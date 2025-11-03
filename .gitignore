@@ -1,16 +1,5 @@
 .env
-files/*.*
-!files/.gitkeep
-public/*.*
-public/*/
-!public/.gitkeep
-!public/.htaccess
-!public/phpinfo.php
 mysql/*.*
 mysql/ib*
 mysql/*/
 !mysql/.gitkeep
-mongo/*/
-mongo/*.*
-!mongo/.gitkeep
-mongo/WiredTiger
