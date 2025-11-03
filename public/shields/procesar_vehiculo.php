@@ -1,0 +1,47 @@
+<?php
+  ob_start();
+  require_once 'includes/config.php';
+  require_once 'clases/Vehiculos.php';
+
+  if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $cliente_id = intval($_POST['cliente_id']);
+    $marca_id = intval($_POST['marca_id']);
+    $modelo_id = intval($_POST['modelo_id']);
+    $anio = intval($_POST['anio']);
+    $patente = strtoupper(trim($_POST['patente']));
+
+    // Validaciones en PHP
+    $errors = [];
+
+    // Validar año
+    if ($anio < 1940 || $anio > 2025)
+      $errors[] = "El año debe estar entre 1940 y 2025";
+
+    // Validar patente (formato: AB123CD o ABC123)
+    if (!preg_match('/^[A-Z]{2,3}[0-9]{3}[A-Z]{2}|[A-Z]{3}[0-9]{3}$/', $patente))
+      $errors[] = "La patente debe tener formato AB123CD o ABC123";
+
+    if (count($errors) > 0) {
+      header("Location: registrar_vehiculo.php?error=" . urlencode(implode(", ", $errors)));
+      exit;
+    }
+
+    // Crear objeto Vehículo y guardar
+    try {
+      $vehiculo = new Vehiculos($marca_id, $modelo_id, $anio, $patente, $cliente_id);
+      
+      if ($vehiculo->guardar()) {
+        ob_end_clean();
+        header("Location: registrar_vehiculo.php?success=create");
+        exit;
+      } else {
+        ob_end_clean();
+        header("Location: registrar_vehiculo.php?error=No se pudo registrar el vehículo. Intente nuevamente.");
+        exit;
+      }
+    } catch (Exception $e) {
+      ob_end_clean();
+      header("Location: registrar_vehiculo.php?error=" . urlencode($e->getMessage()));
+      exit;
+    }
+  }
