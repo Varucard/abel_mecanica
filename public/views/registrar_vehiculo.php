@@ -44,36 +44,38 @@
         <div class="card-body">
 
           <!-- Menú -->
-          <div class="btn-group w-100" role="group" style="gap: 5px;">
-            <div class="dropdown flex-fill">
-              <a href="menu_principal.php" class="btn btn-primary w-100">🏠 Inicio</a>
-              <div class="dropdown-menu">
-                <a href="configurar_sistema.php">Configuración</a>
-              </div>
-            </div>
-            <div class="dropdown flex-fill">
-              <a href="#" class="btn btn-success w-100">👤 Clientes</a>
-              <div class="dropdown-menu">
-                <a href="registrar_cliente.php">Registrar Cliente</a>
-                <a href="listar_clientes.php">Ver Clientes</a>
-              </div>
-            </div>
-            <div class="dropdown flex-fill">
-              <a href="#" class="btn btn-info w-100">🚗 Vehículos</a>
-              <div class="dropdown-menu">
-                <a href="registrar_vehiculo.php">Registrar Vehiculo</a>
-                <a href="listar_clientes.php">Ver Vehiculos</a>
-              </div>
-            </div>
-            <div class="dropdown flex-fill">
-              <a href="#" class="btn btn-warning w-100">📝 Ordenes</a>
-              <div class="dropdown-menu">
-                <a href="registrar_orden.php">Registrar Orden</a>
-                <a href="listar_clientes.php">Ver Ordenes</a>
-              </div>
+        <div class="btn-group w-100" role="group" style="gap: 5px;">
+          <div class="dropdown flex-fill">
+            <a href="menu_principal.php" class="btn btn-primary w-100">🏠 Inicio</a>
+            <div class="dropdown-menu">
+              <a href="registrar_servicio.php">Servicios</a>
+              <a href="registrar_marcas.php">Marcas</a>
+              <a href="registrar_modelos.php">Modelos</a>
             </div>
           </div>
-          <!-- Fin menú -->
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-success w-100">👤 Clientes</a>
+            <div class="dropdown-menu">
+              <a href="registrar_cliente.php">Registrar Cliente</a>
+              <a href="listar_clientes.php">Ver Clientes</a>
+            </div>
+          </div>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-info w-100">🚗 Vehículos</a>
+            <div class="dropdown-menu">
+              <a href="registrar_vehiculo.php">Registrar Vehiculo</a>
+              <a href="listar_clientes.php">Ver Vehiculos</a>
+            </div>
+          </div>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-warning w-100">📝 Ordenes</a>
+            <div class="dropdown-menu">
+              <a href="registrar_orden.php">Registrar Orden</a>
+              <a href="listar_clientes.php">Ver Ordenes</a>
+            </div>
+          </div>
+        </div>
+        <!-- Fin menú -->
 
           <!-- Inicio mensajes -->
           <?php if (isset($_GET['success'])): ?>

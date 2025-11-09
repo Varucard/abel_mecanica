@@ -27,7 +27,9 @@
           <div class="dropdown flex-fill">
             <a href="menu_principal.php" class="btn btn-primary w-100">🏠 Inicio</a>
             <div class="dropdown-menu">
-              <a href="configurar_sistema.php">Configuración</a>
+              <a href="registrar_servicio.php">Servicios</a>
+              <a href="registrar_marcas.php">Marcas</a>
+              <a href="registrar_modelos.php">Modelos</a>
             </div>
           </div>
           <div class="dropdown flex-fill">
