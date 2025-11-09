@@ -1,4 +1,5 @@
 .env
+.vscode/
 mysql/*.*
 mysql/ib*
 mysql/*/
