@@ -53,4 +53,3 @@ class Marcas {
     return $stmt->execute([$id]);
   }
 }
-?>

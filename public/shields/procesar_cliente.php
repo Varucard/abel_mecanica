@@ -1,121 +1,161 @@
 <?php
-  ob_start();
-  require_once 'includes/config_database.php';
-  require_once 'clases/Clientes.php';
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
 
-  // Procesar eliminación
-  if (isset($_GET['action']) && $_GET['action'] == 'delete' && isset($_GET['id'])) {
+ob_start();
+require_once '../includes/config_database.php';
+require_once '../clases/Clientes.php';
+
+/*
+|--------------------------------------------------------------------------
+| 1) ELIMINAR CLIENTE
+|--------------------------------------------------------------------------
+*/
+if (isset($_GET['action']) && $_GET['action'] === 'delete' && isset($_GET['id'])) {
+
     $id = intval($_GET['id']);
 
     if (Clientes::eliminar($conn, $id)) {
-      ob_end_clean();
-      header("Location: registrar_cliente.php?success=delete");
-      exit;
+        if (ob_get_level() > 0) ob_end_clean();
+        header("Location: ../views/listar_clientes.php?success=delete");
+        exit;
     } else {
-      ob_end_clean();
-      header("Location: registrar_cliente.php?error=delete");
-      exit;
+        if (ob_get_level() > 0) ob_end_clean();
+        header("Location: ../views/listar_clientes.php?error=delete");
+        exit;
     }
-  }
+}
 
-  // Procesar cambio de estado
-  if (isset($_GET['action']) && $_GET['action'] == 'cambiar_estado' && isset($_GET['id']) && isset($_GET['estado'])) {
+/*
+|--------------------------------------------------------------------------
+| 2) CAMBIAR ESTADO (activo / inactivo)
+|--------------------------------------------------------------------------
+*/
+if (isset($_GET['action']) && $_GET['action'] === 'cambiar_estado' && isset($_GET['id']) && isset($_GET['estado'])) {
+
     $id = intval($_GET['id']);
-    $estado = $_GET['estado'] == 'activo' ? 'inactivo' : 'activo';
+    $estado = $_GET['estado'] === 'activo' ? 'inactivo' : 'activo';
+
     if (Clientes::cambiarEstado($conn, $id, $estado)) {
-      ob_end_clean();
-      header("Location: registrar_cliente.php?success=estado");
-      exit;
+        if (ob_get_level() > 0) ob_end_clean();
+        header("Location: ../views/listar_clientes.php?success=estado");
+        exit;
     } else {
-      ob_end_clean();
-      header("Location: registrar_cliente.php?error=estado");
-      exit;
+        if (ob_get_level() > 0) ob_end_clean();
+        header("Location: ../views/listar_clientes.php?error=estado");
+        exit;
     }
-  }
+}
 
-  // Procesar registro
-  if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $nombre = mb_strtoupper(trim($_POST['nombre']));
-    $apellido = mb_strtoupper(trim($_POST['apellido']));
-    $dni = trim($_POST['dni']);
-    $telefono = trim($_POST['telefono']);
-    $direccion = mb_strtoupper(trim($_POST['direccion']));
+/*
+|--------------------------------------------------------------------------
+| 3) PROCESAR CREAR / EDITAR CLIENTE (POST)
+|--------------------------------------------------------------------------
+*/
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // Validaciones en PHP
+    $id         = isset($_POST['id']) && $_POST['id'] !== '' ? intval($_POST['id']) : null;
+    $nombre     = mb_strtoupper(trim($_POST['nombre']));
+    $apellido   = mb_strtoupper(trim($_POST['apellido']));
+    $dni        = trim($_POST['dni']);
+    $telefono   = trim($_POST['telefono']);
+    $direccion  = mb_strtoupper(trim($_POST['direccion']));
+
+    // Validaciones básicas
     $errors = [];
 
-    // Validar nombre
     if (!preg_match('/^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]{2,50}$/', $nombre))
-      $errors[] = "El nombre solo debe contener letras y espacios, de 2 a 50 caracteres";
+        $errors[] = "El nombre debe contener solo letras y espacios (2-50 caracteres).";
 
-    // Validar apellido
-    if (!preg_match('/^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]{2,50}$/', $apellido)) 
-      $errors[] = "El apellido solo debe contener letras y espacios, de 2 a 50 caracteres";
+    if (!preg_match('/^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]{2,50}$/', $apellido))
+        $errors[] = "El apellido debe contener solo letras y espacios (2-50 caracteres).";
 
-    // Validar DNI
-    if (!preg_match('/^[0-9]{6,8}$/', $dni)) 
-      $errors[] = "El DNI debe tener entre 6 y 8 dígitos numéricos";
+    if (!preg_match('/^[0-9]{6,8}$/', $dni))
+        $errors[] = "El DNI debe tener entre 6 y 8 dígitos.";
 
-    // Validar teléfono
     if (!preg_match('/^[0-9]{10}$/', $telefono))
-      $errors[] = "El teléfono debe tener exactamente 10 dígitos numéricos";
+        $errors[] = "El teléfono debe tener exactamente 10 dígitos.";
 
-    // Validar dirección
     if (strlen($direccion) < 5 || strlen($direccion) > 200)
-      $errors[] = "La dirección debe tener entre 5 y 200 caracteres";
+        $errors[] = "La dirección debe tener entre 5 y 200 caracteres.";
 
     if (count($errors) > 0) {
-      ob_end_clean();
-      header("Location: registrar_cliente.php?error=" . urlencode(implode(", ", $errors)));
-      exit;
+        if (ob_get_level() > 0) ob_end_clean();
+        header("Location: ../views/registrar_cliente.php?error=" . urlencode(implode(", ", $errors)) . ($id ? "&id=$id" : ""));
+        exit;
     }
 
-    // Crear objeto Cliente y guardar
+    // Crear objeto Cliente
+    $cliente = new Clientes($nombre, $apellido, $dni, $telefono, $direccion);
+
     try {
-      $cliente = new Clientes($nombre, $apellido, $dni, $telefono, $direccion);
-      
-      if ($cliente->guardar($conn)) {
-        ob_end_clean();
-        header("Location: registrar_cliente.php?success=create");
+
+        // EDITAR
+        if ($id) {
+            if ($cliente->actualizar($conn, $id)) {
+                if (ob_get_level() > 0) ob_end_clean();
+                header("Location: ../views/listar_clientes.php?success=update");
+                exit;
+            }
+        }
+
+        // CREAR
+        else {
+            if ($cliente->guardar($conn)) {
+                if (ob_get_level() > 0) ob_end_clean();
+                header("Location: ../views/listar_clientes.php?success=create");
+                exit;
+            }
+        }
+
+        // Si no guardó:
+        if (ob_get_level() > 0) ob_end_clean();
+        header("Location: ../views/registrar_cliente.php?error=" . urlencode("No se pudo guardar el cliente.") . ($id ? "&id=$id" : ""));
         exit;
-      } else {
-        ob_end_clean();
-        header("Location: registrar_cliente.php?error=No se pudo registrar el cliente. Intente nuevamente.");
-        exit;
-      }
+
     } catch (Exception $e) {
-      ob_end_clean();
-      header("Location: registrar_cliente.php?error=" . urlencode($e->getMessage()));
-      exit;
+        if (ob_get_level() > 0) ob_end_clean();
+        header("Location: ../views/registrar_cliente.php?error=" . urlencode($e->getMessage()) . ($id ? "&id=$id" : ""));
+        exit;
     }
-  }
+}
 
-  // Mostrar mensajes
-  $message = '';
-  $alert_type = '';
+/*
+|--------------------------------------------------------------------------
+| 4) SI VIENE GET CON SOLO id → IR A FORMULARIO DE EDITAR
+|--------------------------------------------------------------------------
+*/
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id']) && !isset($_GET['action'])) {
+    $id = intval($_GET['id']);
+    if (ob_get_level() > 0) ob_end_clean();
+    header("Location: ../views/registrar_cliente.php?id=" . $id);
+    exit;
+}
 
-  if (isset($_GET['success'])) {
-    $message = "Cliente registrado exitosamente";
-    $alert_type = 'success';
-  }
+/*
+|--------------------------------------------------------------------------
+| 5) MANEJO DE success / error DIRECTO POR GET
+|--------------------------------------------------------------------------
+*/
+if (isset($_GET['success'])) {
+    if (ob_get_level() > 0) ob_end_clean();
+    header("Location: ../views/listar_clientes.php?success=" . urlencode($_GET['success']));
+    exit;
+}
 
-  if (isset($_GET['error'])) {
-    $message = $_GET['error'];
-    $alert_type = 'danger';
-  }
-?>
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Procesando Cliente</title>
-</head>
-<body>
-<?php if ($message): ?>
-    <script>
-      alert('<?php echo $message; ?>');
-      window.location.href = 'registrar_cliente.php';
-    </script>
-  <?php endif; ?>
-</body>
-</html>
+if (isset($_GET['error'])) {
+    if (ob_get_level() > 0) ob_end_clean();
+    header("Location: ../views/registrar_cliente.php?error=" . urlencode($_GET['error']));
+    exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| 6) SI NO HAY NADA → IR A LA LISTA (EVITA PANTALLA EN BLANCO)
+|--------------------------------------------------------------------------
+*/
+if (ob_get_level() > 0) ob_end_clean();
+header("Location: ../views/listar_clientes.php");
+exit;
+

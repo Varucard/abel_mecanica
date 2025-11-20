@@ -172,4 +172,3 @@ class Vehiculos {
     return $result;
   }
 }
-?>

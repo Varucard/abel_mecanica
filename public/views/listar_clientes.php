@@ -1,0 +1,135 @@
+<?php
+  require_once '../includes/config_database.php';
+  require_once '../clases/Clientes.php';
+   
+  $clientes = Clientes::obtenerTodos($conn);
+
+  if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id']) && !isset($_GET['action'])) {
+    $id = intval($_GET['id']);
+    header("Location: registrar_cliente.php?id=" . $id);
+    exit;
+  }
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Listado de Clientes - Taller Mecánico</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-header bg-success text-white">
+        <h1 class="mb-0">Clientes Registrados</h1>
+      </div>
+
+      <div class="card-body">
+
+        <!-- Menú (idéntico al original - no tocar) -->
+        <div class="btn-group w-100" role="group" style="gap: 5px;">
+          <div class="dropdown flex-fill">
+            <a href="menu_principal.php" class="btn btn-primary w-100">🏠 Inicio</a>
+            <div class="dropdown-menu">
+              <a href="registrar_servicio.php">Servicios</a>
+              <a href="registrar_marcas.php">Marcas</a>
+              <a href="registrar_modelos.php">Modelos</a>
+            </div>
+          </div>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-success w-100">👤 Clientes</a>
+            <div class="dropdown-menu">
+              <a href="registrar_cliente.php">Registrar Cliente</a>
+              <a href="listar_clientes.php">Ver Clientes</a>
+            </div>
+          </div>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-info w-100">🚗 Vehículos</a>
+            <div class="dropdown-menu">
+              <a href="registrar_vehiculo.php">Registrar Vehiculo</a>
+              <a href="listar_clientes.php">Ver Vehiculos</a>
+            </div>
+          </div>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-warning w-100">📝 Ordenes</a>
+            <div class="dropdown-menu">
+              <a href="registrar_orden.php">Registrar Orden</a>
+              <a href="listar_clientes.php">Ver Ordenes</a>
+            </div>
+          </div>
+        </div>
+        <!-- Fin menú -->
+
+        <!-- Mensajes -->
+        <?php if (isset($_GET['success']) && $_GET['success'] == 'delete'): ?>
+          <div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+            <strong>¡Cliente eliminado!</strong> El cliente ha sido eliminado exitosamente.
+          </div>
+        <?php endif; ?>
+        
+        <?php if (isset($_GET['success']) && $_GET['success'] == 'estado'): ?>
+          <div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+            <strong>¡Cambio de estado exitoso!</strong> El estado del cliente ha sido modificado.
+          </div>
+        <?php endif; ?>
+
+        <?php if (isset($_GET['error'])): ?>
+          <div class="alert alert-danger" role="alert" id="error-alert">
+            <strong>Error:</strong> <?php echo htmlspecialchars($_GET['error']); ?>
+          </div>
+        <?php endif; ?>
+
+        <!-- Tabla -->
+        <div class="table-responsive">
+          <table id="tabla_clientes" class="table table-striped table-bordered">
+            <thead>
+              <tr>
+                <th>Nombre</th>
+                <th>Apellido</th>
+                <th>DNI</th>
+                <th>Teléfono</th>
+                <th>Dirección</th>
+                <th>Estado</th>
+                <th>Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              <?php while ($row = $clientes->fetch()): ?>
+                <?php $estado_color = $row['estado'] == 'activo' ? 'success' : 'secondary'; ?>
+                <tr>
+                  <td><?= htmlspecialchars($row['nombre']) ?></td>
+                  <td><?= htmlspecialchars($row['apellido']) ?></td>
+                  <td><?= htmlspecialchars($row['dni']) ?></td>
+                  <td><?= htmlspecialchars($row['telefono']) ?></td>
+                  <td><?= htmlspecialchars($row['direccion']) ?></td>
+                  <td><span class="badge bg-<?= $estado_color ?>"><?= htmlspecialchars($row['estado']) ?></span></td>
+                  <td>
+                    <a href="../shields/procesar_cliente.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">Editar</a>
+                    <button class="btn btn-sm <?= $row['estado'] == 'activo' ? 'btn-warning' : 'btn-success'; ?>"
+                            onclick="cambiarEstadoCliente(<?= $row['id']; ?>, '<?= $row['estado']; ?>')">
+                      <?= $row['estado'] == 'activo' ? 'Desactivar' : 'Activar'; ?>
+                    </button>
+                    <button class="btn btn-sm btn-danger"
+                            onclick="eliminarCliente(<?= $row['id']; ?>, '<?= $row['nombre'] . ' ' . $row['apellido']; ?>')">
+                      Eliminar
+                    </button>
+                  </td>
+                </tr>
+              <?php endwhile; ?>
+            </tbody>
+          </table>
+        </div>
+        <a href="registrar_cliente.php" class="btn btn-success mt-3">+ Nuevo Cliente</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+  <script src="../assets/js/clientes.js"></script>
+</body>
+</html>

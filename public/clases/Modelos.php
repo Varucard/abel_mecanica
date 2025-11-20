@@ -61,4 +61,3 @@ class Modelos {
     return $stmt->execute([$id]);
   }
 }
-?>

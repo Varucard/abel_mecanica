@@ -73,4 +73,3 @@ class Servicios {
     return $stmt->execute([$estado, $id]);
   }
 }
-?>

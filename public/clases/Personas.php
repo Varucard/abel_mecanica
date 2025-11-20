@@ -68,5 +68,3 @@ class Personas {
     return null;
   }
 }
-?>
-
