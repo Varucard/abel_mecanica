@@ -1,12 +1,9 @@
 Modulo Clientes:
-Agregar listado de clientes
-Poder editar un cliente
-  Poder ver autos => Si apreto el auto me muestra el detalle del auto.
-  Visualizar datos del cliente => Capaz agregar un detalle para el cliente => Capaz agregar si es deudor o no.
-  Historial de turnos, si los tiene.
+Poder ver autos => Si apreto el auto me muestra el detalle del auto.
+Visualizar datos del cliente => Capaz agregar un detalle para el cliente => Capaz agregar si es deudor o no.
+Historial de turnos, si los tiene.
 
 Modulo Vehiculos:
-Agregar listado de vehiculos de clientes
 Poder editar un vehiculo de cliente => Kilometraje => Poder agregar imagenes? => detalles del vehiculo (Un choque - vino sucio)
 ABM?
 
@@ -29,8 +26,7 @@ Modulo de empleados:
 AMB empleados
 
 Configuración del sistema:
-Agregar trabajos => precios => descripción
-Agregar mas marcas - modelos de autos
 Impresión de detalles - presupuestos para el Cliente
 Capaz agregar modulo de seguridad al sistema => Clave - Usuario
 Que el Cliente pueda ver como va su auto ingresando como un cliente?
+¿Agregar mas data de los modelos? - año - motor - etc.

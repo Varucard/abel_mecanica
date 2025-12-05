@@ -29,17 +29,19 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
   <title>Registrar Vehículo - Taller Mecánico</title>
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
 </head>
 <body>
   <div class="container">
     <div class="card">
       <div class="card-header bg-info text-white">
-        <h1 class="mb-0">Registrar Vehículo</h1>
+        <h1 class="mb-0">Registrar Vehículo
+          <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
+        </h1>
       </div>
         <div class="card-body">
 
@@ -64,14 +66,14 @@
             <a href="#" class="btn btn-info w-100">🚗 Vehículos</a>
             <div class="dropdown-menu">
               <a href="registrar_vehiculo.php">Registrar Vehiculo</a>
-              <a href="listar_clientes.php">Ver Vehiculos</a>
+              <a href="listar_vehiculos.php">Ver Vehiculos</a>
             </div>
           </div>
           <div class="dropdown flex-fill">
             <a href="#" class="btn btn-warning w-100">📝 Ordenes</a>
             <div class="dropdown-menu">
               <a href="registrar_orden.php">Registrar Orden</a>
-              <a href="listar_clientes.php">Ver Ordenes</a>
+              <a href="listar_ordenes.php">Ver Ordenes</a>
             </div>
           </div>
         </div>
@@ -97,7 +99,7 @@
               <h4>Nuevo Vehículo</h4>
             </div>
             <div class="card-body">
-              <form action="procesar_vehiculo.php" method="POST" id="form_vehiculo" novalidate>
+              <form action="../shields/procesar_vehiculo.php" method="POST" id="form_vehiculo" novalidate>
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="cliente_id" class="form-label">Cliente *</label>
@@ -148,53 +150,19 @@
                 </div>
               </div>
                 <button type="submit" class="btn btn-info">Registrar Vehículo</button>
+                <a href="listar_vehiculos.php" class="btn btn-secondary">Ver Vehículos Registrados</a>
               </form>
             </div>
           </div>
 
-          <!-- Tabla de Vehículos -->
-          <div class="card">
-            <div class="card-header bg-light">
-              <h4>Vehículos Registrados</h4>
-            </div>
-            <div class="card-body">
-              <table id="tabla_vehiculos" class="table table-striped table-bordered">
-                <thead>
-                  <tr>
-                    <th>Cliente</th>
-                    <th>Marca</th>
-                    <th>Modelo</th>
-                    <th>Año</th>
-                    <th>Patente</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php
-                    $vehiculos = Vehiculos::obtenerTodos();
-                    while ($row = $vehiculos->fetch()) {
-                      ?>
-                      <tr>
-                        <td><?php echo htmlspecialchars($row['cliente']); ?></td>
-                        <td><?php echo htmlspecialchars($row['marca']); ?></td>
-                        <td><?php echo htmlspecialchars($row['modelo']); ?></td>
-                        <td><?php echo htmlspecialchars($row['anio']); ?></td>
-                        <td><?php echo htmlspecialchars($row['patente']); ?></td>
-                      </tr>
-                  <?php } ?>
-                </tbody>
-              </table>
-            </div>
-          </div>
         </div>
     </div>
   </div>
 
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
 
-  <script src="../assets/js/vehiculos.js"></script>
+  <script src="../assets/js/registrar_vehiculos.js"></script>
 </body>
 </html>
-

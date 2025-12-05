@@ -7,6 +7,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
   <title>Taller Mecánico - Gestión</title>
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
@@ -16,7 +17,9 @@
   <div class="container">
     <div class="card">
       <div class="card-header bg-primary text-white">
-        <h1 class="mb-0">🔧 Taller Mecánico - Sistema de Gestión</h1>
+        <h1 class="mb-0">🔧 Taller Mecánico - Sistema de Gestión
+          <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
+        </h1>
       </div>
       <div class="card-body">
 
@@ -55,7 +58,7 @@
             <a href="#" class="btn btn-info w-100">🚗 Vehículos</a>
             <div class="dropdown-menu">
               <a href="registrar_vehiculo.php">Registrar Vehiculo</a>
-              <a href="listar_clientes.php">Ver Vehiculos</a>
+              <a href="listar_vehiculos.php">Ver Vehiculos</a>
             </div>
           </div>
           <div class="dropdown flex-fill">

@@ -1,7 +1,7 @@
 <?php
   ob_start();
-  require_once 'includes/config.php';
-  require_once 'clases/Vehiculos.php';
+  require_once '../includes/config_database.php';
+  require_once '../clases/Vehiculos.php';
 
   if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $cliente_id = intval($_POST['cliente_id']);
@@ -22,7 +22,7 @@
       $errors[] = "La patente debe tener formato AB123CD o ABC123";
 
     if (count($errors) > 0) {
-      header("Location: registrar_vehiculo.php?error=" . urlencode(implode(", ", $errors)));
+      header("Location: ../views/registrar_vehiculo.php?error=" . urlencode(implode(", ", $errors)));
       exit;
     }
 
@@ -32,16 +32,16 @@
       
       if ($vehiculo->guardar()) {
         ob_end_clean();
-        header("Location: registrar_vehiculo.php?success=create");
+        header("Location: ../views/registrar_vehiculo.php?success=create");
         exit;
       } else {
         ob_end_clean();
-        header("Location: registrar_vehiculo.php?error=No se pudo registrar el vehículo. Intente nuevamente.");
+        header("Location: ../views/registrar_vehiculo.php?error=No se pudo registrar el vehículo. Intente nuevamente.");
         exit;
       }
     } catch (Exception $e) {
       ob_end_clean();
-      header("Location: registrar_vehiculo.php?error=" . urlencode($e->getMessage()));
+      header("Location: ../views/registrar_vehiculo.php?error=" . urlencode($e->getMessage()));
       exit;
     }
   }

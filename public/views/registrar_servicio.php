@@ -12,6 +12,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
   <title>Registrar Servicio - Taller Mecánico</title>
   <link rel="stylesheet" href="../assets/css/styles.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -21,7 +22,9 @@
   <div class="container">
     <div class="card">
       <div class="card-header bg-primary text-white">
-        <h1 class="mb-0">Registrar Servicio</h1>
+        <h1 class="mb-0">Registrar Servicio
+          <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
+        </h1>
       </div>
       <div class="card-body">
 
@@ -46,7 +49,7 @@
             <a href="#" class="btn btn-info w-100">🚗 Vehículos</a>
             <div class="dropdown-menu">
               <a href="registrar_vehiculo.php">Registrar Vehiculo</a>
-              <a href="listar_clientes.php">Ver Vehiculos</a>
+              <a href="listar_vehiculos.php">Ver Vehiculos</a>
             </div>
           </div>
           <div class="dropdown flex-fill">
