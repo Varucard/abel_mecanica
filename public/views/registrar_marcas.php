@@ -51,7 +51,7 @@ require_once '../clases/Marcas.php';
             <a href="#" class="btn btn-warning w-100">📝 Ordenes</a>
             <div class="dropdown-menu">
               <a href="registrar_orden.php">Registrar Orden</a>
-              <a href="listar_clientes.php">Ver Ordenes</a>
+              <a href="listar_orden.php">Ver Ordenes</a>
             </div>
           </div>
         </div>

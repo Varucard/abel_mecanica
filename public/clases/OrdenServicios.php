@@ -82,34 +82,72 @@ class OrdenServicios {
     }
   }
 
-  public static function verOrdenes() {
+  /**
+   * Obtener todas las órdenes con información completa
+   * (cliente, vehículo, servicios)
+   */
+  public static function obtenerTodas() {
     global $conn;
-    $sql = "SELECT * FROM vw_ordenes_completas ORDER BY created_at DESC";
+    
+    $sql = "
+      SELECT 
+        o.id,
+        o.costo,
+        o.fecha_realizado,
+        o.estado,
+        CONCAT(p.apellido, ', ', p.nombre) AS cliente,
+        CONCAT(v.patente, ' - ', ma.nombre, ' ', mo.nombre) AS vehiculo,
+        s.nombre AS servicios
+      FROM ordenes o
+      INNER JOIN vehiculos v   ON o.vehiculo_id = v.id
+      INNER JOIN clientes c    ON v.cliente_id = c.id
+      INNER JOIN personas p    ON c.persona_id = p.id
+      INNER JOIN marcas ma     ON v.marca_id = ma.id
+      INNER JOIN modelos mo    ON v.modelo_id = mo.id
+      INNER JOIN servicios s   ON o.servicio_id = s.id
+      ORDER BY o.fecha_realizado DESC, o.id DESC
+    ";
+    
     return $conn->query($sql);
   }
 
+  /**
+   * Alias de obtenerTodas() para mantener compatibilidad
+   */
+  public static function verOrdenes() {
+    return self::obtenerTodas();
+  }
+
+  /**
+   * Obtener servicios activos para el select
+   */
   public static function obtenerServicios() {
     global $conn;
     $sql = "SELECT * FROM servicios WHERE estado = 'activo' ORDER BY nombre";
     return $conn->query($sql);
   }
 
+  /**
+   * Cambiar estado de una orden
+   * Si se marca como 'finalizada', guarda fecha_finalizado
+   */
   public static function cambiarEstado($id, $estado) {
     global $conn;
     try {
       if ($estado === 'finalizado') {
-        // establecer fecha_finalizado con la fecha actual
+        // Establecer fecha_finalizado con la fecha actual
         $sql = "UPDATE ordenes SET estado = ?, fecha_finalizado = ? WHERE id = ?";
         $stmt = $conn->prepare($sql);
         $fecha = date('Y-m-d');
         return $stmt->execute([$estado, $fecha, $id]);
       } else {
-        // si se cambia a cualquier otro estado, limpiar fecha_finalizado
+        // Si se cambia a cualquier otro estado, limpiar fecha_finalizado
         $sql = "UPDATE ordenes SET estado = ?, fecha_finalizado = NULL WHERE id = ?";
         $stmt = $conn->prepare($sql);
         return $stmt->execute([$estado, $id]);
       }
     } catch (Exception $e) {
+      // die('Error en cambiarEstado: ' . $e->getMessage());
       return false;
     }
   }

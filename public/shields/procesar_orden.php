@@ -1,7 +1,7 @@
 <?php
   ob_start();
-  require_once 'includes/config_database.php';
-  require_once 'clases/OrdenServicios.php';
+  require_once '../includes/config_database.php';
+  require_once '../clases/OrdenServicios.php';
 
   // Procesar cambio de estado de orden
   if (isset($_GET['action']) && $_GET['action'] == 'cambiar_estado' && isset($_GET['id']) && isset($_GET['estado'])) {
@@ -9,11 +9,11 @@
     $estado = $_GET['estado'];
     if (OrdenServicios::cambiarEstado($id, $estado)) {
       ob_end_clean();
-      header("Location: index.php?success=estado");
+      header("Location: ../views/listar_orden.php?success=estado");
       exit;
     } else {
       ob_end_clean();
-      header("Location: index.php?error=estado");
+      header("Location: ../views/listar_orden.php?error=estado");
       exit;
     }
   }
@@ -38,7 +38,7 @@
 
     if (count($errors) > 0) {
       ob_end_clean();
-      header("Location: registrar_orden.php?error=" . urlencode(implode(", ", $errors)));
+      header("Location: ../views/registrar_orden.php?error=" . urlencode(implode(", ", $errors)));
       exit;
     }
 
@@ -81,7 +81,7 @@
       // Si todas las inserciones fueron exitosas
       $conn->commit();
       ob_end_clean();
-      header("Location: index.php?success=order");
+      header("Location: ../views/listar_orden.php?success=order");
       exit;
     } catch (Exception $e) {
       // Rollback si estaba en transacción
@@ -89,7 +89,7 @@
         $conn->rollBack();
 
       ob_end_clean();
-      header("Location: registrar_orden.php?error=" . urlencode($e->getMessage()));
+      header("Location: ../views/registrar_orden.php?error=" . urlencode($e->getMessage()));
       exit;
     }
   }
