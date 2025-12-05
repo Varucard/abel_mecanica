@@ -8,7 +8,6 @@ Poder editar un vehiculo de cliente => Kilometraje => Poder agregar imagenes? =>
 ABM?
 
 Modulo de Ordenes
-Al crear una orden con varios servicios, se crean varios ordenes => corregir
 Poder editar una orden
 Estados de orden => Aprobada, en  revisión, etc.
 

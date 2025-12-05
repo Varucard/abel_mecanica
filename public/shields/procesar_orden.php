@@ -19,22 +19,28 @@
   }
 
   if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $vehiculo_id = intval($_POST['vehiculo_id']);
-    // servicio_id puede ser un array (varios servicios) o un único valor
-    $servicio_input = $_POST['servicio_id'];
-    $costo = floatval($_POST['costo']);
+    $vehiculo_id     = intval($_POST['vehiculo_id']);
+    $servicio_input  = $_POST['servicio_id']; // puede ser array o valor único
     $fecha_realizado = trim($_POST['fecha_realizado']);
 
-    // Validaciones en PHP
     $errors = [];
-
-    // Validar costo
-    if ($costo <= 0) 
-      $errors[] = "El costo debe ser mayor a 0";
 
     // Validar fecha
     if (empty($fecha_realizado))
       $errors[] = "La fecha es requerida";
+
+    // Normalizar servicios a array
+    $servicios_ids = [];
+    if (is_array($servicio_input)) {
+      foreach ($servicio_input as $s) {
+        $servicios_ids[] = intval($s);
+      }
+    } else {
+      $servicios_ids[] = intval($servicio_input);
+    }
+
+    if (count($servicios_ids) == 0)
+      $errors[] = 'Debe seleccionar al menos un servicio.';
 
     if (count($errors) > 0) {
       ob_end_clean();
@@ -42,49 +48,53 @@
       exit;
     }
 
-    // Crear una orden por cada servicio seleccionado (si vino un array)
     try {
-      // Iniciar transacción para crear todas las órdenes juntas
       $conn->beginTransaction();
 
-      $servicios_ids = [];
-      if (is_array($servicio_input)) {
-        foreach ($servicio_input as $s) {
-          $servicios_ids[] = intval($s);
-        }
-      } else {
-        $servicios_ids[] = intval($servicio_input);
+      // 1) Crear cabecera de ORDEN (una sola)
+      $sql_orden = "INSERT INTO ordenes (vehiculo_id, fecha_realizado, estado, total)
+                    VALUES (?, ?, 'pendiente', 0)";
+      $stmt_orden = $conn->prepare($sql_orden);
+
+      if (!$stmt_orden->execute([$vehiculo_id, $fecha_realizado])) {
+        throw new Exception("No se pudo crear la orden.");
       }
 
-      if (count($servicios_ids) == 0)
-        throw new Exception('Debe seleccionar al menos un servicio.');
+      $orden_id = $conn->lastInsertId();
 
-      // Para cada servicio, obtener precio_base desde la BD y crear la orden correspondiente
+      // 2) Por cada servicio, obtener precio_base y crear detalle en ordenes_servicios
       $stmt_precio = $conn->prepare("SELECT precio_base FROM servicios WHERE id = ?");
+      $total = 0;
 
       foreach ($servicios_ids as $sid) {
         $stmt_precio->execute([$sid]);
-        $res = $stmt_precio->fetch();
+        $res = $stmt_precico = $stmt_precio->fetch();
 
         if (!$res)
           throw new Exception("Servicio con ID {$sid} no encontrado.");
 
         $precio_servicio = floatval($res['precio_base']);
+        $total += $precio_servicio;
 
-        // Crear orden con el precio del servicio (no con el total sumado)
-        $orden = new OrdenServicios($vehiculo_id, $sid, $precio_servicio, $fecha_realizado);
+        // Crear detalle
+        $detalle = new OrdenServicios($orden_id, $sid, $precio_servicio);
 
-        if (!$orden->guardar())
-          throw new Exception('No se pudo crear la orden para el servicio ID ' . $sid);
+        if (!$detalle->guardar())
+          throw new Exception('No se pudo agregar el servicio ID ' . $sid . ' a la orden.');
       }
 
-      // Si todas las inserciones fueron exitosas
+      // 3) Actualizar total de la orden
+      $stmt_total = $conn->prepare("UPDATE ordenes SET total = ? WHERE id = ?");
+      if (!$stmt_total->execute([$total, $orden_id])) {
+        throw new Exception("No se pudo actualizar el total de la orden.");
+      }
+
       $conn->commit();
       ob_end_clean();
       header("Location: ../views/listar_orden.php?success=order");
       exit;
+
     } catch (Exception $e) {
-      // Rollback si estaba en transacción
       if ($conn->inTransaction())
         $conn->rollBack();
 
