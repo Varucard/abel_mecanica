@@ -7,8 +7,8 @@ class Clientes extends Personas {
   private $id_cliente;
   private $persona_id; // ID en la tabla personas (vinculado a la clase base)
 
-  public function __construct($nombre = null, $apellido = null, $dni = null, $telefono = null, $direccion = null) {
-    parent::__construct($nombre, $apellido, $dni);
+  public function __construct($nombre = null, $apellido = null, $dni = null, $telefono = null, $direccion = null, $email = null) {
+    parent::__construct($nombre, $apellido, $dni, $email); // <-- agregamos email al constructor padre
     $this->telefono = $telefono;
     $this->direccion = $direccion;
   }
@@ -55,11 +55,14 @@ class Clientes extends Personas {
     $conn->beginTransaction();
       
     try {
-      // Primero guardar la persona
-      $sql_persona = "INSERT INTO personas (nombre, apellido, dni) VALUES (?, ?, ?)";
+      // Primero guardar la persona (ahora con email)
+      $sql_persona = "INSERT INTO personas (nombre, apellido, dni, email) VALUES (?, ?, ?, ?)";
       $stmt_persona = $conn->prepare($sql_persona);
       
-      if (!$stmt_persona->execute([$this->getNombre(), $this->getApellido(), $this->getDni()]))
+      // Si email viene vacío, lo guardamos como NULL
+      $email = $this->getEmail() !== '' ? $this->getEmail() : null;
+      
+      if (!$stmt_persona->execute([$this->getNombre(), $this->getApellido(), $this->getDni(), $email]))
         throw new Exception("Error al insertar persona");
 
       $persona_id = $conn->lastInsertId();
@@ -94,7 +97,7 @@ class Clientes extends Personas {
 
   // Método CRUD: Read (obtener todos)
   public static function obtenerTodos($conn) {
-    $sql = "SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, c.telefono, c.direccion, c.estado
+    $sql = "SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, p.email, c.telefono, c.direccion, c.estado
             FROM clientes c 
             INNER JOIN personas p ON c.persona_id = p.id 
             ORDER BY p.apellido, p.nombre";
@@ -103,7 +106,7 @@ class Clientes extends Personas {
 
   // Método CRUD: Read (obtener uno por ID)
   public static function obtenerPorId($conn, $id) {
-    $sql = "SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, c.telefono, c.direccion, c.estado
+    $sql = "SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, p.email, c.telefono, c.direccion, c.estado
             FROM clientes c 
             INNER JOIN personas p ON c.persona_id = p.id 
             WHERE c.id = ?";
@@ -130,11 +133,14 @@ class Clientes extends Personas {
 
       $persona_id = $row['persona_id'];
 
-      // 2) Actualizar datos de persona (NO DNI, para evitar conflicto)
-      $sql_persona = "UPDATE personas SET nombre = ?, apellido = ? WHERE id = ?";
+      // 2) Actualizar datos de persona (nombre, apellido, email; NO DNI para evitar conflicto)
+      $sql_persona = "UPDATE personas SET nombre = ?, apellido = ?, email = ? WHERE id = ?";
       $stmt_persona = $conn->prepare($sql_persona);
 
-      if (!$stmt_persona->execute([$this->nombre, $this->apellido, $persona_id]))
+      // Si email viene vacío, lo guardamos como NULL
+      $email = $this->getEmail() !== '' ? $this->getEmail() : null;
+
+      if (!$stmt_persona->execute([$this->nombre, $this->apellido, $email, $persona_id]))
         throw new Exception("Error al actualizar persona.");
 
       // 3) Actualizar datos del cliente

@@ -127,10 +127,19 @@
                 </div>
 
                 <div class="mb-3">
+                  <div class="col-md-6">
+                    <label for="email" class="form-label">Email (opcional)</label>
+                    <input type="email" class="form-control" id="email" name="email" 
+                          value="<?= isset($cliente['email']) ? htmlspecialchars($cliente['email']) : ''; ?>" 
+                          placeholder="ejemplo@correo.com">
+                  </div>
+                </div>
+
+                <div class="mb-3">
                   <label for="direccion" class="form-label">Dirección *</label>
                   <input type="text" class="form-control" id="direccion" name="direccion"
-                         value="<?php echo htmlspecialchars($cliente['direccion'] ?? ''); ?>"
-                         pattern=".{5,200}" required>
+                        value="<?php echo htmlspecialchars($cliente['direccion'] ?? ''); ?>"
+                        pattern=".{5,200}" required>
                 </div>
 
                 <button type="submit" class="btn btn-success">

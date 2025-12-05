@@ -149,6 +149,15 @@
                     style="text-transform: uppercase" required>
                 </div>
               </div>
+              <div class="mb-3">
+                <div class="col-md-6">
+                  <label for="kilometraje" class="form-label">Kilometraje (opcional)</label>
+                  <input type="number" class="form-control" id="kilometraje" name="kilometraje" 
+                        min="0" max="9999999" step="1" 
+                        placeholder="Ej: 125000">
+                  <small class="form-text text-muted">Ingrese el kilometraje actual del vehículo en kilómetros.</small>
+                  </div>
+              </div>
                 <button type="submit" class="btn btn-info">Registrar Vehículo</button>
                 <a href="listar_vehiculos.php" class="btn btn-secondary">Ver Vehículos Registrados</a>
               </form>
