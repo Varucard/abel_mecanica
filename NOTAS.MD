@@ -25,7 +25,7 @@ Modulo de empleados:
 AMB empleados
 
 Configuración del sistema:
-Impresión de detalles - presupuestos para el Cliente
+Una vez entregado el vehiculo o terminada la Orden imprimir un papel de entrega o conformidad.
 Capaz agregar modulo de seguridad al sistema => Clave - Usuario
 Que el Cliente pueda ver como va su auto ingresando como un cliente?
 ¿Agregar mas data de los modelos? - año - motor - etc.

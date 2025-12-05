@@ -98,8 +98,12 @@
                           Finalizar
                         </button>
                       <?php else: ?>
-                        <span class="text-muted">—</span>
+                        <span class="text-muted"></span>
                       <?php endif; ?>
+                        <a href="ver_presupuesto.php?id=<?= $row['id']; ?>" 
+                          class="btn btn-sm btn-info">
+                          Ver
+                        </a>
                     </td>
                   </tr>
                 <?php } ?>
