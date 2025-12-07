@@ -1,17 +1,13 @@
 $(document).ready(function() {
   // Inicializar Select2 para clientes
-  $('.select2').select2();
-
-  // Inicializar DataTable
-  $('#tabla_vehiculos').DataTable({
-    language: {
-      url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-AR.json'
-    },
-    order: [[4, 'asc']]
-  });
+  if ($('.select2').length) {
+    $('.select2').select2();
+  }
 
   // Ocultar alerta de éxito después de 10 segundos
-  $('#success-alert').delay(10000).fadeOut('slow');
+  if ($('#success-alert').length) {
+    $('#success-alert').delay(10000).fadeOut('slow');
+  }
 
   // Verificar si cliente ya tiene vehículos al enviar el formulario
   $('#form_vehiculo').on('submit', function(e) {
@@ -64,6 +60,7 @@ $(document).ready(function() {
         error: function(xhr, status, error) {
           console.error('Error:', error);
           console.error('Response:', xhr.responseText);
+          alert('Error al cargar modelos. Revisa la consola.');
         }
       });
     } else {
