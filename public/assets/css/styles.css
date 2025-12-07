@@ -1,9 +1,82 @@
+/* === Variables de tema (claro por defecto) === */
+:root {
+  /* Colores generales */
+  --bg-body: #f8f9fa;
+  --bg-card: #ffffff;
+  --text-main: #212529;
+  --text-muted: #6c757d; /* Bootstrap default muted */
+  --border-soft: #dee2e6; /* Bootstrap default border */
+  --shadow-soft: rgba(0, 0, 0, 0.1);
+  --shadow-hover: rgba(0, 0, 0, 0.15);
+
+  /* Colores de menú/dropdown */
+  --dropdown-bg: #ffffff;
+  --dropdown-border: rgba(0, 0, 0, 0.15);
+  --dropdown-link-color: #333333;
+  --dropdown-link-hover-bg: #f8f9fa;
+  --dropdown-link-hover-color: #000000;
+
+  /* Colores de DataTables */
+  --dt-bg-header: #f2f2f2;
+  --dt-bg-row-even: #f9f9f9;
+  --dt-bg-row-odd: #ffffff;
+  --dt-border: #dee2e6;
+  --dt-text-color: #333333;
+  --dt-input-bg: #ffffff;
+  --dt-input-border: #ced4da;
+  --dt-input-color: #212529;
+  --dt-pagination-link-bg: #ffffff;
+  --dt-pagination-link-border: #dee2e6;
+  --dt-pagination-link-color: #0d6efd;
+  --dt-pagination-link-hover-bg: #e9ecef;
+  --dt-pagination-link-active-bg: #0d6efd;
+  --dt-pagination-link-active-color: #ffffff;
+}
+
+/* Tema oscuro: se aplica cuando el body tiene la clase .dark-mode */
+body.dark-mode {
+  /* Colores generales */
+  --bg-body: #111827;        /* fondo general (casi negro azulado) */
+  --bg-card: #1f2933;        /* cartas y contenedores */
+  --text-main: #e5e7eb;      /* texto principal claro */
+  --text-muted: #9ca3af;     /* texto secundario */
+  --border-soft: #374151;    /* bordes */
+
+  --shadow-soft: rgba(0, 0, 0, 0.7);
+  --shadow-hover: rgba(0, 0, 0, 0.9);
+
+  /* Colores de menú/dropdown */
+  --dropdown-bg: #1f2933;
+  --dropdown-border: rgba(255, 255, 255, 0.15);
+  --dropdown-link-color: #e5e7eb;
+  --dropdown-link-hover-bg: #374151;
+  --dropdown-link-hover-color: #ffffff;
+
+  /* Colores de DataTables */
+  --dt-bg-header: #111827;
+  --dt-bg-row-even: #1f2933;
+  --dt-bg-row-odd: #111827;  /* ahora sí alternan bien */
+  --dt-border: #374151;
+  --dt-text-color: #e5e7eb;
+  --dt-input-bg: #111827;
+  --dt-input-border: #4b5563;
+  --dt-input-color: #e5e7eb;
+  --dt-pagination-link-bg: #111827;
+  --dt-pagination-link-border: #4b5563;
+  --dt-pagination-link-color: #93c5fd;
+  --dt-pagination-link-hover-bg: #1f2933;
+  --dt-pagination-link-active-bg: #2563eb;
+  --dt-pagination-link-active-color: #ffffff;
+}
+
 /* === Estilos generales === */
 body {
-  background-color: #f8f9fa;
+  background-color: var(--bg-body);
+  color: var(--text-main);
   font-family: Arial, sans-serif;
   margin: 0;
   padding: 0;
+  transition: background-color 0.3s ease, color 0.3s ease; /* Transición suave */
 }
 
 /* === Contenedor principal === */
@@ -14,17 +87,19 @@ body {
 
 /* === Tarjetas === */
 .card {
-  background-color: #fff;
+  background-color: var(--bg-card);
+  color: var(--text-main);
   border-radius: 6px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 6px 16px var(--shadow-soft); /* Sombra más pronunciada */
   margin-bottom: 20px;
   overflow: hidden;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+  border: 1px solid var(--border-soft); /* Asegurar que el borde de la card también cambie */
 }
 
 .card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 6px 12px var(--shadow-hover);
 }
 
 /* === Menú desplegable === */
@@ -39,10 +114,11 @@ body {
   top: 100%;
   left: 0;
   width: 100%;
-  background-color: #fff;
+  background-color: var(--dropdown-bg);
   border-radius: 4px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px var(--dropdown-border);
   z-index: 1000;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
 }
 
 .dropdown:hover .dropdown-menu {
@@ -53,21 +129,265 @@ body {
 .dropdown-menu a {
   display: block;
   padding: 10px 12px;
-  color: #333;
+  color: var(--dropdown-link-color);
   text-decoration: none;
   font-size: 14px;
   transition: background-color 0.2s ease, color 0.2s ease;
 }
 
 .dropdown-menu a:hover {
-  background-color: #f8f9fa;
-  color: #000;
+  background-color: var(--dropdown-link-hover-bg);
+  color: var(--dropdown-link-hover-color);
 }
 
+/* === Overrides para Bootstrap === */
+.btn-outline-secondary {
+  --bs-btn-color: var(--text-main);
+  --bs-btn-border-color: var(--border-soft);
+  --bs-btn-hover-color: var(--bg-body);
+  --bs-btn-hover-bg: var(--text-main);
+  --bs-btn-hover-border-color: var(--text-main);
+  --bs-btn-active-color: var(--bg-body);
+  --bs-btn-active-bg: var(--text-main);
+  --bs-btn-active-border-color: var(--text-main);
+  --bs-btn-disabled-color: var(--text-muted);
+  --bs-btn-disabled-border-color: var(--border-soft);
+}
+
+/* === Overrides para DataTables === */
+.dataTables_wrapper .dataTables_length,
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_processing,
+.dataTables_wrapper .dataTables_paginate {
+  color: var(--dt-text-color);
+}
+
+.dataTables_wrapper .dataTables_filter input,
+.dataTables_wrapper .dataTables_length select {
+  background-color: var(--dt-input-bg);
+  border: 1px solid var(--dt-input-border);
+  color: var(--dt-input-color);
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+table.dataTable {
+  border-collapse: collapse !important;
+  border: 1px solid var(--dt-border);
+  color: var(--dt-text-color);
+  background-color: var(--dt-bg-row-odd); /* Fondo por defecto para filas impares */
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+table.dataTable thead th,
+table.dataTable thead td {
+  background-color: var(--dt-bg-header);
+  border-bottom: 1px solid var(--dt-border);
+  color: var(--dt-text-color);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+table.dataTable tbody tr {
+  color: var(--dt-text-color);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+table.dataTable tbody tr.even {
+  background-color: var(--dt-bg-row-even);
+}
+
+table.dataTable tbody tr.odd {
+  background-color: var(--dt-bg-row-odd);
+}
+
+/* Asegurar que las celdas de ordenamiento también tomen el color de fondo de la fila */
+table.dataTable.display tbody tr.odd > .sorting_1,
+table.dataTable.order-column.stripe tbody tr.odd > .sorting_1 {
+  background-color: var(--dt-bg-row-odd);
+}
+table.dataTable.display tbody tr.even > .sorting_1,
+table.dataTable.order-column.stripe tbody tr.even > .sorting_1 {
+  background-color: var(--dt-bg-row-even);
+}
+
+
+.dataTables_wrapper .dataTables_paginate .paginate_button {
+  background-color: var(--dt-pagination-link-bg);
+  border: 1px solid var(--dt-pagination-link-border);
+  color: var(--dt-pagination-link-color) !important;
+  transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button.current,
+.dataTables_wrapper .dataTables_paginate .paginate_button.current:hover {
+  background-color: var(--dt-pagination-link-active-bg) !important;
+  border-color: var(--dt-pagination-link-active-bg) !important;
+  color: var(--dt-pagination-link-active-color) !important;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button:hover {
+  background-color: var(--dt-pagination-link-hover-bg) !important;
+  border-color: var(--dt-pagination-link-hover-bg) !important;
+  color: var(--dt-pagination-link-color) !important;
+}
+
+/* === Select2 === */
 .select2-container {
   width: 100% !important;
 }
 
-.select2-container {
-  width: 100% !important;
+/* Ajustes para el header principal (el verde de "Clientes Registrados") */
+.bg-success { /* Asumo que es bg-success de Bootstrap */
+  background-color: #198754 !important; /* Color original de Bootstrap success */
+}
+body.dark-mode .bg-success {
+  background-color: #065f46 !important; /* Un verde más profundo para dark mode */
+}
+
+/* Ajustes para los botones de navegación (Inicio, Clientes, Vehículos, Órdenes) */
+.btn-primary { /* Asumo que son btn-primary, btn-success, btn-info, btn-warning */
+  --bs-btn-bg: #0d6efd;
+  --bs-btn-border-color: #0d6efd;
+  --bs-btn-color: #fff;
+}
+body.dark-mode .btn-primary {
+  --bs-btn-bg: #2563eb; /* Un azul más oscuro */
+  --bs-btn-border-color: #2563eb;
+}
+
+.btn-success {
+  --bs-btn-bg: #198754;
+  --bs-btn-border-color: #198754;
+  --bs-btn-color: #fff;
+}
+body.dark-mode .btn-success {
+  --bs-btn-bg: #065f46; /* Un verde más oscuro */
+  --bs-btn-border-color: #065f46;
+}
+
+.btn-info {
+  --bs-btn-bg: #0dcaf0;
+  --bs-btn-border-color: #0dcaf0;
+  --bs-btn-color: #000; /* Info suele tener texto oscuro */
+}
+body.dark-mode .btn-info {
+  --bs-btn-bg: #0ea5e9; /* Un cian más oscuro */
+  --bs-btn-border-color: #0ea5e9;
+  --bs-btn-color: #fff; /* Texto blanco en dark mode */
+}
+
+.btn-warning {
+  --bs-btn-bg: #ffc107;
+  --bs-btn-border-color: #ffc107;
+  --bs-btn-color: #000; /* Warning suele tener texto oscuro */
+}
+body.dark-mode .btn-warning {
+  --bs-btn-bg: #d97706; /* Un amarillo/naranja más oscuro */
+  --bs-btn-border-color: #d97706;
+  --bs-btn-color: #fff; /* Texto blanco en dark mode */
+}
+
+/* Botones de acción en la tabla (Editar, Desactivar, Eliminar) */
+.btn-primary.btn-sm { /* Editar */
+  --bs-btn-bg: #0d6efd;
+  --bs-btn-border-color: #0d6efd;
+}
+body.dark-mode .btn-primary.btn-sm {
+  --bs-btn-bg: #2563eb;
+  --bs-btn-border-color: #2563eb;
+}
+
+.btn-warning.btn-sm { /* Desactivar */
+  --bs-btn-bg: #ffc107;
+  --bs-btn-border-color: #ffc107;
+}
+body.dark-mode .btn-warning.btn-sm {
+  --bs-btn-bg: #d97706;
+  --bs-btn-border-color: #d97706;
+}
+
+.btn-danger.btn-sm { /* Eliminar */
+  --bs-btn-bg: #dc3545;
+  --bs-btn-border-color: #dc3545;
+}
+body.dark-mode .btn-danger.btn-sm {
+  --bs-btn-bg: #dc2626;
+  --bs-btn-border-color: #dc2626;
+}
+
+/* Badge "activo" */
+.badge.bg-success {
+  background-color: #198754 !important;
+  color: #fff;
+}
+body.dark-mode .badge.bg-success {
+  background-color: #065f46 !important;
+  color: #fff;
+}
+
+/* Input de búsqueda de DataTables */
+.dataTables_filter input {
+  background-color: var(--dt-input-bg);
+  border: 1px solid var(--dt-input-border);
+  color: var(--dt-input-color);
+}
+body.dark-mode .dataTables_filter input {
+  background-color: var(--dt-input-bg);
+  border-color: var(--dt-input-border);
+  color: var(--dt-input-color);
+}
+
+/* Select de DataTables (Show X entries) */
+.dataTables_length select {
+  background-color: var(--dt-input-bg);
+  border: 1px solid var(--dt-input-border);
+  color: var(--dt-input-color);
+}
+body.dark-mode .dataTables_length select {
+  background-color: var(--dt-input-bg);
+  border-color: var(--dt-input-border);
+  color: var(--dt-input-color);
+}
+
+/* El contenedor principal de la tabla (el que tiene el borde oscuro en tu captura) */
+.dataTables_wrapper {
+  border: 1px solid var(--dt-border);
+  border-radius: 6px;
+  padding: 10px;
+  background-color: var(--bg-card);
+  transition: border-color 0.3s ease, background-color 0.3s ease;
+}
+
+/* El header de la card (Clientes Registrados) */
+.card-header {
+  background-color: var(--bg-card);
+  color: var(--text-main);
+  border-bottom: 1px solid var(--border-soft);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Asegurar contraste en headers de cards */
+.card-header.bg-light,
+.card-header.bg-white {
+  color: #111827 !important;  /* Texto oscuro sobre fondo claro */
+}
+
+/* En modo oscuro, aunque el header siga teniendo bg-light, el texto será claro */
+body.dark-mode .card-header.bg-light,
+body.dark-mode .card-header.bg-white {
+  background-color: #111827 !important; /* o var(--bg-card) si preferís */
+  color: #e5e7eb !important;           /* texto claro */
+}
+
+/* El contenedor de los botones de navegación (Inicio, Clientes, etc.) */
+.btn-group {
+  margin-bottom: 15px; /* Espacio entre los botones y la tabla */
+}
+
+/* El botón "Modo claro" */
+#btnDarkMode {
+  /* position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1000; */
 }

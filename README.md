@@ -1,46 +1,92 @@
-# Stack completo
-## Materias:
+# abel_mecanica
 
-+ Bases de Datos
-+ Algoritmos y Estructuras de datos 2
+**abel_mecanica** es un entorno de desarrollo dockerizado que integra múltiples servicios (bases de datos SQL y NoSQL, servidor web PHP/Apache y herramientas de administración). Es ideal para desarrollar proyectos web en PHP, realizar prácticas, prototipos y trabajos de clase con una infraestructura completa lista para usar.
 
-Esta configuración de docker es la que utilizaremos para
-los ejemplos y trabajos realizados en clase, para que 
-todos tengamos la misma configuracion y evitar errores.
+Este stack proporciona una base homogénea para trabajar con múltiples proyectos sin necesitar instalaciones locales complejas.
 
-> Esta compuesto por MySQL + PhpMyAdmin, MongoDB + Express, PHP 8.2 + Apache2 y ChartDB
+---
 
-### Contenedores
+## 🚀 Stack Tecnológico
 
-+ database: Contiene la version 5.7 del motor MySQL
-+ mongo: Contiene la ultima version de MongoDB
-+ admin: Administrador web de Bases de Datos MySQL, PhpMyAdmin
-+ mongo-express: Administrador web de Bases de Datos NoSQL, Express para MongoDB
-+ public: Dentro podemos alojar nuestros proyectos, contiene PHP y Apache
-+ chartdb: Herramienta para el diseño de bases de datos relacionales
+- **PHP 8.x + Apache** — Contenedor principal que ejecuta las aplicaciones ubicadas en `/public`.
+- **MySQL 5.7** — Base de datos relacional.
+- **phpMyAdmin** — Administración visual de MySQL.
+- **MongoDB** — Base de datos NoSQL.
+- **Mongo‑Express** — Interfaz web para MongoDB.
+- **ChartDB** — Herramienta de diagramación de bases de datos.
+- **Docker + docker-compose** — Orquestación completa del entorno.
 
-### Archivos
+---
 
-+ .env: contiene las variables de entorno para configurar los contenedores
-+ .gitignore: sirve para excluir archivos del repositorio
-+ Dockerfile: Contiene los comandos para recrear la imagen del contenedor public
-+ mysqld.cnf: archivo de configuracion del motor de bases de datos MySQL
+## 📁 Estructura del Repositorio
 
-### Variables de entorno
-
-Se debe crear el archivo .env dentro de la carpeta "clases/"
 ```
-~$ cd clases
-~/clases$ nano .env
+/
+├── Dockerfile
+├── docker-compose.yml
+├── mysqld.cnf
+├── xdebug.ini
+├── NOTAS.MD
+├── README.md
+├── public/
+│   └── <proyecto_php>
+├── mysql/
+├── files/
+└── .env (no incluido)
 ```
-con las siguientes variables
-``` 
+
+### 📌 Sobre la carpeta `/public`
+
+Dentro de `/public` se encuentran los proyectos PHP que serán servidos por Apache dentro del contenedor principal.  
+Cada subcarpeta representa un proyecto independiente. Por ejemplo:
+
+```
+/public
+└── mecanica_app/
+    ├── index.php
+    ├── css/
+    ├── js/
+    ├── vistas/
+    ├── controladores/
+    └── modelos/
+```
+
+Para acceder al proyecto:
+
+```
+http://localhost:8050/mecanica_app/
+```
+
+Este entorno permite desarrollar aplicaciones PHP estructuradas bajo MVC, API REST, sistemas escolares, CRUDs y cualquier aplicación que requiera una base de datos SQL o NoSQL.
+
+---
+
+## 📝 Configuración Inicial
+
+### 1. Clonar el repositorio
+
+```bash
+git clone https://github.com/Varucard/abel_mecanica.git
+cd abel_mecanica
+```
+
+### 2. Crear el archivo `.env`
+
+Ejemplo mínimo:
+
+```
 TZ=America/Argentina/Buenos_Aires
-SQL_SERVER=database 
-MYSQL_ROOT_PASSWORD=root 
+SQL_SERVER=database
+MYSQL_ROOT_PASSWORD=root
+
+# phpMyAdmin
 PMA_HOST=mysqldb
+
+# Mongo
 MONGO_INITDB_ROOT_USERNAME=root
 MONGO_INITDB_ROOT_PASSWORD=root
+
+# Mongo Express
 ME_CONFIG_OPTIONS_EDITORTHEME=neo
 ME_CONFIG_MONGODB_SERVER=mongodb
 ME_CONFIG_MONGODB_PORT=27017
@@ -50,36 +96,99 @@ ME_CONFIG_MONGODB_ADMINPASSWORD=root
 ME_CONFIG_BASICAUTH_USERNAME=admin
 ME_CONFIG_BASICAUTH_PASSWORD=zaq123
 ```
-### Levantar los contenedores
 
-Comando para iniciar los contenedores, ingresando a la carpeta "clases/"
-```
-~$ cd clases
-~/clases$ sudo docker-compose up -d --build
-```
+> ⚠️ No uses estas credenciales en producción.
 
-### Accesos Web
+---
 
-+ http://localhost:8050/mi_proyecto -> servidor apache
-+ http://localhost:8051 -> PhpMyAdmin (user: root pass: root)
-+ http://localhost:8052/ -> Mongo-Express (user: adnin pass: zaq123)
-+ http://localhost:8053/ -> ChartDB
+## ▶️ Cómo Levantar el Entorno
 
-> mi_proyecto seria el nombre de la carpeta de nuestro proyecto, o cualquier otra carpeta que querramos explorar por el navegador.
-
-### Accesos bash
-
-Para poder acceder a las terminales de los contenedores
-```
-~$ sudo docker exec -it nombre_contenedor bash
-```
-> nombre_contenedor se debe reemplazar por el nombre correspondiente al contenedor que necesitamos ingresar.
-
-### Nota
-
-Para poder ver las carpetas y sea más fácil el acceso desde el navegador, dentro de la carpeta public existe el archivo .htaccess con una única línea de código
-```
-Options +Indexes
+```bash
+docker-compose up -d --build
 ```
 
-Prof. Andrés D. Romano
+Servicios disponibles:
+
+| Servicio | URL |
+|---------|-----|
+| Proyecto PHP/Apache | http://localhost:8050/<tu_proyecto>/ |
+| phpMyAdmin | http://localhost:8051 |
+| Mongo‑Express | http://localhost:8052 |
+| ChartDB | http://localhost:8053 |
+
+---
+
+## 🧑‍💻 Desarrollo dentro de `/public`
+
+Para agregar un proyecto nuevo:
+
+1. Crear carpeta dentro de `/public`, ej.:
+
+```
+public/mi_sistema/
+```
+
+2. Crear un `index.php`:
+
+```php
+<?php
+echo "Proyecto funcionando";
+```
+
+3. Acceder desde el navegador:
+
+```
+http://localhost:8050/mi_sistema/
+```
+
+### Interacciones con la base de datos
+
+El contenedor MySQL expone:
+
+- **Host:** `mysqldb`
+- **Usuario:** `root`
+- **Contraseña:** definida en `.env`
+
+Ejemplo conexión PDO:
+
+```php
+$pdo = new PDO("mysql:host=mysqldb;dbname=test;charset=utf8", "root", "root");
+```
+
+---
+
+## ⚠️ Consideraciones Importantes
+
+- El `.env` no está incluido: cada usuario debe generar el suyo.
+- Las contraseñas por defecto deben cambiarse si se despliega fuera de entornos escolares/privados.
+- Si agregas más proyectos, recomendación: cada uno tenga su propio README.
+- La carpeta `/mysql` permite almacenar configuraciones y persistencia.
+- El entorno está pensado para **desarrollo**, no para producción directa.
+
+---
+
+## 📌 Mejoras Futuras Sugeridas
+
+- Añadir migraciones para MySQL.
+- Incorporar Composer en los proyectos PHP.
+- Agregar tests automatizados.
+- Añadir script de backup/restore de bases de datos.
+- Documentar la estructura de los proyectos dentro de `/public`.
+
+---
+
+## 📄 Licencia
+
+Actualmente el proyecto **no declara licencia**.  
+Si deseas compartirlo públicamente, se recomienda agregar un archivo `LICENSE`.
+
+---
+
+## ✨ Autor / Mantenimiento
+
+Proyecto preparado para facilitar el desarrollo web en entornos educativos y personales.  
+Ideal para prácticas de PHP, MySQL, MongoDB y Docker.
+
+---
+
+¡Entorno listo para desarrollar! 🚀

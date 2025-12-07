@@ -1,28 +1,34 @@
 Modulo Clientes:
-Poder ver autos => Si apreto el auto me muestra el detalle del auto.
-Visualizar datos del cliente => Capaz agregar un detalle para el cliente => Capaz agregar si es deudor o no.
-Historial de turnos, si los tiene.
+Vista para el cliente:
+  - Poder ver autos => Si apreto el auto me muestra los detalle del auto. (Modulo Vehiculos).
+  - Foto del cliente.
+  - Deudor o no.
+  - Historial de turnos. (Modulo Turnos).
 
 Modulo Vehiculos:
-Poder editar un vehiculo de cliente => Kilometraje => Poder agregar imagenes? => detalles del vehiculo (Un choque - vino sucio)
-ABM?
+Vista para vehiculo:
+  - Poder editar un vehiculo de cliente.
+  - Detalles del vehiculo.
+  - Imagenes.
 
 Modulo de Ordenes
-Poder editar una orden
-Estados de orden => Aprobada, en  revisión, etc.
+  - Poder editar una orden.
+  - Estados de orden => Aprobada, en  revisión, etc. (Revisar BD).
+  - Editar ordenes.
 
 Modulo de Turnos:
+ABM turnos.
 Agregar modulo de turnos => Que notifiquen por email?
 Modificar turnos => pedir comprobación de parte del cliente?
 
 Modulo de Stock:
-ABM Stock
+ABM Stock.
 
 Proveedores:
-ABM Proveedores
+ABM Proveedores.
 
 Modulo de empleados:
-AMB empleados
+AMB empleados.
 
 Configuración del sistema:
 Una vez entregado el vehiculo o terminada la Orden imprimir un papel de entrega o conformidad.

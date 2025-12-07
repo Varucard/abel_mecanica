@@ -31,9 +31,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
   <title>Registrar Vehículo - Taller Mecánico</title>
-  <link rel="stylesheet" href="../assets/css/styles.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 <body>
   <div class="container">
@@ -41,6 +41,11 @@
       <div class="card-header bg-info text-white">
         <h1 class="mb-0">Registrar Vehículo
           <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
+          <button id="btnDarkMode"
+                  class="btn btn-sm btn-outline-light"
+                  type="button">
+            🌙 Modo oscuro
+          </button>
         </h1>
       </div>
         <div class="card-body">
@@ -171,7 +176,8 @@
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-
   <script src="../assets/js/registrar_vehiculos.js"></script>
+  <script src="../assets/js/styles.js"></script>
+
 </body>
 </html>

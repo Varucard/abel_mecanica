@@ -10,9 +10,9 @@ require_once '../clases/Marcas.php';
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
   <title>Registrar Modelos</title>
-  <link rel="stylesheet" href="../assets/css/styles.css">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 <body>
 <div class="container mt-4">
@@ -20,6 +20,11 @@ require_once '../clases/Marcas.php';
     <div class="card-header bg-primary text-white">
       <h3 class="mb-0">🚗 Registrar Modelos
         <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
+        <button id="btnDarkMode"
+                  class="btn btn-sm btn-outline-light"
+                  type="button">
+            🌙 Modo oscuro
+          </button>
       </h3>
     </div>
     <div class="card-body">
@@ -158,9 +163,11 @@ require_once '../clases/Marcas.php';
   </div>
 </div>
 
-<script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
-<script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="../assets/js/modelos.js"></script>
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="../assets/js/modelos.js"></script>
+  <script src="../assets/js/styles.js"></script>
+
 </body>
 </html>

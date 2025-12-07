@@ -17,22 +17,39 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
   <title>Listado de Clientes - Taller Mecánico</title>
-  <link rel="stylesheet" href="../assets/css/styles.css">
+
+  <!-- CSS externos -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+
+  <!-- Tus estilos (modo claro/oscuro, cards, etc.) -->
+  <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
 <body>
   <div class="container">
     <div class="card">
+      <!-- HEADER: mismo estilo que en listar_vehiculos -->
       <div class="card-header bg-success text-white">
-        <h1 class="mb-0">Clientes Registrados
-          <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
-        </h1>
+        <div class="d-flex align-items-center">
+          <h1 class="mb-0 d-flex align-items-center">
+            Clientes Registrados
+            <img src="../assets/img/logo.png"
+                 alt="Logo"
+                 style="height:80px; width:80px; border-radius:50%; margin-left:10px;">
+          </h1>
+
+          <!-- Botón modo claro/oscuro alineado a la derecha -->
+          <button id="btnDarkMode"
+                  class="btn btn-sm btn-outline-light ms-auto"
+                  type="button">
+            🌙 Modo oscuro
+          </button>
+        </div>
       </div>
 
       <div class="card-body">
 
-        <!-- Menú (idéntico al original - no tocar) -->
+        <!-- Menú (idéntico al de listar_vehiculos) -->
         <div class="btn-group w-100" role="group" style="gap: 5px;">
           <div class="dropdown flex-fill">
             <a href="menu_principal.php" class="btn btn-primary w-100">🏠 Inicio</a>
@@ -85,54 +102,66 @@
           </div>
         <?php endif; ?>
 
-        <!-- Tabla -->
-        <div class="table-responsive">
-          <table id="tabla_clientes" class="table table-striped table-bordered">
-            <thead>
-              <tr>
-                <th>Nombre</th>
-                <th>Apellido</th>
-                <th>DNI</th>
-                <th>Teléfono</th>
-                <th>Dirección</th>
-                <th>Estado</th>
-                <th>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              <?php while ($row = $clientes->fetch()): ?>
-                <?php $estado_color = $row['estado'] == 'activo' ? 'success' : 'secondary'; ?>
-                <tr>
-                  <td><?= htmlspecialchars($row['nombre']) ?></td>
-                  <td><?= htmlspecialchars($row['apellido']) ?></td>
-                  <td><?= htmlspecialchars($row['dni']) ?></td>
-                  <td><?= htmlspecialchars($row['telefono']) ?></td>
-                  <td><?= htmlspecialchars($row['direccion']) ?></td>
-                  <td><span class="badge bg-<?= $estado_color ?>"><?= htmlspecialchars($row['estado']) ?></span></td>
-                  <td>
-                    <a href="../shields/procesar_cliente.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">Editar</a>
-                    <button class="btn btn-sm <?= $row['estado'] == 'activo' ? 'btn-warning' : 'btn-success'; ?>"
-                            onclick="cambiarEstadoCliente(<?= $row['id']; ?>, '<?= $row['estado']; ?>')">
-                      <?= $row['estado'] == 'activo' ? 'Desactivar' : 'Activar'; ?>
-                    </button>
-                    <button class="btn btn-sm btn-danger"
-                            onclick="eliminarCliente(<?= $row['id']; ?>, '<?= $row['nombre'] . ' ' . $row['apellido']; ?>')">
-                      Eliminar
-                    </button>
-                  </td>
-                </tr>
-              <?php endwhile; ?>
-            </tbody>
-          </table>
+        <!-- Tabla de Clientes (con mismo estilo que vehículos) -->
+        <div class="card mt-4">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Clientes Registrados</h4>
+            <a href="registrar_cliente.php" class="btn btn-success">+ Nuevo Cliente</a>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table id="tabla_clientes" class="table table-striped table-bordered">
+                <thead>
+                  <tr>
+                    <th>Nombre</th>
+                    <th>Apellido</th>
+                    <th>DNI</th>
+                    <th>Teléfono</th>
+                    <th>Dirección</th>
+                    <th>Estado</th>
+                    <th>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <?php while ($row = $clientes->fetch()): ?>
+                    <?php $estado_color = $row['estado'] == 'activo' ? 'success' : 'secondary'; ?>
+                    <tr>
+                      <td><?= htmlspecialchars($row['nombre']) ?></td>
+                      <td><?= htmlspecialchars($row['apellido']) ?></td>
+                      <td><?= htmlspecialchars($row['dni']) ?></td>
+                      <td><?= htmlspecialchars($row['telefono']) ?></td>
+                      <td><?= htmlspecialchars($row['direccion']) ?></td>
+                      <td><span class="badge bg-<?= $estado_color ?>"><?= htmlspecialchars($row['estado']) ?></span></td>
+                      <td>
+                        <a href="../shields/procesar_cliente.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">Editar</a>
+                        <button class="btn btn-sm <?= $row['estado'] == 'activo' ? 'btn-warning' : 'btn-success'; ?>"
+                                onclick="cambiarEstadoCliente(<?= $row['id']; ?>, '<?= $row['estado']; ?>')">
+                          <?= $row['estado'] == 'activo' ? 'Desactivar' : 'Activar'; ?>
+                        </button>
+                        <button class="btn btn-sm btn-danger"
+                                onclick="eliminarCliente(<?= $row['id']; ?>, '<?= $row['nombre'] . ' ' . $row['apellido']; ?>')">
+                          Eliminar
+                        </button>
+                      </td>
+                    </tr>
+                  <?php endwhile; ?>
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
-        <a href="registrar_cliente.php" class="btn btn-success mt-3">+ Nuevo Cliente</a>
-      </div>
-    </div>
-  </div>
 
+      </div> <!-- /.card-body -->
+    </div>   <!-- /.card -->
+  </div>     <!-- /.container -->
+
+  <!-- JS externos -->
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+
+  <!-- JS propio -->
   <script src="../assets/js/clientes.js"></script>
+  <script src="../assets/js/styles.js"></script> <!-- aquí va el script de modo oscuro -->
 </body>
 </html>
