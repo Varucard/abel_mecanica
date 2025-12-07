@@ -12,13 +12,13 @@ $(document).ready(function() {
 
 function eliminarCliente(id, nombre) {
   if (confirm('¿Está seguro de eliminar al cliente ' + nombre + '?')) {
-    window.location.href = 'procesar_cliente.php?action=delete&id=' + id;
+    window.location.href = '../shields/procesar_cliente.php?action=delete&id=' + id;
   }
 }
 
 function cambiarEstadoCliente(id, estado) {
   var accion = estado === 'activo' ? 'desactivar' : 'activar';
   if (confirm('¿Está seguro de ' + accion + ' este cliente?')) {
-    window.location.href = 'procesar_cliente.php?action=cambiar_estado&id=' + id + '&estado=' + estado;
+    window.location.href = '../shields/procesar_cliente.php?action=cambiar_estado&id=' + id + '&estado=' + estado;
   }
 }

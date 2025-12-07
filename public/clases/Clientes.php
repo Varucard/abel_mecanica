@@ -7,8 +7,8 @@ class Clientes extends Personas {
   private $id_cliente;
   private $persona_id; // ID en la tabla personas (vinculado a la clase base)
 
-  public function __construct($nombre = null, $apellido = null, $dni = null, $telefono = null, $direccion = null) {
-    parent::__construct($nombre, $apellido, $dni);
+  public function __construct($nombre = null, $apellido = null, $dni = null, $telefono = null, $direccion = null, $email = null) {
+    parent::__construct($nombre, $apellido, $dni, $email); // <-- agregamos email al constructor padre
     $this->telefono = $telefono;
     $this->direccion = $direccion;
   }
@@ -55,11 +55,14 @@ class Clientes extends Personas {
     $conn->beginTransaction();
       
     try {
-      // Primero guardar la persona
-      $sql_persona = "INSERT INTO personas (nombre, apellido, dni) VALUES (?, ?, ?)";
+      // Primero guardar la persona (ahora con email)
+      $sql_persona = "INSERT INTO personas (nombre, apellido, dni, email) VALUES (?, ?, ?, ?)";
       $stmt_persona = $conn->prepare($sql_persona);
       
-      if (!$stmt_persona->execute([$this->getNombre(), $this->getApellido(), $this->getDni()]))
+      // Si email viene vacío, lo guardamos como NULL
+      $email = $this->getEmail() !== '' ? $this->getEmail() : null;
+      
+      if (!$stmt_persona->execute([$this->getNombre(), $this->getApellido(), $this->getDni(), $email]))
         throw new Exception("Error al insertar persona");
 
       $persona_id = $conn->lastInsertId();
@@ -94,7 +97,7 @@ class Clientes extends Personas {
 
   // Método CRUD: Read (obtener todos)
   public static function obtenerTodos($conn) {
-    $sql = "SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, c.telefono, c.direccion, c.estado
+    $sql = "SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, p.email, c.telefono, c.direccion, c.estado
             FROM clientes c 
             INNER JOIN personas p ON c.persona_id = p.id 
             ORDER BY p.apellido, p.nombre";
@@ -103,7 +106,7 @@ class Clientes extends Personas {
 
   // Método CRUD: Read (obtener uno por ID)
   public static function obtenerPorId($conn, $id) {
-    $sql = "SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, c.telefono, c.direccion, c.estado
+    $sql = "SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, p.email, c.telefono, c.direccion, c.estado
             FROM clientes c 
             INNER JOIN personas p ON c.persona_id = p.id 
             WHERE c.id = ?";
@@ -116,82 +119,51 @@ class Clientes extends Personas {
   }
 
   // Método CRUD: Update
-  public function actualizar($conn) {
+  public function actualizar($conn, $id_cliente) {
     $conn->beginTransaction();
-      
+
     try {
-      // Asegurar que tenemos el persona_id correcto
-      if (empty($this->persona_id)) {
-        // intentar obtener persona_id a partir del id_cliente
-        if (!empty($this->id_cliente)) {
-            $stmt = $conn->prepare("SELECT persona_id FROM clientes WHERE id = ?");
-            $stmt->execute([$this->id_cliente]);
-            $res = $stmt->fetch();
-            
-            if ($res && isset($res['persona_id'])) {
-              $this->persona_id = $res['persona_id'];
-              $this->setId($this->persona_id);
-            } else {
-              // intentar obtener id_cliente a partir de personas.id si está disponible
-              if (!empty($this->getId())) {
-                $stmt2 = $conn->prepare("SELECT id FROM clientes WHERE persona_id = ?");
-                $stmt2->execute([$this->getId()]);
-                $r2 = $stmt2->fetch();
+      // 1) Obtener persona_id real
+      $stmt = $conn->prepare("SELECT persona_id FROM clientes WHERE id = ?");
+      $stmt->execute([$id_cliente]);
+      $row = $stmt->fetch(PDO::FETCH_ASSOC);
 
-                if ($r2 && isset($r2['id']))
-                  $this->id_cliente = $r2['id'];
-              }
-            }
-          } else {
-            // si no disponemos de id_cliente, intentar buscarlo por persona id
-            if (!empty($this->getId())) {
-              $stmt2 = $conn->prepare("SELECT id, persona_id FROM clientes WHERE persona_id = ?");
-              $stmt2->execute([$this->getId()]);
-              $r2 = $stmt2->fetch();
-              if ($r2) {
-                $this->id_cliente = $r2['id'];
-                $this->persona_id = $r2['persona_id'];
-              }
-            }
-          }
-      }
+      if (!$row)
+        throw new Exception("Cliente no encontrado.");
 
-      // Actualizar persona (usar persona_id)
-      if (!empty($this->persona_id)) {
-        $sql_persona = "UPDATE personas SET nombre = ?, apellido = ? WHERE id = ?";
-        $stmt_persona = $conn->prepare($sql_persona);
+      $persona_id = $row['persona_id'];
 
-        if (!$stmt_persona->execute([$this->nombre, $this->apellido, $this->persona_id])) 
-          throw new Exception("Error al actualizar persona");
-      }
+      // 2) Actualizar datos de persona (nombre, apellido, email; NO DNI para evitar conflicto)
+      $sql_persona = "UPDATE personas SET nombre = ?, apellido = ?, email = ? WHERE id = ?";
+      $stmt_persona = $conn->prepare($sql_persona);
 
-      // Actualizar cliente
+      // Si email viene vacío, lo guardamos como NULL
+      $email = $this->getEmail() !== '' ? $this->getEmail() : null;
+
+      if (!$stmt_persona->execute([$this->nombre, $this->apellido, $email, $persona_id]))
+        throw new Exception("Error al actualizar persona.");
+
+      // 3) Actualizar datos del cliente
       $sql_cliente = "UPDATE clientes SET telefono = ?, direccion = ? WHERE id = ?";
       $stmt_cliente = $conn->prepare($sql_cliente);
-      
-      // Actualizar cliente (usar id_cliente)
-      if (!empty($this->id_cliente)) {
-        $sql_cliente = "UPDATE clientes SET telefono = ?, direccion = ? WHERE id = ?";
-        $stmt_cliente = $conn->prepare($sql_cliente);
 
-        if (!$stmt_cliente->execute([$this->telefono, $this->direccion, $this->id_cliente]))
-          throw new Exception("Error al actualizar cliente");
-      } else {
-          // Si no tenemos id_cliente, intentar actualizar por persona_id
-        if (!empty($this->persona_id)) {
-            $sql_cliente = "UPDATE clientes SET telefono = ?, direccion = ? WHERE persona_id = ?";
-            $stmt_cliente = $conn->prepare($sql_cliente);
+      if (!$stmt_cliente->execute([$this->telefono, $this->direccion, $id_cliente]))
+        throw new Exception("Error al actualizar cliente.");
 
-            if (!$stmt_cliente->execute([$this->telefono, $this->direccion, $this->persona_id])) 
-              throw new Exception("Error al actualizar cliente");
-        }
-      }
-      
       $conn->commit();
       return true;
+
+    } catch (PDOException $e) {
+      $conn->rollback();
+
+      if ($e->getCode() == 23000) 
+        throw new Exception("El DNI ya existe en otro cliente.");
+
+      throw new Exception("Error de base de datos: " . $e->getMessage());
+
     } catch (Exception $e) {
       $conn->rollback();
-      return false;
+      throw $e;
     }
   }
 
@@ -214,4 +186,3 @@ class Clientes extends Personas {
     return $stmt->execute([$estado, $id]);
   }
 }
-?>

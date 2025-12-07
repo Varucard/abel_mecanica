@@ -5,11 +5,13 @@ class Personas {
   protected $nombre;
   protected $apellido;
   protected $dni;
+  protected $email; // puede ser null
 
-  public function __construct($nombre = null, $apellido = null, $dni = null) {
-    $this->nombre = $nombre;
+  public function __construct($nombre = null, $apellido = null, $dni = null, $email = null) {
+    $this->nombre   = $nombre;
     $this->apellido = $apellido;
-    $this->dni = $dni;
+    $this->dni      = $dni;
+    $this->email    = $email; // null por defecto
   }
 
   // Getters
@@ -29,6 +31,10 @@ class Personas {
     return $this->dni;
   }
 
+  public function getEmail() {
+    return $this->email;
+  }
+
   // Setters
   public function setId($id) {
     $this->id = $id;
@@ -46,27 +52,44 @@ class Personas {
     $this->dni = $dni;
   }
 
+  public function setEmail($email) {
+    $this->email = $email;
+  }
+
   public function guardar($conn) {
-    $sql = "INSERT INTO personas (nombre, apellido, dni) VALUES (?, ?, ?)";
+    $sql = "INSERT INTO personas (nombre, apellido, dni, email) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    
-    if ($stmt->execute([$this->nombre, $this->apellido, $this->dni])) {
+
+    // Si viene string vacío, lo guardamos como NULL
+    $email = $this->email !== '' ? $this->email : null;
+
+    if ($stmt->execute([$this->nombre, $this->apellido, $this->dni, $email])) {
       $this->id = $conn->lastInsertId();
       return true;
     }
-    
+
     return false;
   }
 
   public static function buscarPorDni($conn, $dni) {
     $sql = "SELECT * FROM personas WHERE dni = ?";
     $stmt = $conn->prepare($sql);
-    
-    if ($stmt->execute([$dni]))
-      return $stmt->fetch();
-    
+
+    if ($stmt->execute([$dni])) {
+      return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
+    return null;
+  }
+
+  public static function buscarPorEmail($conn, $email) {
+    $sql = "SELECT * FROM personas WHERE email = ?";
+    $stmt = $conn->prepare($sql);
+
+    if ($stmt->execute([$email])) {
+      return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+
     return null;
   }
 }
-?>
-

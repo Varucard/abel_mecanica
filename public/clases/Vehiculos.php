@@ -7,13 +7,15 @@ class Vehiculos {
   private $anio;
   private $patente;
   private $cliente_id;
+  private $kilometraje; // puede ser null
 
-  public function __construct($marca_id = null, $modelo_id = null, $anio = null, $patente = null, $cliente_id = null) {
+  public function __construct($marca_id = null, $modelo_id = null, $anio = null, $patente = null, $cliente_id = null, $kilometraje = null) {
     $this->marca_id = $marca_id;
     $this->modelo_id = $modelo_id;
     $this->anio = $anio;
     $this->patente = $patente;
     $this->cliente_id = $cliente_id;
+    $this->kilometraje = $kilometraje;
   }
 
   // Getters
@@ -41,6 +43,10 @@ class Vehiculos {
     return $this->cliente_id;
   }
 
+  public function getKilometraje() {
+    return $this->kilometraje;
+  }
+
   // Setters
   public function setId($id) {
     $this->id = $id;
@@ -66,13 +72,20 @@ class Vehiculos {
     $this->cliente_id = $cliente_id;
   }
 
+  public function setKilometraje($kilometraje) {
+    $this->kilometraje = $kilometraje;
+  }
+
   public function guardar() {
     global $conn;
     try {
-      $sql = "INSERT INTO vehiculos (cliente_id, marca_id, modelo_id, anio, patente) VALUES (?, ?, ?, ?, ?)";
+      $sql = "INSERT INTO vehiculos (cliente_id, marca_id, modelo_id, anio, patente, kilometraje) VALUES (?, ?, ?, ?, ?, ?)";
       $stmt = $conn->prepare($sql);
       
-      if ($stmt->execute([$this->cliente_id, $this->marca_id, $this->modelo_id, $this->anio, $this->patente])) {
+      // Si kilometraje viene vacío o es 0, guardamos NULL
+      $km = ($this->kilometraje !== null && $this->kilometraje !== '' && $this->kilometraje > 0) ? $this->kilometraje : null;
+      
+      if ($stmt->execute([$this->cliente_id, $this->marca_id, $this->modelo_id, $this->anio, $this->patente, $km])) {
         $this->id = $conn->lastInsertId();
         return true;
       }
@@ -88,7 +101,7 @@ class Vehiculos {
 
   public static function obtenerTodos() {
     global $conn;
-    $sql = "SELECT v.id, v.patente, v.anio, CONCAT(p.nombre, ' ', p.apellido) AS cliente,
+    $sql = "SELECT v.id, v.patente, v.anio, v.kilometraje, CONCAT(p.nombre, ' ', p.apellido) AS cliente,
             m.nombre AS marca, mo.nombre AS modelo
             FROM vehiculos v 
             INNER JOIN clientes c ON v.cliente_id = c.id 
@@ -102,7 +115,7 @@ class Vehiculos {
 
   public static function obtenerPorCliente($cliente_id) {
     global $conn;
-    $sql = "SELECT v.id, v.patente, v.anio, m.nombre AS marca, mo.nombre AS modelo
+    $sql = "SELECT v.id, v.patente, v.anio, v.kilometraje, m.nombre AS marca, mo.nombre AS modelo
             FROM vehiculos v 
             INNER JOIN marcas m ON v.marca_id = m.id
             INNER JOIN modelos mo ON v.modelo_id = mo.id
@@ -117,7 +130,7 @@ class Vehiculos {
 
   public static function contarPorCliente($cliente_id) {
     global $conn;
-    $sql = "SELECT COUNT(*) as total FROM vehiculos WHERE cliente_id = ? AND estado = 'activo'";
+    $sql = "SELECT COUNT(*) as total FROM vehiculos WHERE cliente_id = ? AND v.estado = 'activo'";
     $stmt = $conn->prepare($sql);
     
     if ($stmt->execute([$cliente_id])) {
@@ -129,7 +142,7 @@ class Vehiculos {
 
   public static function obtenerParaSelect() {
     global $conn;
-    $sql = "SELECT v.id, v.patente, CONCAT(p.nombre, ' ', p.apellido) AS cliente,
+    $sql = "SELECT v.id, v.patente, v.kilometraje, CONCAT(p.nombre, ' ', p.apellido) AS cliente,
             m.nombre AS marca, mo.nombre AS modelo
             FROM vehiculos v 
             INNER JOIN clientes c ON v.cliente_id = c.id 
@@ -172,4 +185,3 @@ class Vehiculos {
     return $result;
   }
 }
-?>

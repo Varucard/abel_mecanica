@@ -1,0 +1,148 @@
+<?php
+require_once '../includes/config_database.php';
+require_once '../clases/Marcas.php';
+?>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
+  <title>Registrar Marca - Taller Mecánico</title>
+  <link rel="stylesheet" href="../assets/css/styles.css">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <div class="card-header bg-primary text-white">
+        <h1 class="mb-0">Registrar Marca
+          <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
+        </h1>
+      </div>
+      <div class="card-body">
+
+        <!-- 🧭 NAVBAR (sin tocar, igual que tus otras vistas) -->
+        <div class="btn-group w-100" role="group" style="gap: 5px;">
+          <div class="dropdown flex-fill">
+            <a href="menu_principal.php" class="btn btn-primary w-100">🏠 Inicio</a>
+            <div class="dropdown-menu">
+              <a href="registrar_servicio.php">Servicios</a>
+              <a href="registrar_marcas.php">Marcas</a>
+              <a href="registrar_modelos.php">Modelos</a>
+            </div>
+          </div>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-success w-100">👤 Clientes</a>
+            <div class="dropdown-menu">
+              <a href="registrar_cliente.php">Registrar Cliente</a>
+              <a href="listar_clientes.php">Ver Clientes</a>
+            </div>
+          </div>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-info w-100">🚗 Vehículos</a>
+            <div class="dropdown-menu">
+              <a href="registrar_vehiculo.php">Registrar Vehiculo</a>
+              <a href="listar_vehiculos.php">Ver Vehiculos</a>
+            </div>
+          </div>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-warning w-100">📝 Ordenes</a>
+            <div class="dropdown-menu">
+              <a href="registrar_orden.php">Registrar Orden</a>
+              <a href="listar_orden.php">Ver Ordenes</a>
+            </div>
+          </div>
+        </div>
+        <!-- 🔚 FIN NAVBAR -->
+
+        <!-- ✅ Mensajes -->
+        <?php if (isset($_GET['success'])): ?>
+          <div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+            <?= htmlspecialchars($_GET['success']); ?>
+          </div>
+        <?php elseif (isset($_GET['error'])): ?>
+          <div class="alert alert-danger alert-dismissible fade show" role="alert" id="error-alert">
+            <?= htmlspecialchars($_GET['error']); ?>
+          </div>
+        <?php endif; ?>
+
+        <!-- 🧾 Formulario Alta/Edición -->
+        <div class="card mb-4 mt-3">
+          <div class="card-header bg-light">
+            <h4>Nueva Marca</h4>
+          </div>
+          <div class="card-body">
+            <?php
+              $marca = null;
+              if (isset($_GET['id'])) {
+                $marca = Marcas::obtenerPorId($conn, $_GET['id']);
+              }
+            ?>
+            <form action="../shields/procesar_marca.php" method="POST" novalidate>
+              <input type="hidden" name="action" value="<?= $marca ? 'actualizar' : 'guardar'; ?>">
+              <?php if ($marca): ?>
+                <input type="hidden" name="id" value="<?= htmlspecialchars($marca['id']); ?>">
+              <?php endif; ?>
+
+              <div class="mb-3">
+                <label for="nombre" class="form-label">Nombre de la Marca *</label>
+                <input type="text" class="form-control" id="nombre" name="nombre" 
+                       value="<?= htmlspecialchars($marca['nombre'] ?? ''); ?>"
+                       pattern="[A-Za-zÁÉÍÓÚáéíóúñÑ\s]{2,50}" 
+                       title="Solo letras, entre 2 y 50 caracteres" required>
+              </div>
+              <button type="submit" class="btn btn-success">
+                <?= $marca ? 'Actualizar Marca' : 'Registrar Marca'; ?>
+              </button>
+              <?php if ($marca): ?>
+                <a href="registrar_marcas.php" class="btn btn-secondary">Cancelar</a>
+              <?php endif; ?>
+            </form>
+          </div>
+        </div>
+
+        <!-- 📋 Tabla de Marcas -->
+        <div class="card">
+          <div class="card-header bg-light">
+            <h4>Marcas Registradas</h4>
+          </div>
+          <div class="card-body">
+            <table id="tabla_marcas" class="table table-striped table-bordered">
+              <thead>
+                <tr>
+                  <th>Nombre</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php
+                $marcas = Marcas::obtenerTodos($conn);
+                while ($row = $marcas->fetch()) { ?>
+                  <tr>
+                    <td><?= htmlspecialchars($row['nombre']); ?></td>
+                    <td>
+                      <a href="registrar_marcas.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-warning">Editar</a>
+                      <button type="button" class="btn btn-sm btn-danger" onclick="eliminarMarca(<?= $row['id']; ?>, '<?= htmlspecialchars($row['nombre']); ?>')">
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                <?php } ?>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
+  <script src="../assets/js/marcas.js"></script>
+</body>
+</html>
