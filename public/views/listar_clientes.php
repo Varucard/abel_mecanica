@@ -28,33 +28,26 @@
 <body>
   <div class="container">
     <div class="card">
-      <!-- HEADER: mismo estilo que en listar_vehiculos -->
       <div class="card-header bg-success text-white">
-        <div class="d-flex align-items-center">
-          <h1 class="mb-0 d-flex align-items-center">
-            Clientes Registrados
-            <img src="../assets/img/logo.png"
-                 alt="Logo"
-                 style="height:80px; width:80px; border-radius:50%; margin-left:10px;">
-          </h1>
-
-          <!-- Botón modo claro/oscuro alineado a la derecha -->
+        <h1 class="mb-0">Clientes Registrados
+          <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius:50%;">
           <button id="btnDarkMode"
-                  class="btn btn-sm btn-outline-light ms-auto"
+                  class="btn btn-sm btn-outline-light"
                   type="button">
             🌙 Modo oscuro
           </button>
-        </div>
+        </h1>
       </div>
-
       <div class="card-body">
 
         <!-- Menú (idéntico al de listar_vehiculos) -->
         <div class="btn-group w-100" role="group" style="gap: 5px;">
           <div class="dropdown flex-fill">
-            <a href="menu_principal.php" class="btn btn-primary w-100">🏠 Inicio</a>
+            <a href="#" class="btn btn-primary w-100">🏠 Inicio</a>
             <div class="dropdown-menu">
               <a href="registrar_servicio.php">Servicios</a>
+              <a href="registrar_repuesto.php">Repuestos</a>
+              <a href="registrar_repuesto.php">Repuestos</a>
               <a href="registrar_marcas.php">Marcas</a>
               <a href="registrar_modelos.php">Modelos</a>
             </div>

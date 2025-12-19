@@ -40,7 +40,7 @@ class Servicios {
 
   // Leer todos
   public static function obtenerTodos($conn) {
-    $sql = "SELECT * FROM servicios ORDER BY nombre";
+    $sql = "SELECT * FROM servicios WHERE id != 1 ORDER BY nombre";
     return $conn->query($sql);
   }
 

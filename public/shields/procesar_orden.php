@@ -1,105 +1,138 @@
 <?php
-  ob_start();
-  require_once '../includes/config_database.php';
-  require_once '../clases/OrdenServicios.php';
+ob_start();
+require_once '../includes/config_database.php';
+require_once '../clases/OrdenServicios.php';
 
-  // Procesar cambio de estado de orden
-  if (isset($_GET['action']) && $_GET['action'] == 'cambiar_estado' && isset($_GET['id']) && isset($_GET['estado'])) {
-    $id = intval($_GET['id']);
-    $estado = $_GET['estado'];
-    if (OrdenServicios::cambiarEstado($id, $estado)) {
-      ob_end_clean();
-      header("Location: ../views/listar_orden.php?success=estado");
-      exit;
-    } else {
-      ob_end_clean();
-      header("Location: ../views/listar_orden.php?error=estado");
-      exit;
-    }
+define('SERVICIO_REPUESTO_ID', 1); // ID real en tu tabla servicios
+
+/* =========================
+   CAMBIO DE ESTADO
+========================= */
+if (
+  isset($_GET['action'], $_GET['id'], $_GET['estado']) &&
+  $_GET['action'] === 'cambiar_estado'
+) {
+  $id = (int) $_GET['id'];
+  $estado = $_GET['estado'];
+
+  if (OrdenServicios::cambiarEstado($id, $estado)) {
+    ob_end_clean();
+    header("Location: ../views/listar_orden.php?success=estado");
+    exit;
   }
 
-  if ($_SERVER['REQUEST_METHOD'] == 'POST') {
-    $vehiculo_id     = intval($_POST['vehiculo_id']);
-    $servicio_input  = $_POST['servicio_id']; // puede ser array o valor único
-    $fecha_realizado = trim($_POST['fecha_realizado']);
+  ob_end_clean();
+  header("Location: ../views/listar_orden.php?error=estado");
+  exit;
+}
 
-    $errors = [];
+/* =========================
+   ALTA DE ORDEN
+========================= */
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
-    // Validar fecha
-    if (empty($fecha_realizado))
-      $errors[] = "La fecha es requerida";
+  $vehiculo_id     = (int) $_POST['vehiculo_id'];
+  $servicio_input  = $_POST['servicio_id'] ?? [];
+  $repuesto_input  = $_POST['repuesto_id'] ?? [];
+  $fecha_realizado = trim($_POST['fecha_realizado']);
 
-    // Normalizar servicios a array
-    $servicios_ids = [];
-    if (is_array($servicio_input)) {
-      foreach ($servicio_input as $s) {
-        $servicios_ids[] = intval($s);
-      }
-    } else {
-      $servicios_ids[] = intval($servicio_input);
-    }
+  $errors = [];
 
-    if (count($servicios_ids) == 0)
-      $errors[] = 'Debe seleccionar al menos un servicio.';
+  if (!$vehiculo_id)
+    $errors[] = "Vehículo inválido";
 
-    if (count($errors) > 0) {
-      ob_end_clean();
-      header("Location: ../views/registrar_orden.php?error=" . urlencode(implode(", ", $errors)));
-      exit;
-    }
+  if (empty($fecha_realizado))
+    $errors[] = "La fecha es requerida";
 
-    try {
-      $conn->beginTransaction();
-
-      // 1) Crear cabecera de ORDEN (una sola)
-      $sql_orden = "INSERT INTO ordenes (vehiculo_id, fecha_realizado, estado, total)
-                    VALUES (?, ?, 'pendiente', 0)";
-      $stmt_orden = $conn->prepare($sql_orden);
-
-      if (!$stmt_orden->execute([$vehiculo_id, $fecha_realizado])) {
-        throw new Exception("No se pudo crear la orden.");
-      }
-
-      $orden_id = $conn->lastInsertId();
-
-      // 2) Por cada servicio, obtener precio_base y crear detalle en ordenes_servicios
-      $stmt_precio = $conn->prepare("SELECT precio_base FROM servicios WHERE id = ?");
-      $total = 0;
-
-      foreach ($servicios_ids as $sid) {
-        $stmt_precio->execute([$sid]);
-        $res = $stmt_precico = $stmt_precio->fetch();
-
-        if (!$res)
-          throw new Exception("Servicio con ID {$sid} no encontrado.");
-
-        $precio_servicio = floatval($res['precio_base']);
-        $total += $precio_servicio;
-
-        // Crear detalle
-        $detalle = new OrdenServicios($orden_id, $sid, $precio_servicio);
-
-        if (!$detalle->guardar())
-          throw new Exception('No se pudo agregar el servicio ID ' . $sid . ' a la orden.');
-      }
-
-      // 3) Actualizar total de la orden
-      $stmt_total = $conn->prepare("UPDATE ordenes SET total = ? WHERE id = ?");
-      if (!$stmt_total->execute([$total, $orden_id])) {
-        throw new Exception("No se pudo actualizar el total de la orden.");
-      }
-
-      $conn->commit();
-      ob_end_clean();
-      header("Location: ../views/listar_orden.php?success=order");
-      exit;
-
-    } catch (Exception $e) {
-      if ($conn->inTransaction())
-        $conn->rollBack();
-
-      ob_end_clean();
-      header("Location: ../views/registrar_orden.php?error=" . urlencode($e->getMessage()));
-      exit;
-    }
+  /* Normalizar servicios */
+  $servicios_ids = [];
+  if (is_array($servicio_input)) {
+    foreach ($servicio_input as $s)
+      $servicios_ids[] = (int) $s;
   }
+
+  /* Normalizar repuestos */
+  $repuestos_ids = [];
+  if (is_array($repuesto_input)) {
+    foreach ($repuesto_input as $r)
+      $repuestos_ids[] = (int) $r;
+  }
+
+  if (count($servicios_ids) === 0)
+    $errors[] = "Debe seleccionar al menos un servicio";
+
+  if ($errors) {
+    ob_end_clean();
+    header("Location: ../views/registrar_orden.php?error=" . urlencode(implode(', ', $errors)));
+    exit;
+  }
+
+  try {
+    $conn->beginTransaction();
+
+    /* 1) Crear ORDEN */
+    $stmt = $conn->prepare(
+      "INSERT INTO ordenes (vehiculo_id, fecha_realizado, estado, total)
+       VALUES (?, ?, 'pendiente', 0)"
+    );
+
+    if (!$stmt->execute([$vehiculo_id, $fecha_realizado]))
+      throw new Exception("No se pudo crear la orden");
+
+    $orden_id = $conn->lastInsertId();
+    $total = 0;
+
+    /* 2) SERVICIOS */
+    $stmt_serv = $conn->prepare("SELECT precio_base FROM servicios WHERE id = ?");
+
+    foreach ($servicios_ids as $sid) {
+      $stmt_serv->execute([$sid]);
+      $serv = $stmt_serv->fetch(PDO::FETCH_ASSOC);
+
+      if (!$serv)
+        throw new Exception("Servicio ID {$sid} no encontrado");
+
+      $precio = (float) $serv['precio_base'];
+      $total += $precio;
+
+      $detalle = new OrdenServicios($orden_id, $sid, null, $precio);
+      if (!$detalle->guardar())
+        throw new Exception("No se pudo agregar servicio ID {$sid}");
+    }
+
+    /* 3) REPUESTOS */
+    $stmt_rep = $conn->prepare("SELECT precio FROM repuestos WHERE id = ?");
+
+    foreach ($repuestos_ids as $rid) {
+      $stmt_rep->execute([$rid]);
+      $rep = $stmt_rep->fetch(PDO::FETCH_ASSOC);
+
+      if (!$rep)
+        throw new Exception("Repuesto ID {$rid} no encontrado");
+
+      $precio = (float) $rep['precio'];
+      $total += $precio;
+
+      $detalle = new OrdenServicios($orden_id, SERVICIO_REPUESTO_ID, $rid, $precio);
+      if (!$detalle->guardar())
+        throw new Exception("No se pudo agregar repuesto ID {$rid}");
+    }
+
+    /* 4) TOTAL */
+    $stmt_total = $conn->prepare("UPDATE ordenes SET total = ? WHERE id = ?");
+    $stmt_total->execute([$total, $orden_id]);
+
+    $conn->commit();
+    ob_end_clean();
+    header("Location: ../views/listar_orden.php?success=order");
+    exit;
+
+  } catch (Exception $e) {
+    if ($conn->inTransaction())
+      $conn->rollBack();
+
+    ob_end_clean();
+    header("Location: ../views/registrar_orden.php?error=" . urlencode($e->getMessage()));
+    exit;
+  }
+}

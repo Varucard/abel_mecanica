@@ -14,7 +14,7 @@ $orden_id = intval($_GET['id']);
 
 // Obtener datos de la ORDEN (cabecera)
 $stmt_orden = $conn->prepare("
-  SELECT o.*, v.patente, v.anio, v.cliente_id,
+  SELECT o.*, v.patente, v.anio, v.cliente_id, v.kilometraje,
          ma.nombre AS marca, mo.nombre AS modelo
   FROM ordenes o
   INNER JOIN vehiculos v ON o.vehiculo_id = v.id
@@ -35,24 +35,27 @@ if (!$cliente) {
   die('Error: Cliente no encontrado.');
 }
 
-// Obtener SERVICIOS de la orden
-$stmt_servicios = $conn->prepare("
-  SELECT os.*, s.nombre AS servicio_nombre
+// Obtener SERVICIOS y REPUESTOS de la orden
+$stmt_detalle = $conn->prepare("
+  SELECT 
+    os.costo,
+    s.nombre AS servicio_nombre,
+    r.nombre AS repuesto_nombre,
+    os.repuesto_id
   FROM ordenes_servicios os
   INNER JOIN servicios s ON os.servicio_id = s.id
+  LEFT JOIN repuestos r ON os.repuesto_id = r.id
   WHERE os.orden_id = ?
-  ORDER BY s.nombre
+  ORDER BY s.nombre, r.nombre
 ");
-$stmt_servicios->execute([$orden_id]);
-$servicios = $stmt_servicios->fetchAll(PDO::FETCH_ASSOC);
+$stmt_detalle->execute([$orden_id]);
+$detalle = $stmt_detalle->fetchAll(PDO::FETCH_ASSOC);
 
-// Calcular subtotal (suma de servicios)
-// SIN IVA: el total estimado es igual al subtotal
-$subtotal = 0;
-foreach ($servicios as $serv) {
-  $subtotal += floatval($serv['costo']);
+// Calcular total costos
+$total = 0;
+foreach ($detalle as $item) {
+  $total += floatval($item['costo']);
 }
-$total = $subtotal;
 
 // Detectar si es para imprimir (abre nuevo tab y auto-print)
 $print_mode = isset($_GET['print']) && $_GET['print'] == '1';

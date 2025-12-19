@@ -1,10 +1,13 @@
-$(document).ready(function() {
-  // Inicializar Select2 solo si existe
+$(document).ready(function () {
+
+  // Inicializar Select2
   if ($('.select2').length) {
-    $('.select2').select2();
+    $('.select2').select2({
+      width: '100%'
+    });
   }
 
-  // Inicializar DataTable solo si existe la tabla
+  // Inicializar DataTable si existe
   if ($('#tabla_ordenes').length) {
     $('#tabla_ordenes').DataTable({
       language: {
@@ -22,32 +25,58 @@ $(document).ready(function() {
           next: "Siguiente",
           previous: "Anterior"
         }
-      },
-      order: [[5, 'desc']]
+      }
     });
   }
 
-  // Ocultar alerta de éxito después de 10 segundos
+  // Ocultar alerta de éxito
   if ($('#success-alert').length) {
     $('#success-alert').delay(10000).fadeOut('slow');
   }
 
-  // Calcular costo total automáticamente al seleccionar servicios
-  if ($('#servicio_id').length) {
-    $('#servicio_id').on('change', function() {
-      let total = 0;
-      $('#servicio_id option:selected').each(function() {
-        let precio = parseFloat($(this).data('precio')) || 0;
+  // ===============================
+  // CÁLCULO AUTOMÁTICO DEL TOTAL
+  // ===============================
+  function calcularTotal() {
+    let total = 0;
+
+    // Servicios
+    $('select[name="servicio_id[]"] option:selected').each(function () {
+      let precio = parseFloat($(this).data('precio'));
+      if (!isNaN(precio)) {
         total += precio;
-      });
-      $('#costo').val(total.toFixed(2));
+      }
     });
+
+    // Repuestos (opcionales)
+    $('select[name="repuesto_id[]"] option:selected').each(function () {
+      let precio = parseFloat($(this).data('precio'));
+      if (!isNaN(precio)) {
+        total += precio;
+      }
+    });
+
+    $('input[name="costo"]').val(total.toFixed(2));
   }
+
+  // Escuchar cambios (Select2 compatible)
+  $(document).on(
+    'change',
+    'select[name="servicio_id[]"], select[name="repuesto_id[]"]',
+    calcularTotal
+  );
+
 });
 
-// Función para cambiar estado de orden
+// ===============================
+// CAMBIAR ESTADO DE ORDEN
+// ===============================
 function cambiarEstadoOrden(id, estado) {
   if (confirm('¿Desea marcar esta orden como finalizada?')) {
-    window.location.href = '../../shields/procesar_orden.php?action=cambiar_estado&id=' + id + '&estado=' + estado;
+    window.location.href =
+      '../../shields/procesar_orden.php?action=cambiar_estado&id=' +
+      id +
+      '&estado=' +
+      estado;
   }
 }

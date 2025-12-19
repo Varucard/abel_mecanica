@@ -17,7 +17,7 @@ $config_taller = [
 
 $config_trabajo = [
   'validez' => 10, //Días
-  'garantia' => 90, //Días
+  'garantia' => 10, //Días
   'tiempo_estimado' => 3, //Días
   'forma_pago' => ['Contado', 'Tarjeta de Crédito', 'Tarjeta de Débito', 'Transferencia Bancaria', 'Mercado Pago'],
   'observaciones' => [

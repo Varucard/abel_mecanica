@@ -65,12 +65,13 @@
     ? $cliente['email']
     : '—';
 
-  // Preparar kilometraje (evitar NULL)
-  $km = isset($orden['kilometraje']) && $orden['kilometraje'] !== null && $orden['kilometraje'] !== ''
-    ? number_format($orden['kilometraje'], 0, ',', '.') . ' km'
-    : '—';
+  // Preparar kilometraje (evitar NULL pero permitir 0)
+  if (isset($orden['kilometraje']) && is_numeric($orden['kilometraje'])) {
+    $km = number_format((float)$orden['kilometraje'], 0, ',', '.') . ' km';
+  } else {
+    $km = '—';
+  }
   ?>
-
   <div class="card" role="document">
     <header>
       <div>
@@ -125,12 +126,18 @@
           </tr>
         </thead>
         <tbody>
-          <?php foreach ($servicios as $serv): ?>
+          <?php foreach ($detalle as $item): ?>
           <tr>
-            <td><?= htmlspecialchars($serv['servicio_nombre']); ?></td>
+            <td>
+              <?= htmlspecialchars(
+                $item['repuesto_id']
+                  ? 'Repuesto: ' . $item['repuesto_nombre']
+                  : $item['servicio_nombre']
+              ); ?>
+            </td>
             <td class="right">1</td>
-            <td class="right">$ <?= number_format($serv['costo'], 2, ',', '.'); ?></td>
-            <td class="right">$ <?= number_format($serv['costo'], 2, ',', '.'); ?></td>
+            <td class="right">$ <?= number_format($item['costo'], 2, ',', '.'); ?></td>
+            <td class="right">$ <?= number_format($item['costo'], 2, ',', '.'); ?></td>
           </tr>
           <?php endforeach; ?>
         </tbody>
@@ -161,11 +168,11 @@
       <?= htmlspecialchars($config_trabajo['mensaje_legal']); ?>
     </div>
 
-    <div style="display:flex; gap:20px; margin-top:16px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
+    <div style="display:flex; gap:20px; margin-top:35px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
       <div>
         <div class="small">Firma y conformidad del cliente:</div>
         <div style="
-            margin-top:16px;
+            margin-top:100px;
             border-top:1px dashed #999;
             width:340px;
             padding-top:16px;

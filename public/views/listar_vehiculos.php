@@ -31,9 +31,10 @@
           <!-- Menú -->
         <div class="btn-group w-100" role="group" style="gap: 5px;">
           <div class="dropdown flex-fill">
-            <a href="menu_principal.php" class="btn btn-primary w-100">🏠 Inicio</a>
+            <a href="#" class="btn btn-primary w-100">🏠 Inicio</a>
             <div class="dropdown-menu">
               <a href="registrar_servicio.php">Servicios</a>
+              <a href="registrar_repuesto.php">Repuestos</a>
               <a href="registrar_marcas.php">Marcas</a>
               <a href="registrar_modelos.php">Modelos</a>
             </div>

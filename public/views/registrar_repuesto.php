@@ -1,10 +1,10 @@
 <?php
   require_once '../includes/config_database.php';
-  require_once '../clases/Servicios.php';
+  require_once '../clases/Repuestos.php';
 
   $serv = null;
   if (isset($_GET['id'])) {
-    $serv = Servicios::obtenerPorId($conn, $_GET['id']);
+    $serv = Repuestos::obtenerPorId($conn, $_GET['id']);
   }
 ?>
 <!DOCTYPE html>
@@ -13,7 +13,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
-  <title>Registrar Servicio - Taller Mecánico</title>
+  <title>Registrar Repuesto - Taller Mecánico</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="../assets/css/styles.css">
@@ -22,7 +22,7 @@
   <div class="container">
     <div class="card">
       <div class="card-header bg-primary text-white">
-        <h1 class="mb-0">Registrar Servicio
+        <h1 class="mb-0">Registrar Repuesto
           <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
           <button id="btnDarkMode"
                   class="btn btn-sm btn-outline-light"
@@ -84,10 +84,10 @@
         <!-- === Formulario Alta/Edición === -->
         <div class="card mb-4">
           <div class="card-header bg-light">
-            <h4><?php echo isset($serv) ? 'Editar Servicio' : 'Nuevo Servicio'; ?></h4>
+            <h4><?php echo isset($serv) ? 'Editar Repuesto' : 'Nuevo Repuesto'; ?></h4>
           </div>
           <div class="card-body">
-            <form action="../shields/procesar_servicio.php" method="POST" novalidate>
+            <form action="../shields/procesar_repuesto.php" method="POST" novalidate>
               <input type="hidden" name="action" value="<?php echo isset($serv) ? 'actualizar' : 'guardar'; ?>">
               <input type="hidden" name="id" value="<?php echo $serv['id'] ?? ''; ?>">
 
@@ -98,73 +98,66 @@
                          value="<?php echo htmlspecialchars($serv['nombre'] ?? ''); ?>">
                 </div>
                 <div class="col-md-6">
-                  <label for="precio_base" class="form-label">Precio Base *</label>
-                  <input type="number" class="form-control" id="precio_base" name="precio_base" step="0.01" required
-                         value="<?php echo htmlspecialchars($serv['precio_base'] ?? ''); ?>">
+                  <label for="precio" class="form-label">Precio *</label>
+                  <input type="number" class="form-control" id="precio" name="precio" step="0.01" required
+                         value="<?php echo htmlspecialchars($serv['precio'] ?? ''); ?>">
                 </div>
               </div>
 
               <div class="mb-3">
-                <label for="descripcion" class="form-label">Descripción *</label>
-                <textarea class="form-control" id="descripcion" name="descripcion" rows="3" required><?php
+                <label for="descripcion" class="form-label">Descripción</label>
+                <textarea class="form-control" id="descripcion" name="descripcion" rows="3"><?php
                   echo htmlspecialchars($serv['descripcion'] ?? '');
                 ?></textarea>
               </div>
 
-              <div class="mb-3">
-                <label for="estado" class="form-label">Estado</label>
-                <select name="estado" id="estado" class="form-select">
-                  <option value="activo" <?php echo (isset($serv['estado']) && $serv['estado']=='activo') ? 'selected' : ''; ?>>Activo</option>
-                  <option value="inactivo" <?php echo (isset($serv['estado']) && $serv['estado']=='inactivo') ? 'selected' : ''; ?>>Inactivo</option>
-                </select>
-              </div>
-
               <button type="submit" class="btn btn-success">
-                <?php echo isset($serv) ? 'Actualizar Servicio' : 'Registrar Servicio'; ?>
+                <?php echo isset($serv) ? 'Actualizar Repuesto' : 'Registrar Repuesto'; ?>
               </button>
             </form>
           </div>
         </div>
 
-        <!-- === Tabla de Servicios === -->
+        <!-- === Tabla de Repuestos === -->
         <div class="card">
           <div class="card-header bg-light">
-            <h4>Servicios Registrados</h4>
+            <h4>Repuestos Registrados</h4>
           </div>
           <div class="card-body">
-            <table id="tabla_servicios" class="table table-striped table-bordered">
+            <table id="tabla_repuestos" class="table table-striped table-bordered">
               <thead>
                 <tr>
                   <th>Nombre</th>
                   <th>Descripción</th>
-                  <th>Precio Base</th>
-                  <th>Estado</th>
+                  <th>Precio</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
                 <?php
-                  $servicios = Servicios::obtenerTodos($conn);
-                  while ($row = $servicios->fetch()) {
-                    $estado_color = $row['estado'] == 'activo' ? 'success' : 'secondary';
+                  $repuestos = Repuestos::obtenerTodos($conn);
+                  foreach ($repuestos as $row):
                 ?>
-                <tr>
-                  <td><?php echo htmlspecialchars($row['nombre']); ?></td>
-                  <td><?php echo htmlspecialchars($row['descripcion']); ?></td>
-                  <td>$<?php echo number_format($row['precio_base'], 2, ',', '.'); ?></td>
-                  <td><span class="badge bg-<?php echo $estado_color; ?>"><?php echo htmlspecialchars($row['estado']); ?></span></td>
-                  <td>
-                    <a href="registrar_servicio.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary">Editar</a>
-                    <button class="btn btn-sm <?php echo $row['estado'] == 'activo' ? 'btn-warning' : 'btn-success'; ?>"
-                            onclick="cambiarEstadoServicio(<?php echo $row['id']; ?>, '<?php echo $row['estado']; ?>')">
-                      <?php echo $row['estado'] == 'activo' ? 'Desactivar' : 'Activar'; ?>
-                    </button>
-                    <button class="btn btn-sm btn-danger"
-                            onclick="eliminarServicio(<?php echo $row['id']; ?>, '<?php echo $row['nombre']; ?>')">Eliminar</button>
-                  </td>
-                </tr>
-                <?php } ?>
+                  <tr>
+                    <td><?php echo htmlspecialchars($row['nombre']); ?></td>
+                    <td><?php echo htmlspecialchars($row['descripcion']); ?></td>
+                    <td>$<?php echo number_format($row['precio'], 2, ',', '.'); ?></td>
+                    <td>
+                      <a href="registrar_repuesto.php?id=<?php echo $row['id']; ?>"
+                        class="btn btn-sm btn-primary">Editar</a>
+
+                      <button class="btn btn-sm btn-danger"
+                              onclick="eliminarRepuesto(
+                                <?php echo (int)$row['id']; ?>,
+                                '<?php echo htmlspecialchars(addslashes($row['nombre'])); ?>'
+                              )">
+                        Eliminar
+                      </button>
+                    </td>
+                  </tr>
+                <?php endforeach; ?>
               </tbody>
+
             </table>
           </div>
         </div>
@@ -176,7 +169,7 @@
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-  <script src="../assets/js/servicios.js"></script>
+  <script src="../assets/js/repuestos.js"></script>
   <script src="../assets/js/styles.js"></script>
 
 </body>
