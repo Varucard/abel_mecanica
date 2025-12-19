@@ -5,7 +5,6 @@ class Servicios {
   private $nombre;
   private $descripcion;
   private $precio_base;
-  private $estado;
 
   public function __construct($nombre = null, $descripcion = null, $precio_base = 0.0) {
     $this->nombre = $nombre;

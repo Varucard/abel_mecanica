@@ -69,8 +69,8 @@ class OrdenServicios {
       SELECT 
         o.id,
         o.total AS costo,
-        o.fecha_realizado,
         o.estado,
+        o.created_at,
         CONCAT(p.apellido, ', ', p.nombre) AS cliente,
         CONCAT(v.patente, ' - ', ma.nombre, ' ', mo.nombre) AS vehiculo,
 
@@ -89,7 +89,6 @@ class OrdenServicios {
       LEFT JOIN repuestos r ON os.repuesto_id = r.id
 
       GROUP BY o.id
-      ORDER BY o.fecha_realizado DESC, o.id DESC
     ";
 
     return $conn->query($sql);
@@ -102,7 +101,7 @@ class OrdenServicios {
   /* ===================== SERVICIOS ===================== */
   public static function obtenerServicios() {
     global $conn;
-    $sql = "SELECT * FROM servicios WHERE estado = 'activo' AND id != 1 ORDER BY nombre";
+    $sql = "SELECT * FROM servicios WHERE id != 1 ORDER BY nombre";
     return $conn->query($sql);
   }
 

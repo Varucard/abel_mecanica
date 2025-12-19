@@ -2,6 +2,41 @@
 require_once '../includes/config_database.php';
 require_once '../clases/OrdenServicios.php';
 require_once '../clases/Vehiculos.php';
+
+/* =========================
+   CARGA PARA EDITAR
+========================= */
+$orden = null;
+$serviciosSeleccionados = [];
+$repuestosSeleccionados = [];
+
+if (isset($_GET['id'])) {
+  $id = (int) $_GET['id'];
+
+  $stmt = $conn->prepare("SELECT * FROM ordenes WHERE id = ?");
+  $stmt->execute([$id]);
+  $orden = $stmt->fetch(PDO::FETCH_ASSOC);
+
+  if (!$orden) {
+    header("Location: listar_orden.php?error=orden_no_encontrada");
+    exit;
+  }
+
+  $stmt = $conn->prepare("
+    SELECT servicio_id, repuesto_id
+    FROM ordenes_servicios
+    WHERE orden_id = ?
+  ");
+  $stmt->execute([$id]);
+
+  while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+    if ($row['repuesto_id']) {
+      $repuestosSeleccionados[] = (int)$row['repuesto_id'];
+    } else {
+      $serviciosSeleccionados[] = (int)$row['servicio_id'];
+    }
+  }
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -9,7 +44,7 @@ require_once '../clases/Vehiculos.php';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
-  <title>Registrar Orden - Taller Mecánico</title>
+  <title><?= $orden ? 'Editar Orden' : 'Registrar Orden' ?> - Taller Mecánico</title>
 
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
@@ -17,114 +52,100 @@ require_once '../clases/Vehiculos.php';
 </head>
 <body>
 
-<div class="container">
-  <div class="card">
+<div class="container my-4">
+  <div class="card shadow">
 
     <div class="card-header bg-warning text-dark">
-      <h1 class="mb-0">
-        Crear Orden de Servicio
-        <img src="../assets/img/logo.png" style="height:80px;width:80px;border-radius:50%">
-        <button id="btnDarkMode" class="btn btn-sm btn-outline-dark">🌙 Modo oscuro</button>
+      <h1 class="mb-0 d-flex align-items-center gap-3">
+        <?= $orden ? 'Editar Orden de Servicio' : 'Crear Orden de Servicio' ?>
+        <img src="../assets/img/logo.png" style="height:60px;width:60px;border-radius:50%">
+        <button id="btnDarkMode" class="btn btn-sm btn-outline-dark ms-auto">🌙 Modo oscuro</button>
       </h1>
     </div>
 
     <div class="card-body">
 
-      <!-- MENÚ -->
-      <div class="btn-group w-100 mb-3" style="gap:5px">
-        <div class="dropdown flex-fill">
-          <button class="btn btn-primary w-100 dropdown-toggle" data-bs-toggle="dropdown">🏠 Inicio</button>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="registrar_servicio.php">Servicios</a></li>
-            <li><a class="dropdown-item" href="registrar_repuesto.php">Repuestos</a></li>
-            <li><a class="dropdown-item" href="registrar_marcas.php">Marcas</a></li>
-            <li><a class="dropdown-item" href="registrar_modelos.php">Modelos</a></li>
-          </ul>
-        </div>
-
-        <div class="dropdown flex-fill">
-          <button class="btn btn-success w-100 dropdown-toggle" data-bs-toggle="dropdown">👤 Clientes</button>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="registrar_cliente.php">Registrar Cliente</a></li>
-            <li><a class="dropdown-item" href="listar_clientes.php">Ver Clientes</a></li>
-          </ul>
-        </div>
-
-        <div class="dropdown flex-fill">
-          <button class="btn btn-info w-100 dropdown-toggle" data-bs-toggle="dropdown">🚗 Vehículos</button>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="registrar_vehiculo.php">Registrar Vehículo</a></li>
-            <li><a class="dropdown-item" href="listar_vehiculos.php">Ver Vehículos</a></li>
-          </ul>
-        </div>
-
-        <div class="dropdown flex-fill">
-          <button class="btn btn-warning w-100 dropdown-toggle" data-bs-toggle="dropdown">📝 Órdenes</button>
-          <ul class="dropdown-menu">
-            <li><a class="dropdown-item" href="registrar_orden.php">Registrar Orden</a></li>
-            <li><a class="dropdown-item" href="listar_orden.php">Ver Órdenes</a></li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- === Mensajes === -->
-        <?php if (isset($_GET['success'])): ?>
-          <div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
-            <?php echo htmlspecialchars($_GET['success']); ?>
+      <!-- Menú -->
+        <div class="btn-group w-100" role="group" style="gap: 5px;">
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-primary w-100">🏠 Inicio</a>
+            <div class="dropdown-menu">
+              <a href="registrar_servicio.php">Servicios</a>
+              <a href="registrar_repuesto.php">Repuestos</a>
+              <a href="registrar_marcas.php">Marcas</a>
+              <a href="registrar_modelos.php">Modelos</a>
+            </div>
           </div>
-        <?php endif; ?>
-
-        <?php if (isset($_GET['error'])): ?>
-          <div class="alert alert-danger" role="alert" id="error-alert">
-            <strong>Error:</strong> <?php echo htmlspecialchars($_GET['error']); ?>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-success w-100">👤 Clientes</a>
+            <div class="dropdown-menu">
+              <a href="registrar_cliente.php">Registrar Cliente</a>
+              <a href="listar_clientes.php">Ver Clientes</a>
+            </div>
           </div>
-        <?php endif; ?>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-info w-100">🚗 Vehículos</a>
+            <div class="dropdown-menu">
+              <a href="registrar_vehiculo.php">Registrar Vehiculo</a>
+              <a href="listar_vehiculos.php">Ver Vehiculos</a>
+            </div>
+          </div>
+          <div class="dropdown flex-fill">
+            <a href="#" class="btn btn-warning w-100">📝 Ordenes</a>
+            <div class="dropdown-menu">
+              <a href="registrar_orden.php">Registrar Orden</a>
+              <a href="listar_orden.php">Ver Ordenes</a>
+            </div>
+          </div>
+        </div>
+        <!-- Fin menú -->
 
       <!-- FORMULARIO -->
-      <div class="card mb-4">
+      <div class="card shadow-sm">
         <div class="card-header bg-light">
-          <h4>Nueva Orden</h4>
+          <h4 class="mb-0"><?= $orden ? 'Editar Orden' : 'Nueva Orden' ?></h4>
         </div>
+
         <div class="card-body">
+          <form action="../shields/procesar_orden.php" method="POST" id="form_orden">
 
-          <form action="../shields/procesar_orden.php" method="POST" id="form_orden" novalidate>
+            <?php if ($orden): ?>
+              <input type="hidden" name="id" value="<?= $orden['id'] ?>">
+            <?php endif; ?>
 
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Vehículo *</label>
-                <select class="form-control select2" name="vehiculo_id" required>
-                  <option value="">Seleccione un vehículo</option>
-                  <?php
-                    $vehiculos = Vehiculos::obtenerParaSelect();
-                    while ($v = $vehiculos->fetch()) {
-                      echo '<option value="'.$v['id'].'">' .
-                        htmlspecialchars($v['patente'].' - '.$v['cliente'].' ('.$v['marca'].' '.$v['modelo'].')') .
-                      '</option>';
-                    }
-                  ?>
-                </select>
-              </div>
-
-              <div class="col-md-6">
-                <label class="form-label">Fecha *</label>
-                <input type="date" class="form-control" name="fecha_realizado"
-                       max="<?= date('Y-m-d') ?>" required>
-              </div>
+            <!-- Vehículo -->
+            <div class="mb-3">
+              <label class="form-label">Vehículo *</label>
+              <select class="form-control select2" name="vehiculo_id" required>
+                <option value="">Seleccione un vehículo</option>
+                <?php
+                $vehiculos = Vehiculos::obtenerParaSelect();
+                while ($v = $vehiculos->fetch()):
+                ?>
+                  <option value="<?= $v['id'] ?>"
+                    <?= ($orden && $orden['vehiculo_id'] == $v['id']) ? 'selected' : '' ?>>
+                    <?= htmlspecialchars($v['patente'].' - '.$v['cliente'].' ('.$v['marca'].' '.$v['modelo'].')') ?>
+                  </option>
+                <?php endwhile; ?>
+              </select>
             </div>
 
+            <!-- Servicios / Repuestos -->
             <div class="row mb-3">
               <div class="col-md-6">
                 <label class="form-label">Servicios *</label>
                 <select class="form-control select2" name="servicio_id[]" multiple>
                   <?php
-                    $servicios = OrdenServicios::obtenerServicios();
-                    while ($s = $servicios->fetch()) {
-                      echo '<option value="'.$s['id'].'" data-precio="'.$s['precio_base'].'">' .
-                        htmlspecialchars($s['nombre']) .
-                        ' ($'.number_format($s['precio_base'],2,',','.').')' .
-                      '</option>';
-                    }
+                  $servicios = OrdenServicios::obtenerServicios();
+                  while ($s = $servicios->fetch()):
                   ?>
+                    <option value="<?= $s['id'] ?>"
+                      data-precio="<?= $s['precio_base'] ?>"
+                      <?= in_array($s['id'], $serviciosSeleccionados) ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($s['nombre']) ?>
+                      ($<?= number_format($s['precio_base'],2,',','.') ?>)
+                    </option>
+                  <?php endwhile; ?>
                 </select>
               </div>
 
@@ -132,27 +153,35 @@ require_once '../clases/Vehiculos.php';
                 <label class="form-label">Repuestos</label>
                 <select class="form-control select2" name="repuesto_id[]" multiple>
                   <?php
-                    $repuestos = OrdenServicios::obtenerRepuestos();
-                    while ($r = $repuestos->fetch()) {
-                      echo '<option value="'.$r['id'].'" data-precio="'.$r['precio'].'">' .
-                        htmlspecialchars($r['nombre']) .
-                        ' ($'.number_format($r['precio'],2,',','.').')' .
-                      '</option>';
-                    }
+                  $repuestos = OrdenServicios::obtenerRepuestos();
+                  while ($r = $repuestos->fetch()):
                   ?>
+                    <option value="<?= $r['id'] ?>"
+                      data-precio="<?= $r['precio'] ?>"
+                      <?= in_array($r['id'], $repuestosSeleccionados) ? 'selected' : '' ?>>
+                      <?= htmlspecialchars($r['nombre']) ?>
+                      ($<?= number_format($r['precio'],2,',','.') ?>)
+                    </option>
+                  <?php endwhile; ?>
                 </select>
               </div>
             </div>
 
-            <div class="row mb-3">
-              <div class="col-md-6">
-                <label class="form-label">Costo total *</label>
-                <input type="number" class="form-control" name="costo" step="0.01" readonly required>
-              </div>
+            <!-- Total -->
+            <div class="mb-4">
+              <label class="form-label">Costo total</label>
+              <input type="number"
+                     class="form-control"
+                     name="costo"
+                     step="0.01"
+                     readonly
+                     required
+                     value="<?= $orden ? $orden['total'] : '' ?>">
             </div>
 
-            <button type="submit" class="btn btn-warning">Crear Orden</button>
-            <a href="listar_orden.php" class="btn btn-secondary">Ver Órdenes</a>
+            <button type="submit" class="btn btn-warning">
+              <?= $orden ? 'Actualizar Orden' : 'Crear Orden' ?>
+            </button>
 
           </form>
         </div>

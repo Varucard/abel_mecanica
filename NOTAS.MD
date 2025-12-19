@@ -12,9 +12,7 @@ Vista para vehiculo:
   - Imagenes.
 
 Modulo de Ordenes
-  - Poder editar una orden.
   - Estados de orden => Aprobada, en  revisión, etc. (Revisar BD).
-  - Editar ordenes.
 
 Modulo de Turnos:
 ABM turnos.
@@ -31,7 +29,10 @@ Modulo de empleados:
 AMB empleados.
 
 Configuración del sistema:
+Revisar vista "Modo Obscuro" en los formularios.
 Una vez entregado el vehiculo o terminada la Orden imprimir un papel de entrega o conformidad.
 Capaz agregar modulo de seguridad al sistema => Clave - Usuario
 Que el Cliente pueda ver como va su auto ingresando como un cliente?
 ¿Agregar mas data de los modelos? - año - motor - etc.
+Capaz generar una clase para ORDEN.
+Eliminar todo el codigo de negocio de las vistas.

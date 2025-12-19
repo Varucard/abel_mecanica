@@ -3,11 +3,13 @@ ob_start();
 require_once '../includes/config_database.php';
 require_once '../clases/OrdenServicios.php';
 
-define('SERVICIO_REPUESTO_ID', 1); // ID real en tu tabla servicios
+define('SERVICIO_REPUESTO_ID', 1);
 
-/* =========================
-   CAMBIO DE ESTADO
-========================= */
+/*
+|--------------------------------------------------------------------------
+| 1) CAMBIAR ESTADO
+|--------------------------------------------------------------------------
+*/
 if (
   isset($_GET['action'], $_GET['id'], $_GET['estado']) &&
   $_GET['action'] === 'cambiar_estado'
@@ -26,66 +28,71 @@ if (
   exit;
 }
 
-/* =========================
-   ALTA DE ORDEN
-========================= */
+/*
+|--------------------------------------------------------------------------
+| 2) POST → CREAR / EDITAR ORDEN
+|--------------------------------------------------------------------------
+*/
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
+  $id              = isset($_POST['id']) && $_POST['id'] !== '' ? (int) $_POST['id'] : null;
   $vehiculo_id     = (int) $_POST['vehiculo_id'];
   $servicio_input  = $_POST['servicio_id'] ?? [];
   $repuesto_input  = $_POST['repuesto_id'] ?? [];
-  $fecha_realizado = trim($_POST['fecha_realizado']);
 
   $errors = [];
 
   if (!$vehiculo_id)
     $errors[] = "Vehículo inválido";
 
-  if (empty($fecha_realizado))
-    $errors[] = "La fecha es requerida";
-
-  /* Normalizar servicios */
-  $servicios_ids = [];
-  if (is_array($servicio_input)) {
-    foreach ($servicio_input as $s)
-      $servicios_ids[] = (int) $s;
-  }
-
-  /* Normalizar repuestos */
-  $repuestos_ids = [];
-  if (is_array($repuesto_input)) {
-    foreach ($repuesto_input as $r)
-      $repuestos_ids[] = (int) $r;
-  }
-
-  if (count($servicios_ids) === 0)
+  if (count($servicio_input) === 0)
     $errors[] = "Debe seleccionar al menos un servicio";
 
   if ($errors) {
     ob_end_clean();
-    header("Location: ../views/registrar_orden.php?error=" . urlencode(implode(', ', $errors)));
+    header("Location: ../views/registrar_orden.php?error=" . urlencode(implode(', ', $errors)) . ($id ? "&id=$id" : ""));
     exit;
   }
 
   try {
     $conn->beginTransaction();
 
-    /* 1) Crear ORDEN */
-    $stmt = $conn->prepare(
-      "INSERT INTO ordenes (vehiculo_id, fecha_realizado, estado, total)
-       VALUES (?, ?, 'pendiente', 0)"
-    );
+    /* =========================
+       CREAR / EDITAR ORDEN
+    ========================= */
 
-    if (!$stmt->execute([$vehiculo_id, $fecha_realizado]))
-      throw new Exception("No se pudo crear la orden");
+    if ($id) {
+      // EDITAR
+      $stmt = $conn->prepare(
+        "UPDATE ordenes SET vehiculo_id = ? WHERE id = ?"
+      );
+      $stmt->execute([$vehiculo_id, $id]);
 
-    $orden_id = $conn->lastInsertId();
+      // Borrar detalles anteriores
+      $conn->prepare("DELETE FROM ordenes_servicios WHERE orden_id = ?")
+           ->execute([$id]);
+
+      $orden_id = $id;
+    } else {
+      // CREAR
+      $stmt = $conn->prepare(
+        "INSERT INTO ordenes (vehiculo_id, estado, total)
+         VALUES (?, 'pendiente', 0)"
+      );
+      $stmt->execute([$vehiculo_id]);
+      $orden_id = $conn->lastInsertId();
+    }
+
     $total = 0;
 
-    /* 2) SERVICIOS */
+    /* =========================
+       SERVICIOS
+    ========================= */
     $stmt_serv = $conn->prepare("SELECT precio_base FROM servicios WHERE id = ?");
 
-    foreach ($servicios_ids as $sid) {
+    foreach ($servicio_input as $sid) {
+      $sid = (int) $sid;
+
       $stmt_serv->execute([$sid]);
       $serv = $stmt_serv->fetch(PDO::FETCH_ASSOC);
 
@@ -97,13 +104,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       $detalle = new OrdenServicios($orden_id, $sid, null, $precio);
       if (!$detalle->guardar())
-        throw new Exception("No se pudo agregar servicio ID {$sid}");
+        throw new Exception("No se pudo agregar servicio");
     }
 
-    /* 3) REPUESTOS */
+    /* =========================
+       REPUESTOS (opcionales)
+    ========================= */
     $stmt_rep = $conn->prepare("SELECT precio FROM repuestos WHERE id = ?");
 
-    foreach ($repuestos_ids as $rid) {
+    foreach ($repuesto_input as $rid) {
+      $rid = (int) $rid;
+
       $stmt_rep->execute([$rid]);
       $rep = $stmt_rep->fetch(PDO::FETCH_ASSOC);
 
@@ -115,16 +126,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       $detalle = new OrdenServicios($orden_id, SERVICIO_REPUESTO_ID, $rid, $precio);
       if (!$detalle->guardar())
-        throw new Exception("No se pudo agregar repuesto ID {$rid}");
+        throw new Exception("No se pudo agregar repuesto");
     }
 
-    /* 4) TOTAL */
-    $stmt_total = $conn->prepare("UPDATE ordenes SET total = ? WHERE id = ?");
-    $stmt_total->execute([$total, $orden_id]);
+    /* =========================
+       TOTAL
+    ========================= */
+    $conn->prepare("UPDATE ordenes SET total = ? WHERE id = ?")
+         ->execute([$total, $orden_id]);
 
     $conn->commit();
     ob_end_clean();
-    header("Location: ../views/listar_orden.php?success=order");
+
+    header("Location: ../views/listar_orden.php?success=" . ($id ? "update" : "create"));
     exit;
 
   } catch (Exception $e) {
@@ -132,7 +146,29 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
       $conn->rollBack();
 
     ob_end_clean();
-    header("Location: ../views/registrar_orden.php?error=" . urlencode($e->getMessage()));
+    header("Location: ../views/registrar_orden.php?error=" . urlencode($e->getMessage()) . ($id ? "&id=$id" : ""));
     exit;
   }
 }
+
+/*
+|--------------------------------------------------------------------------
+| 3) GET id → IR A FORMULARIO DE EDITAR
+|--------------------------------------------------------------------------
+*/
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id']) && !isset($_GET['action'])) {
+  $id = (int) $_GET['id'];
+
+  ob_end_clean();
+  header("Location: ../views/registrar_orden.php?id=" . $id);
+  exit;
+}
+
+/*
+|--------------------------------------------------------------------------
+| 4) FALLBACK
+|--------------------------------------------------------------------------
+*/
+ob_end_clean();
+header("Location: ../views/listar_orden.php");
+exit;

@@ -93,7 +93,7 @@
       </div>
       <div class="box small">
         <div><strong>Nº Presupuesto:</strong> <?= str_pad($orden['id'], 4, '0', STR_PAD_LEFT); ?></div>
-        <div><strong>Fecha:</strong> <?= date('d/m/Y', strtotime($orden['fecha_realizado'])); ?></div>
+        <div><strong>Fecha:</strong> <?= date('d/m/Y', strtotime($orden['created_at'])); ?></div>
         <div><strong>Validez:</strong> <?= intval($config_trabajo['validez']); ?> días</div>
       </div>
     </header>

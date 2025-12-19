@@ -3,13 +3,13 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: mysqldb
--- Tiempo de generación: 18-12-2025 a las 22:17:52
+-- Tiempo de generación: 18-12-2025 a las 23:31:18
 -- Versión del servidor: 5.7.44
 -- Versión de PHP: 8.3.27
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
-SET time_zone = "+00:00";
+SET time_zone = "-03:00";
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -69,7 +69,6 @@ CREATE TABLE `modelos` (
 CREATE TABLE `ordenes` (
   `id` int(11) NOT NULL,
   `vehiculo_id` int(11) NOT NULL,
-  `fecha_realizado` date NOT NULL,
   `fecha_finalizado` date DEFAULT NULL,
   `estado` enum('pendiente','en_proceso','finalizado','cancelado') DEFAULT 'pendiente',
   `total` decimal(10,2) NOT NULL DEFAULT '0.00',
@@ -132,8 +131,7 @@ CREATE TABLE `servicios` (
   `id` int(11) NOT NULL,
   `nombre` varchar(100) NOT NULL,
   `descripcion` text,
-  `precio_base` decimal(10,2) DEFAULT NULL,
-  `estado` enum('activo','inactivo') DEFAULT 'activo'
+  `precio_base` decimal(10,2) DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
 
 -- --------------------------------------------------------

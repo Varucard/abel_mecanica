@@ -73,7 +73,6 @@
             <table id="tabla_ordenes" class="table table-striped table-bordered">
               <thead>
                 <tr>
-                  <th>ID</th>
                   <th>Cliente</th>
                   <th>Vehículo</th>
                   <th>Servicio(s)</th>
@@ -91,14 +90,14 @@
                   $estadoTexto = $row['estado'] === 'finalizado' ? 'Finalizado' : 'Pendiente';
                   ?>
                   <tr>
-                    <td><?= htmlspecialchars($row['id']); ?></td>
                     <td><?= htmlspecialchars($row['cliente']); ?></td>
                     <td><?= htmlspecialchars($row['vehiculo']); ?></td>
                     <td><?= htmlspecialchars($row['servicios']); ?></td>
                     <td>$<?= number_format($row['costo'], 2); ?></td>
-                    <td><?= date('d/m/Y', strtotime($row['fecha_realizado'])); ?></td>
+                    <td><?= date('d/m/Y', strtotime($row['created_at'])); ?></td>
                     <td><span class="badge bg-<?= $estadoClass; ?>"><?= $estadoTexto; ?></span></td>
                     <td>
+                      <a href="../shields/procesar_orden.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">Editar</a>
                       <?php if ($row['estado'] === 'pendiente'): ?>
                         <button class="btn btn-sm btn-success" onclick="cambiarEstadoOrden(<?= $row['id']; ?>, 'finalizado')">
                           Finalizar

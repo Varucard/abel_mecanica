@@ -1,13 +1,17 @@
 $(document).ready(function () {
 
+  // ===============================
   // Inicializar Select2
+  // ===============================
   if ($('.select2').length) {
     $('.select2').select2({
       width: '100%'
     });
   }
 
-  // Inicializar DataTable si existe
+  // ===============================
+  // Inicializar DataTable
+  // ===============================
   if ($('#tabla_ordenes').length) {
     $('#tabla_ordenes').DataTable({
       language: {
@@ -29,7 +33,9 @@ $(document).ready(function () {
     });
   }
 
+  // ===============================
   // Ocultar alerta de éxito
+  // ===============================
   if ($('#success-alert').length) {
     $('#success-alert').delay(10000).fadeOut('slow');
   }
@@ -42,7 +48,7 @@ $(document).ready(function () {
 
     // Servicios
     $('select[name="servicio_id[]"] option:selected').each(function () {
-      let precio = parseFloat($(this).data('precio'));
+      const precio = parseFloat($(this).data('precio'));
       if (!isNaN(precio)) {
         total += precio;
       }
@@ -50,7 +56,7 @@ $(document).ready(function () {
 
     // Repuestos (opcionales)
     $('select[name="repuesto_id[]"] option:selected').each(function () {
-      let precio = parseFloat($(this).data('precio'));
+      const precio = parseFloat($(this).data('precio'));
       if (!isNaN(precio)) {
         total += precio;
       }
@@ -59,12 +65,15 @@ $(document).ready(function () {
     $('input[name="costo"]').val(total.toFixed(2));
   }
 
-  // Escuchar cambios (Select2 compatible)
+  // Escuchar cambios (compatible Select2)
   $(document).on(
     'change',
     'select[name="servicio_id[]"], select[name="repuesto_id[]"]',
     calcularTotal
   );
+
+  // Calcular al cargar (por seguridad)
+  calcularTotal();
 
 });
 
