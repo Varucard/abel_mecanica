@@ -42,13 +42,19 @@ if (!$cliente) {
     die('Error: Cliente no encontrado.');
 }
 
-// SERVICIOS
+// SERVICIOS Y REPUESTOS
 $stmt_servicios = $conn->prepare("
-    SELECT os.*, s.nombre AS servicio_nombre
+    SELECT 
+        os.costo,
+        os.servicio_id,
+        os.repuesto_id,
+        s.nombre AS servicio_nombre,
+        r.nombre AS repuesto_nombre
     FROM ordenes_servicios os
-    INNER JOIN servicios s ON os.servicio_id = s.id
+    LEFT JOIN servicios s ON os.servicio_id = s.id
+    LEFT JOIN repuestos r ON os.repuesto_id = r.id
     WHERE os.orden_id = ?
-    ORDER BY s.nombre
+    ORDER BY s.nombre, r.nombre
 ");
 $stmt_servicios->execute([$orden_id]);
 $servicios = $stmt_servicios->fetchAll(PDO::FETCH_ASSOC);
@@ -208,7 +214,7 @@ ob_start();
     font-size: 9px;
   }
   .firma-block {
-    margin-top: 22px;
+    margin-top: 70px;
     font-size: 9px;
   }
   .firma-line {
@@ -285,7 +291,17 @@ ob_start();
       <tbody>
         <?php foreach ($servicios as $serv): ?>
         <tr>
-          <td><?= htmlspecialchars($serv['servicio_nombre']); ?></td>
+          <td>
+            <?php
+            if (!empty($serv['repuesto_id']) && !empty($serv['repuesto_nombre'])) {
+                echo 'Repuesto: ' . htmlspecialchars($serv['repuesto_nombre']);
+            } elseif (!empty($serv['servicio_nombre'])) {
+                echo htmlspecialchars($serv['servicio_nombre']);
+            } else {
+                echo 'Ítem sin descripción';
+            }
+            ?>
+          </td>
           <td class="right">1</td>
           <td class="right">$ <?= number_format($serv['costo'], 2, ',', '.'); ?></td>
           <td class="right">$ <?= number_format($serv['costo'], 2, ',', '.'); ?></td>

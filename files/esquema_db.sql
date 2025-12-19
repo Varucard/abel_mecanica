@@ -3,13 +3,13 @@
 -- https://www.phpmyadmin.net/
 --
 -- Servidor: mysqldb
--- Tiempo de generación: 18-12-2025 a las 23:31:18
+-- Tiempo de generación: 19-12-2025 a las 12:13:58
 -- Versión del servidor: 5.7.44
 -- Versión de PHP: 8.3.27
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
-SET time_zone = "-03:00";
+SET time_zone = "+00:00";
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -31,8 +31,8 @@ CREATE TABLE `clientes` (
   `id` int(11) NOT NULL,
   `persona_id` int(11) NOT NULL,
   `telefono` varchar(10) NOT NULL,
-  `direccion` varchar(200) NOT NULL,
-  `estado` enum('activo','inactivo') DEFAULT 'activo',
+  `direccion` varchar(200) DEFAULT NULL,
+  `estado` enum('activo','inactivo') NOT NULL DEFAULT 'activo',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=latin1;
@@ -69,7 +69,7 @@ CREATE TABLE `modelos` (
 CREATE TABLE `ordenes` (
   `id` int(11) NOT NULL,
   `vehiculo_id` int(11) NOT NULL,
-  `fecha_finalizado` date DEFAULT NULL,
+  `fecha_realizado` date DEFAULT NULL,
   `estado` enum('pendiente','en_proceso','finalizado','cancelado') DEFAULT 'pendiente',
   `total` decimal(10,2) NOT NULL DEFAULT '0.00',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
