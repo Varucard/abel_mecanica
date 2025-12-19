@@ -25,7 +25,7 @@ class Servicios {
 
   // CRUD: Crear
   public function guardar($conn) {
-    $sql = "INSERT INTO servicios (nombre, descripcion, precio_base) VALUES (?, ?, ?, ?)";
+    $sql = "INSERT INTO servicios (nombre, descripcion, precio_base) VALUES (?, ?, ?)";
     $stmt = $conn->prepare($sql);
     if ($stmt->execute([$this->nombre, $this->descripcion, $this->precio_base])) {
       $this->id = $conn->lastInsertId();

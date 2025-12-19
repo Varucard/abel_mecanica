@@ -75,7 +75,7 @@
                 <tr>
                   <th>Cliente</th>
                   <th>Vehículo</th>
-                  <th>Servicio(s)</th>
+                  <th>Servicio(s) - Repuesto(s)</th>
                   <th>Costo</th>
                   <th>Fecha</th>
                   <th>Estado</th>
@@ -92,7 +92,17 @@
                   <tr>
                     <td><?= htmlspecialchars($row['cliente']); ?></td>
                     <td><?= htmlspecialchars($row['vehiculo']); ?></td>
-                    <td><?= htmlspecialchars($row['servicios']); ?></td>
+                    <td>
+                      <?php if (!empty($row['servicios'])): ?>
+                        <?= htmlspecialchars($row['servicios']); ?>
+                      <?php endif; ?>
+
+                      <?php if (!empty($row['repuestos'])): ?>
+                        <div class="small text-muted mt-1">
+                          <strong>Repuestos:</strong> <?= htmlspecialchars($row['repuestos']); ?>
+                        </div>
+                      <?php endif; ?>
+                    </td>
                     <td>$<?= number_format($row['costo'], 2); ?></td>
                     <td><?= date('d/m/Y', strtotime($row['created_at'])); ?></td>
                     <td><span class="badge bg-<?= $estadoClass; ?>"><?= $estadoTexto; ?></span></td>

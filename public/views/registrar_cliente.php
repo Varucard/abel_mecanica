@@ -142,10 +142,10 @@
                 </div>
 
                 <div class="mb-3">
-                  <label for="direccion" class="form-label">Dirección *</label>
+                  <label for="direccion" class="form-label">Dirección</label>
                   <input type="text" class="form-control" id="direccion" name="direccion"
                         value="<?php echo htmlspecialchars($cliente['direccion'] ?? ''); ?>"
-                        pattern=".{5,200}" required>
+                        pattern=".{5,200}">
                 </div>
 
                 <button type="submit" class="btn btn-success">

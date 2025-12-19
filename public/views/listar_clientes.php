@@ -123,7 +123,7 @@
                       <td><?= htmlspecialchars($row['apellido']) ?></td>
                       <td><?= htmlspecialchars($row['dni']) ?></td>
                       <td><?= htmlspecialchars($row['telefono']) ?></td>
-                      <td><?= htmlspecialchars($row['direccion']) ?></td>
+                      <td><?= htmlspecialchars(isset($row['direccion']) ? $row['direccion'] : '')  ?></td>
                       <td><span class="badge bg-<?= $estado_color ?>"><?= htmlspecialchars($row['estado']) ?></span></td>
                       <td>
                         <a href="../shields/procesar_cliente.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">Editar</a>

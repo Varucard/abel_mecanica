@@ -74,8 +74,23 @@ class OrdenServicios {
         CONCAT(p.apellido, ', ', p.nombre) AS cliente,
         CONCAT(v.patente, ' - ', ma.nombre, ' ', mo.nombre) AS vehiculo,
 
-        GROUP_CONCAT(DISTINCT s.nombre ORDER BY s.nombre SEPARATOR ', ') AS servicios,
-        GROUP_CONCAT(DISTINCT r.nombre ORDER BY r.nombre SEPARATOR ', ') AS repuestos
+        /* === SERVICIOS (excluye 'Servicio de sistema') === */
+        GROUP_CONCAT(
+          DISTINCT
+          CASE 
+            WHEN s.nombre <> 'Servicio de sistema' THEN s.nombre
+            ELSE NULL
+          END
+          ORDER BY s.nombre
+          SEPARATOR ', '
+        ) AS servicios,
+
+        /* === REPUESTOS === */
+        GROUP_CONCAT(
+          DISTINCT r.nombre
+          ORDER BY r.nombre
+          SEPARATOR ', '
+        ) AS repuestos
 
       FROM ordenes o
       INNER JOIN vehiculos v ON o.vehiculo_id = v.id
@@ -93,6 +108,7 @@ class OrdenServicios {
 
     return $conn->query($sql);
   }
+
 
   public static function verOrdenes() {
     return self::obtenerTodas();

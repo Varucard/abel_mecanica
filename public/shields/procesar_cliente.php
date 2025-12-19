@@ -60,7 +60,7 @@
     $apellido = mb_strtoupper(trim($_POST['apellido']));
     $dni = trim($_POST['dni']);
     $telefono = trim($_POST['telefono']);
-    $direccion = mb_strtoupper(trim($_POST['direccion']));
+    $direccion = isset($_POST['direccion']) ? mb_strtoupper(trim($_POST['direccion'])) : null;
     $email = isset($_POST['email']) ? trim($_POST['email']) : null;
 
     // Validaciones básicas
@@ -78,8 +78,10 @@
     if (!preg_match('/^[0-9]{10}$/', $telefono))
       $errors[] = "El teléfono debe tener exactamente 10 dígitos.";
 
-    if (strlen($direccion) < 5 || strlen($direccion) > 200)
-      $errors[] = "La dirección debe tener entre 5 y 200 caracteres.";
+    if ($direccion != null) {
+      if (strlen($direccion) < 5 || strlen($direccion) > 200)
+        $errors[] = "La dirección debe tener entre 5 y 200 caracteres.";
+    }
       
     if ($email !== null && $email !== '') {
       if (!filter_var($email, FILTER_VALIDATE_EMAIL))
