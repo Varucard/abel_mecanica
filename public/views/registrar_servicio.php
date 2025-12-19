@@ -111,14 +111,6 @@
                 ?></textarea>
               </div>
 
-              <div class="mb-3">
-                <label for="estado" class="form-label">Estado</label>
-                <select name="estado" id="estado" class="form-select">
-                  <option value="activo" <?php echo (isset($serv['estado']) && $serv['estado']=='activo') ? 'selected' : ''; ?>>Activo</option>
-                  <option value="inactivo" <?php echo (isset($serv['estado']) && $serv['estado']=='inactivo') ? 'selected' : ''; ?>>Inactivo</option>
-                </select>
-              </div>
-
               <button type="submit" class="btn btn-success">
                 <?php echo isset($serv) ? 'Actualizar Servicio' : 'Registrar Servicio'; ?>
               </button>
@@ -138,7 +130,6 @@
                   <th>Nombre</th>
                   <th>Descripción</th>
                   <th>Precio Base</th>
-                  <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -146,19 +137,13 @@
                 <?php
                   $servicios = Servicios::obtenerTodos($conn);
                   while ($row = $servicios->fetch()) {
-                    $estado_color = $row['estado'] == 'activo' ? 'success' : 'secondary';
                 ?>
                 <tr>
                   <td><?php echo htmlspecialchars($row['nombre']); ?></td>
                   <td><?php echo htmlspecialchars($row['descripcion']); ?></td>
                   <td>$<?php echo number_format($row['precio_base'], 2, ',', '.'); ?></td>
-                  <td><span class="badge bg-<?php echo $estado_color; ?>"><?php echo htmlspecialchars($row['estado']); ?></span></td>
                   <td>
                     <a href="registrar_servicio.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary">Editar</a>
-                    <button class="btn btn-sm <?php echo $row['estado'] == 'activo' ? 'btn-warning' : 'btn-success'; ?>"
-                            onclick="cambiarEstadoServicio(<?php echo $row['id']; ?>, '<?php echo $row['estado']; ?>')">
-                      <?php echo $row['estado'] == 'activo' ? 'Desactivar' : 'Activar'; ?>
-                    </button>
                     <button class="btn btn-sm btn-danger"
                             onclick="eliminarServicio(<?php echo $row['id']; ?>, '<?php echo $row['nombre']; ?>')">Eliminar</button>
                   </td>

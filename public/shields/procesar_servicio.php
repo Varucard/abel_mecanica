@@ -20,10 +20,9 @@ try {
       $nombre = $_POST['nombre'] ?? '';
       $descripcion = $_POST['descripcion'] ?? '';
       $precio_base = $_POST['precio_base'] ?? 0.0;
-      $estado = $_POST['estado'] ?? 'activo';
 
       if ($nombre) {
-        $servicio = new Servicios($nombre, $descripcion, $precio_base, $estado);
+        $servicio = new Servicios($nombre, $descripcion, $precio_base);
         if ($servicio->guardar($conn)) {
           header("Location: ../views/registrar_servicio.php?success=Servicio creado correctamente");
         } else {
@@ -45,10 +44,9 @@ try {
       $nombre = $_POST['nombre'] ?? '';
       $descripcion = $_POST['descripcion'] ?? '';
       $precio_base = $_POST['precio_base'] ?? 0.0;
-      $estado = $_POST['estado'] ?? 'activo';
 
       if ($id && $nombre) {
-        $servicio = new Servicios($nombre, $descripcion, $precio_base, $estado);
+        $servicio = new Servicios($nombre, $descripcion, $precio_base);
         $servicio->setId($id);
         if ($servicio->actualizar($conn)) {
           header("Location: ../views/registrar_servicio.php?success=Servicio actualizado correctamente");
@@ -64,18 +62,6 @@ try {
         header("Location: ../views/registrar_servicio.php?success=Servicio eliminado correctamente");
       } else {
         header("Location: ../views/registrar_servicio.php?error=Error al eliminar servicio");
-      }
-      exit;
-
-    case 'estado':
-      $id = $_GET['id'] ?? null;
-      $estado = $_GET['estado'] ?? null;
-      if ($id && in_array($estado, ['activo', 'inactivo'])) {
-        if (Servicios::cambiarEstado($conn, $id, $estado)) {
-          header("Location: ../views/registrar_servicio.php?success=Estado actualizado correctamente");
-        } else {
-          header("Location: ../views/registrar_servicio.php?error=Error al actualizar estado");
-        }
       }
       exit;
 

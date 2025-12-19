@@ -7,11 +7,10 @@ class Servicios {
   private $precio_base;
   private $estado;
 
-  public function __construct($nombre = null, $descripcion = null, $precio_base = 0.0, $estado = 'activo') {
+  public function __construct($nombre = null, $descripcion = null, $precio_base = 0.0) {
     $this->nombre = $nombre;
     $this->descripcion = $descripcion;
     $this->precio_base = $precio_base;
-    $this->estado = $estado;
   }
 
   // Getters y setters
@@ -19,19 +18,17 @@ class Servicios {
   public function getNombre() { return $this->nombre; }
   public function getDescripcion() { return $this->descripcion; }
   public function getPrecioBase() { return $this->precio_base; }
-  public function getEstado() { return $this->estado; }
 
   public function setId($id) { $this->id = $id; }
   public function setNombre($nombre) { $this->nombre = $nombre; }
   public function setDescripcion($descripcion) { $this->descripcion = $descripcion; }
   public function setPrecioBase($precio_base) { $this->precio_base = $precio_base; }
-  public function setEstado($estado) { $this->estado = $estado; }
 
   // CRUD: Crear
   public function guardar($conn) {
-    $sql = "INSERT INTO servicios (nombre, descripcion, precio_base, estado) VALUES (?, ?, ?, ?)";
+    $sql = "INSERT INTO servicios (nombre, descripcion, precio_base) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
-    if ($stmt->execute([$this->nombre, $this->descripcion, $this->precio_base, $this->estado])) {
+    if ($stmt->execute([$this->nombre, $this->descripcion, $this->precio_base])) {
       $this->id = $conn->lastInsertId();
       return true;
     }
@@ -54,9 +51,9 @@ class Servicios {
 
   // Actualizar
   public function actualizar($conn) {
-    $sql = "UPDATE servicios SET nombre = ?, descripcion = ?, precio_base = ?, estado = ? WHERE id = ?";
+    $sql = "UPDATE servicios SET nombre = ?, descripcion = ?, precio_base = ? WHERE id = ?";
     $stmt = $conn->prepare($sql);
-    return $stmt->execute([$this->nombre, $this->descripcion, $this->precio_base, $this->estado, $this->id]);
+    return $stmt->execute([$this->nombre, $this->descripcion, $this->precio_base, $this->id]);
   }
 
   // Eliminar
@@ -64,12 +61,5 @@ class Servicios {
     $sql = "DELETE FROM servicios WHERE id = ?";
     $stmt = $conn->prepare($sql);
     return $stmt->execute([$id]);
-  }
-
-  // Cambiar estado
-  public static function cambiarEstado($conn, $id, $estado) {
-    $sql = "UPDATE servicios SET estado = ? WHERE id = ?";
-    $stmt = $conn->prepare($sql);
-    return $stmt->execute([$estado, $id]);
   }
 }
