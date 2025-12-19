@@ -78,6 +78,7 @@
                     <th>Modelo</th>
                     <th>Año</th>
                     <th>Patente</th>
+                    <th>Acciones</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -91,6 +92,13 @@
                         <td><?php echo htmlspecialchars($row['modelo']); ?></td>
                         <td><?php echo htmlspecialchars($row['anio']); ?></td>
                         <td><?php echo htmlspecialchars($row['patente']); ?></td>
+                        <td>
+                          <a href="../shields/procesar_vehiculo.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">Editar</a>
+                          <!-- <a href="ver_presupuesto.php?id=<?= $row['id']; ?>" 
+                            class="btn btn-sm btn-info">
+                            Ver
+                          </a> -->
+                        </td>
                       </tr>
                   <?php } ?>
                 </tbody>

@@ -23,6 +23,17 @@
     echo json_encode(['total' => $total]);
     exit;
   }
+
+  // MODO EDICIÓN
+  $vehiculo_edit = null;
+  $es_edicion = false;
+  if (isset($_GET['id']) && !empty($_GET['id'])) {
+    $id = (int) $_GET['id'];
+    $vehiculo_edit = Vehiculos::obtenerPorId($id);
+    if ($vehiculo_edit) {
+      $es_edicion = true;
+    }
+  }
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -30,7 +41,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
-  <title>Registrar Vehículo - Taller Mecánico</title>
+  <title><?= $es_edicion ? 'Editar' : 'Registrar' ?> Vehículo - Taller Mecánico</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
   <link rel="stylesheet" href="../assets/css/styles.css">
@@ -39,7 +50,7 @@
   <div class="container">
     <div class="card">
       <div class="card-header bg-info text-white">
-        <h1 class="mb-0">Registrar Vehículo
+        <h1 class="mb-0"><?= $es_edicion ? 'Editar' : 'Registrar' ?> Vehículo
           <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
           <button id="btnDarkMode"
                   class="btn btn-sm btn-outline-light"
@@ -86,15 +97,21 @@
         <!-- Fin menú -->
 
           <!-- Inicio mensajes -->
-          <?php if (isset($_GET['success'])): ?>
+          <?php if (isset($_GET['success']) && $_GET['success'] === 'create'): ?>
             <div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
               <strong>¡Registro completado!</strong> El vehículo ha sido registrado exitosamente.
+            </div>
+          <?php endif; ?>
+
+          <?php if (isset($_GET['success']) && $_GET['success'] === 'update'): ?>
+            <div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
+              <strong>¡Actualización completada!</strong> El vehículo ha sido actualizado exitosamente.
             </div>
           <?php endif; ?>
           
           <?php if (isset($_GET['error'])): ?>
             <div class="alert alert-danger" role="alert" id="error-alert">
-              <strong>Error al registrar:</strong> <?php echo htmlspecialchars($_GET['error']); ?>
+              <strong>Error:</strong> <?php echo htmlspecialchars($_GET['error']); ?>
             </div>
           <?php endif; ?>
           <!-- Fin mensajes -->
@@ -102,10 +119,14 @@
           <!-- Formulario de Registro -->
           <div class="card mb-4">
             <div class="card-header bg-light">
-              <h4>Nuevo Vehículo</h4>
+              <h4><?= $es_edicion ? 'Editar' : 'Nuevo' ?> Vehículo</h4>
             </div>
             <div class="card-body">
               <form action="../shields/procesar_vehiculo.php" method="POST" id="form_vehiculo" novalidate>
+                <?php if ($es_edicion): ?>
+                  <input type="hidden" id="vehiculo_id" name="id" value="<?= $vehiculo_edit['id'] ?>">
+                <?php endif; ?>
+
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="cliente_id" class="form-label">Cliente *</label>
@@ -114,7 +135,8 @@
                         <?php
                         $clientes = Clientes::obtenerTodos($conn);
                         while ($cliente = $clientes->fetch()) {
-                          echo '<option value="' . $cliente['id'] . '">' . 
+                          $selected = ($es_edicion && $vehiculo_edit['cliente_id'] == $cliente['id']) ? 'selected' : '';
+                          echo '<option value="' . $cliente['id'] . '" ' . $selected . '>' . 
                           htmlspecialchars($cliente['apellido'] . ', ' . $cliente['nombre'] . ' - DNI: ' . $cliente['dni']) . 
                           '</option>';
                         }
@@ -128,7 +150,8 @@
                       <?php
                       $marcas = Vehiculos::obtenerMarcas();
                       while ($marca = $marcas->fetch()) {
-                        echo '<option value="' . $marca['id'] . '">' . htmlspecialchars($marca['nombre']) . '</option>';
+                        $selected = ($es_edicion && $vehiculo_edit['marca_id'] == $marca['id']) ? 'selected' : '';
+                        echo '<option value="' . $marca['id'] . '" ' . $selected . '>' . htmlspecialchars($marca['nombre']) . '</option>';
                       }
                       ?>
                     </select>
@@ -137,19 +160,30 @@
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="modelo_id" class="form-label">Modelo *</label>
-                    <select class="form-control" id="modelo_id" name="modelo_id" required disabled>
+                    <select class="form-control" id="modelo_id" name="modelo_id" required <?= !$es_edicion ? 'disabled' : '' ?>>
                       <option value="">Seleccione una marca primero</option>
+                      <?php if ($es_edicion): ?>
+                        <?php
+                        $modelos = Vehiculos::obtenerModelosPorMarca($vehiculo_edit['marca_id']);
+                        while ($modelo = $modelos->fetch()) {
+                          $selected = ($vehiculo_edit['modelo_id'] == $modelo['id']) ? 'selected' : '';
+                          echo '<option value="' . $modelo['id'] . '" ' . $selected . '>' . htmlspecialchars($modelo['nombre']) . '</option>';
+                        }
+                        ?>
+                      <?php endif; ?>
                     </select>
                   </div>
                 <div class="col-md-3">
               <label for="anio" class="form-label">Año *</label>
               <input type="number" class="form-control" id="anio" name="anio" 
                 min="1940" max="2025" 
+                value="<?= $es_edicion ? htmlspecialchars($vehiculo_edit['anio']) : '' ?>"
                 title="Debe estar entre 1940 y 2025" required>
               </div>
                 <div class="col-md-3">
                   <label for="patente" class="form-label">Patente *</label>
                   <input type="text" class="form-control" id="patente" name="patente" 
+                    value="<?= $es_edicion ? htmlspecialchars($vehiculo_edit['patente']) : '' ?>"
                     pattern="[A-Za-z]{2,3}[0-9]{3}[A-Za-z]{2}|[A-Za-z]{3}[0-9]{3}" 
                     title="Formato: AB123CD o ABC123" 
                     style="text-transform: uppercase" required>
@@ -160,11 +194,14 @@
                   <label for="kilometraje" class="form-label">Kilometraje (opcional)</label>
                   <input type="number" class="form-control" id="kilometraje" name="kilometraje" 
                         min="0" max="9999999" step="1" 
+                        value="<?= $es_edicion && $vehiculo_edit['kilometraje'] ? htmlspecialchars($vehiculo_edit['kilometraje']) : '' ?>"
                         placeholder="Ej: 125000">
                   <small class="form-text text-muted">Ingrese el kilometraje actual del vehículo en kilómetros.</small>
                   </div>
               </div>
-                <button type="submit" class="btn btn-info">Registrar Vehículo</button>
+                <button type="submit" class="btn btn-info">
+                  <?= $es_edicion ? 'Actualizar' : 'Registrar' ?> Vehículo
+                </button>
                 <a href="listar_vehiculos.php" class="btn btn-secondary">Ver Vehículos Registrados</a>
               </form>
             </div>

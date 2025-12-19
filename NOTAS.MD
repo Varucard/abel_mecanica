@@ -7,9 +7,9 @@ Vista para el cliente:
 
 Modulo Vehiculos:
 Vista para vehiculo:
-  - Poder editar un vehiculo de cliente.
   - Detalles del vehiculo.
   - Imagenes.
+  - Como no puedo eliminar vehiculos por la asociación con Ordenes, deberia de poder desactivarlos.
 
 Modulo de Ordenes
   - Estados de orden => Aprobada, en  revisión, etc. (Revisar BD).

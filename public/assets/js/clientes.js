@@ -1,7 +1,7 @@
 $(document).ready(function() {
   $('#tabla_clientes').DataTable({
     language: {
-      url: '//cdn.datatables.net/plug-ins/1.13.7/i18n/es-AR.json'
+      url: 'https://cdn.datatables.net/plug-ins/1.13.7/i18n/es-AR.json'
     },
     order: [[1, 'asc']]
   });

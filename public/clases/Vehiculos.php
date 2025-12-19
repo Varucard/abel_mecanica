@@ -99,6 +99,34 @@ class Vehiculos {
     }
   }
 
+  public function actualizar() {
+    global $conn;
+    try {
+      $sql = "UPDATE vehiculos SET cliente_id = ?, marca_id = ?, modelo_id = ?, anio = ?, patente = ?, kilometraje = ? WHERE id = ?";
+      $stmt = $conn->prepare($sql);
+      
+      $km = ($this->kilometraje !== null && $this->kilometraje !== '' && $this->kilometraje > 0) ? $this->kilometraje : null;
+      
+      return $stmt->execute([$this->cliente_id, $this->marca_id, $this->modelo_id, $this->anio, $this->patente, $km, $this->id]);
+    } catch (PDOException $e) {
+      if ($e->getCode() == 23000) {
+        throw new Exception("La patente ya corresponde a otro vehículo en el sistema.");
+      }
+      throw new Exception("Error al actualizar el vehículo: " . $e->getMessage());
+    }
+  }
+
+  public static function obtenerPorId($id) {
+    global $conn;
+    $sql = "SELECT * FROM vehiculos WHERE id = ? AND estado = 'activo'";
+    $stmt = $conn->prepare($sql);
+    
+    if ($stmt->execute([$id])) {
+      return $stmt->fetch(PDO::FETCH_ASSOC);
+    }
+    return null;
+  }
+
   public static function obtenerTodos() {
     global $conn;
     $sql = "SELECT v.id, v.patente, v.anio, v.kilometraje, CONCAT(p.nombre, ' ', p.apellido) AS cliente,
@@ -130,7 +158,7 @@ class Vehiculos {
 
   public static function contarPorCliente($cliente_id) {
     global $conn;
-    $sql = "SELECT COUNT(*) as total FROM vehiculos WHERE cliente_id = ? AND v.estado = 'activo'";
+    $sql = "SELECT COUNT(*) as total FROM vehiculos WHERE cliente_id = ? AND estado = 'activo'";
     $stmt = $conn->prepare($sql);
     
     if ($stmt->execute([$cliente_id])) {
