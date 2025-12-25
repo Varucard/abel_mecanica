@@ -7,6 +7,7 @@
       <a href="registrar_repuesto.php">Repuestos</a>
       <a href="registrar_marcas.php">Marcas</a>
       <a href="registrar_modelos.php">Modelos</a>
+      <a href="configurar_sistema.php">Sistema</a>
     </div>
   </div>
   <div class="dropdown flex-fill">
