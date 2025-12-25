@@ -3,11 +3,26 @@ $(document).ready(function () {
   // ===============================
   // Inicializar Select2
   // ===============================
-  if ($('.select2').length) {
-    $('.select2').select2({
-      width: '100%'
-    });
-  }
+  // Vehículo (single)
+  $('#vehiculo_id').select2({
+    placeholder: 'Seleccione un vehículo',
+    allowClear: true,
+    width: '100%'
+  });
+
+  // Servicios (multiple)
+  $('#servicio_id').select2({
+    placeholder: 'Seleccione uno o más servicios',
+    allowClear: true,
+    width: '100%'
+  });
+
+  // Repuestos (multiple)
+  $('#repuesto_id').select2({
+    placeholder: 'Seleccione uno o más repuestos',
+    allowClear: true,
+    width: '100%'
+  });
 
   // ===============================
   // Inicializar DataTable

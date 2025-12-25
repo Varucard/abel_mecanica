@@ -4,10 +4,24 @@ function esEdicionPorURL() {
 }
 
 $(document).ready(function() {
-  // Inicializar Select2 para clientes
-  if ($('.select2').length) {
-    $('.select2').select2();
-  }
+  // Inicializar Select2 con placeholders
+  $('#cliente_id').select2({
+    placeholder: 'Seleccione un cliente',
+    allowClear: true,
+    width: '100%'
+  });
+
+  $('#marca_id').select2({
+    placeholder: 'Seleccione una marca',
+    allowClear: true,
+    width: '100%'
+  });
+
+  $('#modelo_id').select2({
+    placeholder: 'Seleccione un modelo',
+    allowClear: true,
+    width: '100%'
+  });
 
   // Ocultar alerta de éxito después de 10 segundos
   if ($('#success-alert').length) {
@@ -16,11 +30,10 @@ $(document).ready(function() {
 
   // Verificar si cliente ya tiene vehículos al enviar el formulario
   $('#form_vehiculo').on('submit', function(e) {
-    var cliente_id  = $('#cliente_id').val();
+    var cliente_id = $('#cliente_id').val();
 
     // Si estamos en EDICIÓN (URL tiene ?id=...), NO mostramos mensaje
     if (esEdicionPorURL()) {
-      // console.log('MODO EDICIÓN: no se verifica cantidad de vehículos.');
       return true; // dejamos que el form se envíe normalmente
     }
 
@@ -66,11 +79,20 @@ $(document).ready(function() {
         dataType: 'json',
         success: function(data) {
           var modeloSelect = $('#modelo_id');
-          modeloSelect.empty().append('<option value="">Seleccione un modelo</option>');
+          
+          // Limpiar y habilitar
+          modeloSelect.empty().append('<option value=""></option>');
           modeloSelect.prop('disabled', false);
           
           $.each(data, function(index, modelo) {
             modeloSelect.append('<option value="' + modelo.id + '">' + modelo.nombre + '</option>');
+          });
+
+          // Re-inicializar Select2 para que tome el placeholder
+          modeloSelect.select2({
+            placeholder: 'Seleccione un modelo',
+            allowClear: true,
+            width: '100%'
           });
         },
         error: function(xhr, status, error) {
@@ -82,8 +104,13 @@ $(document).ready(function() {
     } else {
       $('#modelo_id')
         .empty()
-        .append('<option value="">Seleccione una marca primero</option>')
-        .prop('disabled', true);
+        .append('<option value=""></option>')
+        .prop('disabled', true)
+        .select2({
+          placeholder: 'Seleccione una marca primero',
+          allowClear: true,
+          width: '100%'
+        });
     }
   });
 });

@@ -384,10 +384,128 @@ body.dark-mode .card-header.bg-white {
   margin-bottom: 15px; /* Espacio entre los botones y la tabla */
 }
 
-/* El botón "Modo claro" */
-#btnDarkMode {
-  /* position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 1000; */
+/* === Select2 === */
+.select2-container {
+  width: 100% !important;
+}
+
+/* === Select2 - Modo CLARO (por defecto) === */
+
+/* Caja cerrada (single y multiple) */
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+  background-color: #ffffff;
+  border-color: #ced4da;
+}
+
+/* Texto dentro del cuadro cerrado */
+.select2-container--default .select2-selection--single .select2-selection__rendered,
+.select2-container--default .select2-selection--multiple .select2-selection__rendered {
+  color: #212529;
+}
+
+/* Placeholder */
+.select2-container--default .select2-selection--single .select2-selection__placeholder,
+.select2-container--default .select2-selection--multiple .select2-selection__placeholder {
+  color: #6c757d;
+}
+
+/* Dropdown (lista de opciones) */
+.select2-dropdown {
+  background-color: #ffffff;
+  border-color: #ced4da;
+}
+
+/* Cada opción */
+.select2-results__option {
+  color: #212529;
+}
+
+/* Opción resaltada (hover) */
+.select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: #0d6efd;
+  color: #ffffff;
+}
+
+/* Tags seleccionados en multiple */
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+  background-color: #e9ecef;
+  border-color: #ced4da;
+  color: #212529;
+}
+
+/* === Select2 - Modo OSCURO === */
+
+/* Caja cerrada (single y multiple) */
+body.dark-mode .select2-container--default .select2-selection--single,
+body.dark-mode .select2-container--default .select2-selection--multiple {
+  background-color: #111827;
+  border-color: #4b5563;
+}
+
+/* Texto dentro del cuadro cerrado */
+body.dark-mode .select2-container--default .select2-selection--single .select2-selection__rendered,
+body.dark-mode .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+  color: #e5e7eb;
+}
+
+/* Placeholder en modo oscuro */
+body.dark-mode .select2-container--default .select2-selection--single .select2-selection__placeholder,
+body.dark-mode .select2-container--default .select2-selection--multiple .select2-selection__placeholder {
+  color: #9ca3af;
+}
+
+/* Dropdown (lista de opciones) */
+body.dark-mode .select2-dropdown {
+  background-color: #111827;
+  border-color: #4b5563;
+}
+
+/* Cada opción */
+body.dark-mode .select2-results__option {
+  color: #e5e7eb !important;
+}
+
+/* Opción resaltada (hover) en modo oscuro */
+body.dark-mode .select2-container--default .select2-results__option--highlighted[aria-selected] {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+
+/* Tags seleccionados en multiple (modo oscuro) */
+body.dark-mode .select2-container--default .select2-selection--multiple .select2-selection__choice {
+  background-color: #374151;
+  border-color: #4b5563;
+  color: #e5e7eb;
+}
+
+/* Botón "X" para quitar tag en multiple */
+body.dark-mode .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+  color: #e5e7eb;
+}
+
+body.dark-mode .select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+  color: #ffffff;
+}
+
+/* === Selects nativos (Vehículo, Servicios, Repuestos, etc.) === */
+select.form-control,
+select.form-select {
+  background-color: #ffffff;
+  color: #212529;
+}
+
+/* En modo oscuro, forzamos buen contraste */
+body.dark-mode select.form-control,
+body.dark-mode select.form-select {
+  background-color: #111827;
+  color: #e5e7eb;
+  border-color: #4b5563;
+}
+
+/* Opciones dentro del select nativo */
+body.dark-mode select.form-control option,
+body.dark-mode select.form-select option {
+  background-color: #111827;
+  color: #e5e7eb;
 }

@@ -52,53 +52,25 @@ if (isset($_GET['id'])) {
 </head>
 <body>
 
-<div class="container my-4">
-  <div class="card shadow">
-
+<div class="container mt-4">
+  <div class="card">
     <div class="card-header bg-warning text-dark">
-      <h1 class="mb-0 d-flex align-items-center gap-3">
+      <h1 class="mb-0">
         <?= $orden ? 'Editar Orden de Servicio' : 'Crear Orden de Servicio' ?>
         <img src="../assets/img/logo.png" style="height:60px;width:60px;border-radius:50%">
-        <button id="btnDarkMode" class="btn btn-sm btn-outline-dark ms-auto">🌙 Modo oscuro</button>
+        <button id="btnDarkMode"
+                class="btn btn-sm btn-outline-light"
+                type="button">
+              🌙 Modo oscuro
+        </button>
       </h1>
     </div>
 
     <div class="card-body">
 
       <!-- Menú -->
-        <div class="btn-group w-100" role="group" style="gap: 5px;">
-          <div class="dropdown flex-fill">
-            <a href="#" class="btn btn-primary w-100">🏠 Inicio</a>
-            <div class="dropdown-menu">
-              <a href="registrar_servicio.php">Servicios</a>
-              <a href="registrar_repuesto.php">Repuestos</a>
-              <a href="registrar_marcas.php">Marcas</a>
-              <a href="registrar_modelos.php">Modelos</a>
-            </div>
-          </div>
-          <div class="dropdown flex-fill">
-            <a href="#" class="btn btn-success w-100">👤 Clientes</a>
-            <div class="dropdown-menu">
-              <a href="registrar_cliente.php">Registrar Cliente</a>
-              <a href="listar_clientes.php">Ver Clientes</a>
-            </div>
-          </div>
-          <div class="dropdown flex-fill">
-            <a href="#" class="btn btn-info w-100">🚗 Vehículos</a>
-            <div class="dropdown-menu">
-              <a href="registrar_vehiculo.php">Registrar Vehiculo</a>
-              <a href="listar_vehiculos.php">Ver Vehiculos</a>
-            </div>
-          </div>
-          <div class="dropdown flex-fill">
-            <a href="#" class="btn btn-warning w-100">📝 Ordenes</a>
-            <div class="dropdown-menu">
-              <a href="registrar_orden.php">Registrar Orden</a>
-              <a href="listar_orden.php">Ver Ordenes</a>
-            </div>
-          </div>
-        </div>
-        <!-- Fin menú -->
+      <?php require_once '../views/navbar.php'; ?>
+      <!-- Fin menú -->
 
       <!-- FORMULARIO -->
       <div class="card shadow-sm">
@@ -116,7 +88,7 @@ if (isset($_GET['id'])) {
             <!-- Vehículo -->
             <div class="mb-3">
               <label class="form-label">Vehículo *</label>
-              <select class="form-control select2" name="vehiculo_id" required>
+              <select class="form-control select2" name="vehiculo_id" id="vehiculo_id" required>
                 <option value="">Seleccione un vehículo</option>
                 <?php
                 $vehiculos = Vehiculos::obtenerParaSelect();
@@ -134,7 +106,7 @@ if (isset($_GET['id'])) {
             <div class="row mb-3">
               <div class="col-md-6">
                 <label class="form-label">Servicios *</label>
-                <select class="form-control select2" name="servicio_id[]" multiple>
+                <select class="form-control select2" name="servicio_id[]" id="servicio_id" multiple>
                   <?php
                   $servicios = OrdenServicios::obtenerServicios();
                   while ($s = $servicios->fetch()):
@@ -151,7 +123,7 @@ if (isset($_GET['id'])) {
 
               <div class="col-md-6">
                 <label class="form-label">Repuestos</label>
-                <select class="form-control select2" name="repuesto_id[]" multiple>
+                <select class="form-control select2" name="repuesto_id[]" id="repuesto_id" multiple>
                   <?php
                   $repuestos = OrdenServicios::obtenerRepuestos();
                   while ($r = $repuestos->fetch()):

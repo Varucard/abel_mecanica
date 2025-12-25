@@ -61,39 +61,8 @@
       </div>
         <div class="card-body">
 
-          <!-- Menú -->
-        <div class="btn-group w-100" role="group" style="gap: 5px;">
-          <div class="dropdown flex-fill">
-            <a href="#" class="btn btn-primary w-100">🏠 Inicio</a>
-            <div class="dropdown-menu">
-              <a href="registrar_servicio.php">Servicios</a>
-              <a href="registrar_repuesto.php">Repuestos</a>
-              <a href="registrar_marcas.php">Marcas</a>
-              <a href="registrar_modelos.php">Modelos</a>
-            </div>
-          </div>
-          <div class="dropdown flex-fill">
-            <a href="#" class="btn btn-success w-100">👤 Clientes</a>
-            <div class="dropdown-menu">
-              <a href="registrar_cliente.php">Registrar Cliente</a>
-              <a href="listar_clientes.php">Ver Clientes</a>
-            </div>
-          </div>
-          <div class="dropdown flex-fill">
-            <a href="#" class="btn btn-info w-100">🚗 Vehículos</a>
-            <div class="dropdown-menu">
-              <a href="registrar_vehiculo.php">Registrar Vehiculo</a>
-              <a href="listar_vehiculos.php">Ver Vehiculos</a>
-            </div>
-          </div>
-          <div class="dropdown flex-fill">
-            <a href="#" class="btn btn-warning w-100">📝 Ordenes</a>
-            <div class="dropdown-menu">
-              <a href="registrar_orden.php">Registrar Orden</a>
-              <a href="listar_orden.php">Ver Ordenes</a>
-            </div>
-          </div>
-        </div>
+        <!-- Menú -->
+        <?php require_once '../views/navbar.php'; ?>
         <!-- Fin menú -->
 
           <!-- Inicio mensajes -->
@@ -131,7 +100,7 @@
                   <div class="col-md-6">
                     <label for="cliente_id" class="form-label">Cliente *</label>
                     <select class="form-control select2" id="cliente_id" name="cliente_id" required>
-                        <option value="">Seleccione un cliente</option>
+                        <option value=""></option>
                         <?php
                         $clientes = Clientes::obtenerTodos($conn);
                         while ($cliente = $clientes->fetch()) {
@@ -145,8 +114,8 @@
                   </div>
                   <div class="col-md-6">
                     <label for="marca_id" class="form-label">Marca *</label>
-                    <select class="form-control" id="marca_id" name="marca_id" required>
-                      <option value="">Seleccione una marca</option>
+                    <select class="form-control select2-marca" id="marca_id" name="marca_id" required>
+                      <option value=""></option>
                       <?php
                       $marcas = Vehiculos::obtenerMarcas();
                       while ($marca = $marcas->fetch()) {
@@ -160,8 +129,8 @@
                 <div class="row mb-3">
                   <div class="col-md-6">
                     <label for="modelo_id" class="form-label">Modelo *</label>
-                    <select class="form-control" id="modelo_id" name="modelo_id" required <?= !$es_edicion ? 'disabled' : '' ?>>
-                      <option value="">Seleccione una marca primero</option>
+                    <select class="form-control select2-modelo" id="modelo_id" name="modelo_id" required <?= !$es_edicion ? 'disabled' : '' ?>>
+                      <option value=""></option>
                       <?php if ($es_edicion): ?>
                         <?php
                         $modelos = Vehiculos::obtenerModelosPorMarca($vehiculo_edit['marca_id']);
@@ -173,32 +142,32 @@
                       <?php endif; ?>
                     </select>
                   </div>
-                <div class="col-md-3">
-              <label for="anio" class="form-label">Año *</label>
-              <input type="number" class="form-control" id="anio" name="anio" 
-                min="1940" max="2025" 
-                value="<?= $es_edicion ? htmlspecialchars($vehiculo_edit['anio']) : '' ?>"
-                title="Debe estar entre 1940 y 2025" required>
-              </div>
-                <div class="col-md-3">
-                  <label for="patente" class="form-label">Patente *</label>
-                  <input type="text" class="form-control" id="patente" name="patente" 
-                    value="<?= $es_edicion ? htmlspecialchars($vehiculo_edit['patente']) : '' ?>"
-                    pattern="[A-Za-z]{2,3}[0-9]{3}[A-Za-z]{2}|[A-Za-z]{3}[0-9]{3}" 
-                    title="Formato: AB123CD o ABC123" 
-                    style="text-transform: uppercase" required>
-                </div>
-              </div>
-              <div class="mb-3">
-                <div class="col-md-6">
-                  <label for="kilometraje" class="form-label">Kilometraje (opcional)</label>
-                  <input type="number" class="form-control" id="kilometraje" name="kilometraje" 
-                        min="0" max="9999999" step="1" 
-                        value="<?= $es_edicion && $vehiculo_edit['kilometraje'] ? htmlspecialchars($vehiculo_edit['kilometraje']) : '' ?>"
-                        placeholder="Ej: 125000">
-                  <small class="form-text text-muted">Ingrese el kilometraje actual del vehículo en kilómetros.</small>
+                  <div class="col-md-3">
+                    <label for="anio" class="form-label">Año *</label>
+                    <input type="number" class="form-control" id="anio" name="anio" 
+                      min="1940" max="2025" 
+                      value="<?= $es_edicion ? htmlspecialchars($vehiculo_edit['anio']) : '' ?>"
+                      title="Debe estar entre 1940 y 2025" required>
                   </div>
-              </div>
+                  <div class="col-md-3">
+                    <label for="patente" class="form-label">Patente *</label>
+                    <input type="text" class="form-control" id="patente" name="patente" 
+                      value="<?= $es_edicion ? htmlspecialchars($vehiculo_edit['patente']) : '' ?>"
+                      pattern="[A-Za-z]{2,3}[0-9]{3}[A-Za-z]{2}|[A-Za-z]{3}[0-9]{3}" 
+                      title="Formato: AB123CD o ABC123" 
+                      style="text-transform: uppercase" required>
+                  </div>
+                </div>
+                <div class="mb-3">
+                  <div class="col-md-6">
+                    <label for="kilometraje" class="form-label">Kilometraje (opcional)</label>
+                    <input type="number" class="form-control" id="kilometraje" name="kilometraje" 
+                          min="0" max="9999999" step="1" 
+                          value="<?= $es_edicion && $vehiculo_edit['kilometraje'] ? htmlspecialchars($vehiculo_edit['kilometraje']) : '' ?>"
+                          placeholder="Ej: 125000">
+                    <small class="form-text text-muted">Ingrese el kilometraje actual del vehículo en kilómetros.</small>
+                  </div>
+                </div>
                 <button type="submit" class="btn btn-info">
                   <?= $es_edicion ? 'Actualizar' : 'Registrar' ?> Vehículo
                 </button>
