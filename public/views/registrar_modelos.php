@@ -117,7 +117,7 @@ require_once '../clases/Marcas.php';
                   <td><?= htmlspecialchars($row['marca_nombre']); ?></td>
                   <td><?= htmlspecialchars($row['nombre']); ?></td>
                   <td>
-                    <a href="registrar_modelos.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-warning">Editar</a>
+                    <a href="registrar_modelos.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-primary">Editar</a>
                     <button type="button" class="btn btn-sm btn-danger" 
                             onclick="eliminarModelo(<?= $row['id']; ?>, '<?= htmlspecialchars($row['nombre']); ?>')">
                       Eliminar

@@ -4,25 +4,31 @@ $(document).ready(function () {
   // Inicializar Select2
   // ===============================
   // Vehículo (single)
-  $('#vehiculo_id').select2({
-    placeholder: 'Seleccione un vehículo',
-    allowClear: true,
-    width: '100%'
-  });
+  if ($('#vehiculo_id').length) {
+    $('#vehiculo_id').select2({
+      placeholder: 'Seleccione un vehículo',
+      allowClear: true,
+      width: '100%'
+    });
+  }
 
   // Servicios (multiple)
-  $('#servicio_id').select2({
-    placeholder: 'Seleccione uno o más servicios',
-    allowClear: true,
-    width: '100%'
-  });
+  if ($('#servicio_id').length) {
+    $('#servicio_id').select2({
+      placeholder: 'Seleccione uno o más servicios',
+      allowClear: true,
+      width: '100%'
+    });
+  }
 
   // Repuestos (multiple)
-  $('#repuesto_id').select2({
-    placeholder: 'Seleccione uno o más repuestos',
-    allowClear: true,
-    width: '100%'
-  });
+  if ($('#repuesto_id').length) {
+    $('#repuesto_id').select2({
+      placeholder: 'Seleccione uno o más repuestos',
+      allowClear: true,
+      width: '100%'
+    });
+  }
 
   // ===============================
   // Inicializar DataTable
@@ -49,10 +55,13 @@ $(document).ready(function () {
   }
 
   // ===============================
-  // Ocultar alerta de éxito
+  // Ocultar alerta de éxito/error
   // ===============================
   if ($('#success-alert').length) {
     $('#success-alert').delay(10000).fadeOut('slow');
+  }
+  if ($('#error-alert').length) {
+    $('#error-alert').delay(10000).fadeOut('slow');
   }
 
   // ===============================
@@ -88,19 +97,40 @@ $(document).ready(function () {
   );
 
   // Calcular al cargar (por seguridad)
-  calcularTotal();
+  if ($('input[name="costo"]').length) {
+    calcularTotal();
+  }
+
+  // ===============================
+  // CAMBIO DE ESTADO DESDE EL SELECT
+  // ===============================
+  $(document).on('change', '.estado-orden-select', function () {
+    const id = $(this).data('id');
+    const estado = $(this).val();
+
+    if (!id || !estado) return;
+
+    const labels = {
+      pendiente: 'pendiente',
+      en_proceso: 'en proceso',
+      finalizado: 'finalizada',
+      cancelada: 'cancelada'
+    };
+
+    const label = labels[estado] || estado.replace('_', ' ');
+
+    if (!confirm('¿Desea cambiar el estado de la orden a "' + label + '"?')) {
+      // Si cancela, recargamos para volver al valor original
+      location.reload();
+      return;
+    }
+
+    // Redirigir al procesador
+    window.location.href =
+      '../shields/procesar_orden.php?action=cambiar_estado&id=' +
+      encodeURIComponent(id) +
+      '&estado=' +
+      encodeURIComponent(estado);
+  });
 
 });
-
-// ===============================
-// CAMBIAR ESTADO DE ORDEN
-// ===============================
-function cambiarEstadoOrden(id, estado) {
-  if (confirm('¿Desea marcar esta orden como finalizada?')) {
-    window.location.href =
-      '../../shields/procesar_orden.php?action=cambiar_estado&id=' +
-      id +
-      '&estado=' +
-      estado;
-  }
-}

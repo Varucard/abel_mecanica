@@ -509,3 +509,118 @@ body.dark-mode select.form-select option {
   background-color: #111827;
   color: #e5e7eb;
 }
+
+/* === Select de estado en la tabla de órdenes === */
+.estado-orden-select {
+  font-size: 0.85rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  border-width: 2px; /* Borde un poco más grueso para que se note el color */
+  font-weight: 500;
+  min-width: 140px;
+  background-color: #ffffff; /* Fondo blanco siempre en modo claro */
+  color: #212529;            /* Texto oscuro siempre en modo claro */
+}
+
+/* En modo claro, solo pintamos el BORDE para indicar el estado */
+.estado-orden-select.estado-pendiente { border-color: #ffc107; }
+.estado-orden-select.estado-en_proceso { border-color: #0dcaf0; }
+.estado-orden-select.estado-finalizado { border-color: #198754; }
+.estado-orden-select.estado-cancelada  { border-color: #6c757d; }
+
+/* Forzamos que las opciones sean siempre legibles (fondo blanco, texto negro) */
+.estado-orden-select option {
+  background-color: #ffffff !important;
+  color: #212529 !important;
+}
+
+/* === MODO OSCURO (Aquí sí mantenemos los fondos de colores) === */
+body.dark-mode .estado-orden-select {
+  color: #fff;
+}
+
+body.dark-mode .estado-orden-select.estado-pendiente {
+  background-color: #d97706;
+  border-color: #d97706;
+}
+
+body.dark-mode .estado-orden-select.estado-en_proceso {
+  background-color: #0ea5e9;
+  border-color: #0ea5e9;
+}
+
+body.dark-mode .estado-orden-select.estado-finalizado {
+  background-color: #065f46;
+  border-color: #065f46;
+}
+
+body.dark-mode .estado-orden-select.estado-cancelada {
+  background-color: #4b5563;
+  border-color: #4b5563;
+}
+
+/* Opciones en modo oscuro */
+body.dark-mode .estado-orden-select option {
+  background-color: #1f2933 !important;
+  color: #e5e7eb !important;
+}
+
+.estado-orden-select {
+  min-width: 130px !important;
+  font-size: 0.8rem !important;
+}
+
+/* Achicar letra en columnas específicas de la tabla */
+.col-achicada {
+  font-size: 0.95rem !important; /* Un poco más chica que el estándar */
+  line-height: 1.2;              /* Interlineado más compacto */
+  vertical-align: middle !important;
+}
+
+/* Si querés que en modo oscuro también se mantenga chica */
+body.dark-mode .col-achicada {
+  font-size: 0.95rem !important;
+}
+
+/* Columnas más angostas para Cliente y Vehículo */
+th.col-cliente,
+td.col-cliente {
+  font-size: 0.95rem;
+  line-height: 1.2;
+  max-width: 100px;       /* ajustá este valor a gusto */
+  width: 180px;
+  white-space: normal;    /* permitir salto de línea */
+  word-wrap: break-word;
+}
+
+th.col-vehiculo,
+td.col-vehiculo {
+  font-size: 0.95rem;
+  line-height: 1.2;
+  max-width: 100px;       /* un poquito más ancho por la patente + modelo */
+  width: 200px;
+  white-space: normal;
+  word-wrap: break-word;
+}
+
+/* Opcional: en pantallas chicas, aún más angosto */
+@media (max-width: 1200px) {
+  th.col-cliente, td.col-cliente {
+    max-width: 150px;
+    width: 150px;
+  }
+  th.col-vehiculo, td.col-vehiculo {
+    max-width: 170px;
+    width: 170px;
+  }
+}
+
+/* Columna de acciones: botones en una sola línea */
+td.col-acciones {
+  white-space: nowrap;          /* evita salto de línea */
+}
+
+/* Un pequeño espacio entre los botones */
+td.col-acciones .btn {
+  margin-right: 4px;
+}

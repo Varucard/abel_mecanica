@@ -133,11 +133,11 @@ class OrdenServicios {
 
     try {
       if ($estado === 'finalizado') {
-        $sql = "UPDATE ordenes SET estado = ?, fecha_finalizado = ? WHERE id = ?";
+        $sql = "UPDATE ordenes SET estado = ?, fecha_realizado = ? WHERE id = ?";
         $stmt = $conn->prepare($sql);
         return $stmt->execute([$estado, date('Y-m-d'), $id]);
       } else {
-        $sql = "UPDATE ordenes SET estado = ?, fecha_finalizado = NULL WHERE id = ?";
+        $sql = "UPDATE ordenes SET estado = ?, fecha_realizado = NULL WHERE id = ?";
         $stmt = $conn->prepare($sql);
         return $stmt->execute([$estado, $id]);
       }

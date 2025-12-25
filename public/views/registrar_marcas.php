@@ -98,7 +98,7 @@ require_once '../clases/Marcas.php';
                   <tr>
                     <td><?= htmlspecialchars($row['nombre']); ?></td>
                     <td>
-                      <a href="registrar_marcas.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-warning">Editar</a>
+                      <a href="registrar_marcas.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-primary">Editar</a>
                       <button type="button" class="btn btn-sm btn-danger" onclick="eliminarMarca(<?= $row['id']; ?>, '<?= htmlspecialchars($row['nombre']); ?>')">
                         Eliminar
                       </button>

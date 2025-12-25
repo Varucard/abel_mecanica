@@ -7,16 +7,34 @@ define('SERVICIO_REPUESTO_ID', 1);
 
 /*
 |--------------------------------------------------------------------------
-| 1) CAMBIAR ESTADO
+| 1) CAMBIAR ESTADO (GET)
 |--------------------------------------------------------------------------
+| URL esperada:
+|   ../shields/procesar_orden.php?action=cambiar_estado&id=123&estado=finalizado
 */
 if (
   isset($_GET['action'], $_GET['id'], $_GET['estado']) &&
   $_GET['action'] === 'cambiar_estado'
 ) {
-  $id = (int) $_GET['id'];
+  $id     = (int) $_GET['id'];
   $estado = $_GET['estado'];
 
+  // Validar ID mínimo
+  if ($id <= 0) {
+    ob_end_clean();
+    header("Location: ../views/listar_orden.php?error=orden_invalida");
+    exit;
+  }
+
+  // Validar que el estado sea uno de los permitidos en el ENUM
+  $estadosValidos = ['pendiente', 'en_proceso', 'finalizado', 'cancelado'];
+  if (!in_array($estado, $estadosValidos, true)) {
+    ob_end_clean();
+    header("Location: ../views/listar_orden.php?error=estado_invalido");
+    exit;
+  }
+
+  // Cambiar estado usando la clase de dominio
   if (OrdenServicios::cambiarEstado($id, $estado)) {
     ob_end_clean();
     header("Location: ../views/listar_orden.php?success=estado");
@@ -36,21 +54,24 @@ if (
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
   $id              = isset($_POST['id']) && $_POST['id'] !== '' ? (int) $_POST['id'] : null;
-  $vehiculo_id     = (int) $_POST['vehiculo_id'];
+  $vehiculo_id     = isset($_POST['vehiculo_id']) ? (int) $_POST['vehiculo_id'] : 0;
   $servicio_input  = $_POST['servicio_id'] ?? [];
   $repuesto_input  = $_POST['repuesto_id'] ?? [];
 
   $errors = [];
 
-  if (!$vehiculo_id)
+  if ($vehiculo_id <= 0) {
     $errors[] = "Vehículo inválido";
+  }
 
-  if (count($servicio_input) === 0)
+  if (count($servicio_input) === 0) {
     $errors[] = "Debe seleccionar al menos un servicio";
+  }
 
   if ($errors) {
     ob_end_clean();
-    header("Location: ../views/registrar_orden.php?error=" . urlencode(implode(', ', $errors)) . ($id ? "&id=$id" : ""));
+    $msg = urlencode(implode(', ', $errors));
+    header("Location: ../views/registrar_orden.php?error={$msg}" . ($id ? "&id=$id" : ""));
     exit;
   }
 
@@ -74,13 +95,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       $orden_id = $id;
     } else {
-      // CREAR
+      // CREAR (siempre inicia en 'pendiente')
       $stmt = $conn->prepare(
         "INSERT INTO ordenes (vehiculo_id, estado, total)
          VALUES (?, 'pendiente', 0)"
       );
       $stmt->execute([$vehiculo_id]);
-      $orden_id = $conn->lastInsertId();
+      $orden_id = (int) $conn->lastInsertId();
     }
 
     $total = 0;
@@ -92,19 +113,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     foreach ($servicio_input as $sid) {
       $sid = (int) $sid;
+      if ($sid <= 0) continue;
 
       $stmt_serv->execute([$sid]);
       $serv = $stmt_serv->fetch(PDO::FETCH_ASSOC);
 
-      if (!$serv)
+      if (!$serv) {
         throw new Exception("Servicio ID {$sid} no encontrado");
+      }
 
       $precio = (float) $serv['precio_base'];
       $total += $precio;
 
       $detalle = new OrdenServicios($orden_id, $sid, null, $precio);
-      if (!$detalle->guardar())
+      if (!$detalle->guardar()) {
         throw new Exception("No se pudo agregar servicio");
+      }
     }
 
     /* =========================
@@ -114,19 +138,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     foreach ($repuesto_input as $rid) {
       $rid = (int) $rid;
+      if ($rid <= 0) continue;
 
       $stmt_rep->execute([$rid]);
       $rep = $stmt_rep->fetch(PDO::FETCH_ASSOC);
 
-      if (!$rep)
+      if (!$rep) {
         throw new Exception("Repuesto ID {$rid} no encontrado");
+      }
 
       $precio = (float) $rep['precio'];
       $total += $precio;
 
+      // Usás SERVICIO_REPUESTO_ID como "servicio genérico" para repuestos
       $detalle = new OrdenServicios($orden_id, SERVICIO_REPUESTO_ID, $rid, $precio);
-      if (!$detalle->guardar())
+      if (!$detalle->guardar()) {
         throw new Exception("No se pudo agregar repuesto");
+      }
     }
 
     /* =========================
@@ -142,11 +170,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 
   } catch (Exception $e) {
-    if ($conn->inTransaction())
+    if ($conn->inTransaction()) {
       $conn->rollBack();
+    }
 
     ob_end_clean();
-    header("Location: ../views/registrar_orden.php?error=" . urlencode($e->getMessage()) . ($id ? "&id=$id" : ""));
+    $msg = urlencode($e->getMessage());
+    header("Location: ../views/registrar_orden.php?error={$msg}" . ($id ? "&id=$id" : ""));
     exit;
   }
 }

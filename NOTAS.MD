@@ -35,3 +35,4 @@ Que el Cliente pueda ver como va su auto ingresando como un cliente?
 ¿Agregar mas data de los modelos? - año - motor - etc.
 Capaz generar una clase para ORDEN.
 Eliminar todo el codigo de negocio de las vistas.
+Posible que se pueda eliminar algo que arrastre ids de BD?
