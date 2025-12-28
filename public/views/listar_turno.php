@@ -1,6 +1,21 @@
 <?php
 require_once '../includes/config_database.php';
-require_once '../clases/OrdenServicios.php';
+require_once '../Clases/Turnos.php';
+
+// Procesar cambio de estado rápido vía AJAX
+if (isset($_POST['cambiar_estado'])) {
+  $turno = new Turno();
+  $turno->setId($_POST['id']);
+  $turno->setEstado($_POST['nuevo_estado']);
+  if ($turno->cambiarEstado($conn)) {
+    echo json_encode(['status' => 'success']);
+  } else {
+    echo json_encode(['status' => 'error']);
+  }
+  exit;
+}
+
+$turnos = Turno::obtenerTodos($conn);
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -9,7 +24,7 @@ require_once '../clases/OrdenServicios.php';
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
-  <title>Listado de Órdenes - Taller Mecánico</title>
+  <title>Agenda de Turnos - Taller Mecánico</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="../assets/css/styles.css">
@@ -19,7 +34,7 @@ require_once '../clases/OrdenServicios.php';
   <div class="container">
     <div class="card">
       <div class="card-header bg-warning text-dark">
-        <h1 class="mb-0">Listado de Órdenes de Servicio
+        <h1 class="mb-0">Agenda de Turnos
           <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
           <button id="btnDarkMode"
             class="btn btn-sm btn-outline-light"
@@ -40,13 +55,13 @@ require_once '../clases/OrdenServicios.php';
             <?php
             switch ($_GET['success']) {
               case 'create':
-                echo 'Orden creada exitosamente';
+                echo 'Turno agendado exitosamente';
                 break;
               case 'update':
-                echo 'Orden actualizada exitosamente';
+                echo 'Turno actualizado exitosamente';
                 break;
               case 'estado':
-                echo 'Estado de la orden actualizado';
+                echo 'Estado del turno actualizado';
                 break;
               default:
                 echo 'Operación exitosa';
@@ -61,13 +76,13 @@ require_once '../clases/OrdenServicios.php';
             <?php
             switch ($_GET['error']) {
               case 'estado':
-                echo 'Error al cambiar el estado de la orden';
+                echo 'Error al cambiar el estado del turno';
                 break;
               case 'estado_invalido':
                 echo 'Estado inválido';
                 break;
-              case 'orden_invalida':
-                echo 'Orden no encontrada';
+              case 'turno_invalido':
+                echo 'Turno no encontrado';
                 break;
               default:
                 echo htmlspecialchars($_GET['error']);
@@ -77,66 +92,54 @@ require_once '../clases/OrdenServicios.php';
           </div>
         <?php endif; ?>
 
-        <!-- Tabla de Órdenes -->
+        <!-- Tabla de Turnos -->
         <div class="card mt-4">
           <div class="card-header bg-light d-flex justify-content-between align-items-center">
-            <h4 class="mb-0">Órdenes Registradas</h4>
-            <a href="registrar_orden.php" class="btn btn-warning">+ Crear Orden</a>
+            <h4 class="mb-0">Turnos Registrados</h4>
+            <a href="registrar_turno.php" class="btn btn-warning">+ Nuevo Turno</a>
           </div>
           <div class="card-body">
-            <table id="tabla_ordenes" class="table table-striped table-bordered">
+            <table id="tabla_turnos" class="table table-striped table-bordered">
               <thead>
                 <tr>
+                  <th>Fecha/Hora</th>
                   <th class="col-cliente">Cliente</th>
                   <th class="col-vehiculo">Vehículo</th>
-                  <th>Servicio(s) - Repuesto(s)</th>
-                  <th>Costo</th>
-                  <th>Fecha</th>
+                  <th>Descripción</th>
                   <th>Estado</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                <?php
-                $ordenes = OrdenServicios::obtenerTodas();
-                while ($row = $ordenes->fetch()) {
-                  $claseEstadoFila = 'estado-' . $row['estado']; // ej: estado-pendiente
+                <?php while ($t = $turnos->fetch()):
+                  $claseEstadoFila = 'estado-' . $t['estado'];
                 ?>
                   <tr>
-                    <td class="col-achicada"><?= htmlspecialchars($row['cliente']); ?></td>
-                    <td class="col-achicada"><?= htmlspecialchars($row['vehiculo']); ?></td>
                     <td>
-                      <?php if (!empty($row['servicios'])): ?>
-                        <?= htmlspecialchars($row['servicios']); ?>
-                      <?php endif; ?>
-
-                      <?php if (!empty($row['repuestos'])): ?>
-                        <div class="small text-muted mt-1">
-                          <strong>Repuestos:</strong> <?= htmlspecialchars($row['repuestos']); ?>
-                        </div>
-                      <?php endif; ?>
+                      <strong><?= date('d/m/Y', strtotime($t['fecha'])) ?></strong><br>
+                      <small class="text-muted"><?= date('H:i', strtotime($t['hora'])) ?> hs</small>
                     </td>
-                    <td>$<?= number_format($row['costo'], 2, ',', '.'); ?></td>
-                    <td><?= date('d/m/Y', strtotime($row['created_at'])); ?></td>
+                    <td class="col-achicada"><?= htmlspecialchars($t['cliente_nombre']) ?></td>
+                    <td class="col-achicada"><?= htmlspecialchars($t['vehiculo_info']) ?></td>
+                    <td><small><?= htmlspecialchars($t['descripcion']) ?></small></td>
 
-                    <!-- Estado como select con color -->
                     <td>
-                      <select class="form-select form-select-sm estado-orden-select <?= $claseEstadoFila; ?>"
-                        data-id="<?= $row['id']; ?>">
-                        <option value="pendiente" <?= $row['estado'] === 'pendiente'  ? 'selected' : ''; ?>>Pendiente</option>
-                        <option value="en_proceso" <?= $row['estado'] === 'en_proceso' ? 'selected' : ''; ?>>En proceso</option>
-                        <option value="finalizado" <?= $row['estado'] === 'finalizado' ? 'selected' : ''; ?>>Finalizado</option>
-                        <option value="cancelado" <?= $row['estado'] === 'cancelado'  ? 'selected' : ''; ?>>Cancelado</option>
+                      <select class="form-select form-select-sm estado-turno-select <?= $claseEstadoFila; ?>"
+                        data-id="<?= $t['id']; ?>">
+                        <option value="pendiente" <?= $t['estado'] === 'pendiente'  ? 'selected' : ''; ?>>Pendiente</option>
+                        <option value="confirmado" <?= $t['estado'] === 'confirmado' ? 'selected' : ''; ?>>Confirmado</option>
+                        <option value="realizado" <?= $t['estado'] === 'realizado'  ? 'selected' : ''; ?>>Realizado</option>
+                        <option value="cancelado" <?= $t['estado'] === 'cancelado'  ? 'selected' : ''; ?>>Cancelado</option>
+                        <option value="no_asistio" <?= $t['estado'] === 'no_asistio' ? 'selected' : ''; ?>>No Asistió</option>
                       </select>
                     </td>
 
-                    <!-- Acciones -->
                     <td class="col-acciones">
-                      <a href="../shields/procesar_orden.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">Editar</a>
-                      <a href="ver_presupuesto.php?id=<?= $row['id']; ?>" class="btn btn-sm btn-info">Ver</a>
+                      <a href="registrar_turno.php?id=<?= $t['id'] ?>" class="btn btn-sm btn-primary">Editar</a>
+                      <a href="registrar_turno.php?id=<?= $t['id']; ?>" class="btn btn-sm btn-info">Ver</a>
                     </td>
                   </tr>
-                <?php } ?>
+                <?php endwhile; ?>
               </tbody>
             </table>
           </div>
@@ -149,7 +152,7 @@ require_once '../clases/OrdenServicios.php';
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.datatables.net/1.13.7/js/jquery.dataTables.min.js"></script>
-  <script src="../assets/js/ordenes.js"></script>
+  <script src="../assets/js/turnos.js"></script>
   <script src="../assets/js/styles.js"></script>
 
 </body>

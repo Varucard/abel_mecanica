@@ -624,3 +624,34 @@ td.col-acciones {
 td.col-acciones .btn {
   margin-right: 4px;
 }
+
+/* Estados de turnos */
+.estado-turno-select.estado-pendiente {
+  background-color: #fff3cd !important;
+  color: #856404 !important;
+  border-color: #ffc107 !important;
+}
+
+.estado-turno-select.estado-confirmado {
+  background-color: #cfe2ff !important;
+  color: #084298 !important;
+  border-color: #0dcaf0 !important;
+}
+
+.estado-turno-select.estado-realizado {
+  background-color: #d1e7dd !important;
+  color: #0f5132 !important;
+  border-color: #198754 !important;
+}
+
+.estado-turno-select.estado-cancelado {
+  background-color: #f8d7da !important;
+  color: #842029 !important;
+  border-color: #dc3545 !important;
+}
+
+.estado-turno-select.estado-no_asistio {
+  background-color: #e2e3e5 !important;
+  color: #41464b !important;
+  border-color: #6c757d !important;
+}

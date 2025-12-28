@@ -1,67 +1,78 @@
 <?php
 require_once 'Personas.php';
 
-class Clientes extends Personas {
+class Clientes extends Personas
+{
   private $telefono;
   private $direccion;
   private $id_cliente;
   private $persona_id; // ID en la tabla personas (vinculado a la clase base)
 
-  public function __construct($nombre = null, $apellido = null, $dni = null, $telefono = null, $direccion = null, $email = null) {
+  public function __construct($nombre = null, $apellido = null, $dni = null, $telefono = null, $direccion = null, $email = null)
+  {
     parent::__construct($nombre, $apellido, $dni, $email); // <-- agregamos email al constructor padre
     $this->telefono = $telefono;
     $this->direccion = $direccion;
   }
 
   // Persona_id getter/setter
-  public function getPersonaId() {
+  public function getPersonaId()
+  {
     return $this->persona_id;
   }
 
-  public function setPersonaId($persona_id) {
+  public function setPersonaId($persona_id)
+  {
     $this->persona_id = $persona_id;
     // mantener también el id de la clase base (personas.id)
     $this->setId($persona_id);
   }
 
   // Getters
-  public function getTelefono() {
+  public function getTelefono()
+  {
     return $this->telefono;
   }
 
-  public function getDireccion() {
+  public function getDireccion()
+  {
     return $this->direccion;
   }
 
-  public function getIdCliente() {
+  public function getIdCliente()
+  {
     return $this->id_cliente;
   }
 
   // Setters
-  public function setTelefono($telefono) {
+  public function setTelefono($telefono)
+  {
     $this->telefono = $telefono;
   }
 
-  public function setDireccion($direccion) {
+  public function setDireccion($direccion)
+  {
     $this->direccion = $direccion;
   }
 
-  public function setIdCliente($id_cliente) {
+  public function setIdCliente($id_cliente)
+  {
     $this->id_cliente = $id_cliente;
   }
 
   // Método CRUD: Create
-  public function guardar($conn) {
+  public function guardar($conn)
+  {
     $conn->beginTransaction();
-      
+
     try {
       // Primero guardar la persona (ahora con email)
       $sql_persona = "INSERT INTO personas (nombre, apellido, dni, email) VALUES (?, ?, ?, ?)";
       $stmt_persona = $conn->prepare($sql_persona);
-      
+
       // Si email viene vacío, lo guardamos como NULL
       $email = $this->getEmail() !== '' ? $this->getEmail() : null;
-      
+
       if (!$stmt_persona->execute([$this->getNombre(), $this->getApellido(), $this->getDni(), $email]))
         throw new Exception("Error al insertar persona");
 
@@ -74,7 +85,7 @@ class Clientes extends Personas {
       // Luego guardar el cliente
       $sql_cliente = "INSERT INTO clientes (persona_id, telefono, direccion) VALUES (?, ?, ?)";
       $stmt_cliente = $conn->prepare($sql_cliente);
-      
+
       if (!$stmt_cliente->execute([$persona_id, $this->telefono, $this->direccion]))
         throw new Exception("Error al insertar cliente");
 
@@ -96,7 +107,8 @@ class Clientes extends Personas {
   }
 
   // Método CRUD: Read (obtener todos)
-  public static function obtenerTodos($conn) {
+  public static function obtenerTodos($conn)
+  {
     $sql = "SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, p.email, c.telefono, c.direccion, c.estado
             FROM clientes c 
             INNER JOIN personas p ON c.persona_id = p.id 
@@ -105,13 +117,14 @@ class Clientes extends Personas {
   }
 
   // Método CRUD: Read (obtener uno por ID)
-  public static function obtenerPorId($conn, $id) {
+  public static function obtenerPorId($conn, $id)
+  {
     $sql = "SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, p.email, c.telefono, c.direccion, c.estado
             FROM clientes c 
             INNER JOIN personas p ON c.persona_id = p.id 
             WHERE c.id = ?";
     $stmt = $conn->prepare($sql);
-    
+
     if ($stmt->execute([$id]))
       return $stmt->fetch();
 
@@ -119,7 +132,8 @@ class Clientes extends Personas {
   }
 
   // Método CRUD: Update
-  public function actualizar($conn, $id_cliente) {
+  public function actualizar($conn, $id_cliente)
+  {
     $conn->beginTransaction();
 
     try {
@@ -152,15 +166,13 @@ class Clientes extends Personas {
 
       $conn->commit();
       return true;
-
     } catch (PDOException $e) {
       $conn->rollback();
 
-      if ($e->getCode() == 23000) 
+      if ($e->getCode() == 23000)
         throw new Exception("El DNI ya existe en otro cliente.");
 
       throw new Exception("Error de base de datos: " . $e->getMessage());
-
     } catch (Exception $e) {
       $conn->rollback();
       throw $e;
@@ -168,21 +180,23 @@ class Clientes extends Personas {
   }
 
   // Método CRUD: Delete
-  public static function eliminar($conn, $id) {
+  public static function eliminar($conn, $id)
+  {
     // Al tener FOREIGN KEY con CASCADE, solo necesitamos eliminar la persona
     $sql = "DELETE p FROM personas p
             INNER JOIN clientes c ON p.id = c.persona_id
             WHERE c.id = ?";
     $stmt = $conn->prepare($sql);
-    
+
     return $stmt->execute([$id]);
   }
 
   // Cambiar estado del cliente
-  public static function cambiarEstado($conn, $id, $estado) {
+  public static function cambiarEstado($conn, $id, $estado)
+  {
     $sql = "UPDATE clientes SET estado = ? WHERE id = ?";
     $stmt = $conn->prepare($sql);
-    
+
     return $stmt->execute([$estado, $id]);
   }
 }

@@ -19,16 +19,16 @@ $config_trabajo = [
   'validez' => 10,
   'garantia' => 10,
   'tiempo_estimado' => 3,
-  'forma_pago' => array (
-  0 => 'Contado',
-  1 => 'Tarjeta de Crédito',
-  2 => 'Tarjeta de Débito',
-  3 => 'Transferencia Bancaria',
-  4 => 'Mercado Pago',
-),
-  'observaciones' => array (
-  0 => 'Tiempo estimado de reparación: 2-4 días hábiles desde la aceptación y recepción de repuestos.',
-  1 => 'Los precios están sujetos a modificación si surgen imprevistos o variaciones en repuestos.',
-),
+  'forma_pago' => array(
+    0 => 'Contado',
+    1 => 'Tarjeta de Crédito',
+    2 => 'Tarjeta de Débito',
+    3 => 'Transferencia Bancaria',
+    4 => 'Mercado Pago',
+  ),
+  'observaciones' => array(
+    0 => 'Tiempo estimado de reparación: 2-4 días hábiles desde la aceptación y recepción de repuestos.',
+    1 => 'Los precios están sujetos a modificación si surgen imprevistos o variaciones en repuestos.',
+  ),
   'mensaje_legal' => 'Este documento no es una factura y no posee validez fiscal.'
 ];

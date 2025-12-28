@@ -1,17 +1,18 @@
 <?php
-  require_once '../includes/config_database.php';
-  require_once '../clases/Clientes.php';
-   
-  $clientes = Clientes::obtenerTodos($conn);
+require_once '../includes/config_database.php';
+require_once '../clases/Clientes.php';
 
-  if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id']) && !isset($_GET['action'])) {
-    $id = intval($_GET['id']);
-    header("Location: registrar_cliente.php?id=" . $id);
-    exit;
-  }
+$clientes = Clientes::obtenerTodos($conn);
+
+if ($_SERVER['REQUEST_METHOD'] === 'GET' && isset($_GET['id']) && !isset($_GET['action'])) {
+  $id = intval($_GET['id']);
+  header("Location: registrar_cliente.php?id=" . $id);
+  exit;
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,6 +26,7 @@
   <!-- Tus estilos (modo claro/oscuro, cards, etc.) -->
   <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
+
 <body>
   <div class="container">
     <div class="card">
@@ -32,8 +34,8 @@
         <h1 class="mb-0">Clientes Registrados
           <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius:50%;">
           <button id="btnDarkMode"
-                  class="btn btn-sm btn-outline-light"
-                  type="button">
+            class="btn btn-sm btn-outline-light"
+            type="button">
             🌙 Modo oscuro
           </button>
         </h1>
@@ -50,7 +52,7 @@
             <strong>¡Cliente eliminado!</strong> El cliente ha sido eliminado exitosamente.
           </div>
         <?php endif; ?>
-        
+
         <?php if (isset($_GET['success']) && $_GET['success'] == 'estado'): ?>
           <div class="alert alert-success alert-dismissible fade show" role="alert" id="success-alert">
             <strong>¡Cambio de estado exitoso!</strong> El estado del cliente ha sido modificado.
@@ -96,11 +98,11 @@
                       <td>
                         <a href="../shields/procesar_cliente.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">Editar</a>
                         <button class="btn btn-sm <?= $row['estado'] == 'activo' ? 'btn-warning' : 'btn-success'; ?>"
-                                onclick="cambiarEstadoCliente(<?= $row['id']; ?>, '<?= $row['estado']; ?>')">
+                          onclick="cambiarEstadoCliente(<?= $row['id']; ?>, '<?= $row['estado']; ?>')">
                           <?= $row['estado'] == 'activo' ? 'Desactivar' : 'Activar'; ?>
                         </button>
                         <button class="btn btn-sm btn-danger"
-                                onclick="eliminarCliente(<?= $row['id']; ?>, '<?= $row['nombre'] . ' ' . $row['apellido']; ?>')">
+                          onclick="eliminarCliente(<?= $row['id']; ?>, '<?= $row['nombre'] . ' ' . $row['apellido']; ?>')">
                           Eliminar
                         </button>
                       </td>
@@ -113,8 +115,8 @@
         </div>
 
       </div> <!-- /.card-body -->
-    </div>   <!-- /.card -->
-  </div>     <!-- /.container -->
+    </div> <!-- /.card -->
+  </div> <!-- /.container -->
 
   <!-- JS externos -->
   <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
@@ -125,4 +127,5 @@
   <script src="../assets/js/clientes.js"></script>
   <script src="../assets/js/styles.js"></script> <!-- aquí va el script de modo oscuro -->
 </body>
+
 </html>

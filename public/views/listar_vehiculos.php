@@ -1,9 +1,10 @@
 <?php
-  require_once '../includes/config_database.php';
-  require_once '../clases/Vehiculos.php';
+require_once '../includes/config_database.php';
+require_once '../clases/Vehiculos.php';
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +14,7 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
+
 <body>
   <div class="container">
     <div class="card">
@@ -20,61 +22,61 @@
         <h1 class="mb-0">Listado de Vehículos
           <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
           <button id="btnDarkMode"
-                  class="btn btn-sm btn-outline-light"
-                  type="button">
+            class="btn btn-sm btn-outline-light"
+            type="button">
             🌙 Modo oscuro
           </button>
         </h1>
       </div>
-        <div class="card-body">
+      <div class="card-body">
 
         <!-- Menú -->
         <?php require_once '../views/navbar.php'; ?>
         <!-- Fin menú -->
 
-          <!-- Tabla de Vehículos -->
-          <div class="card mt-4">
-            <div class="card-header bg-light d-flex justify-content-between align-items-center">
-              <h4 class="mb-0">Vehículos Registrados</h4>
-              <a href="registrar_vehiculo.php" class="btn btn-info">+ Registrar Vehículo</a>
-            </div>
-            <div class="card-body">
-              <table id="tabla_vehiculos" class="table table-striped table-bordered">
-                <thead>
+        <!-- Tabla de Vehículos -->
+        <div class="card mt-4">
+          <div class="card-header bg-light d-flex justify-content-between align-items-center">
+            <h4 class="mb-0">Vehículos Registrados</h4>
+            <a href="registrar_vehiculo.php" class="btn btn-info">+ Registrar Vehículo</a>
+          </div>
+          <div class="card-body">
+            <table id="tabla_vehiculos" class="table table-striped table-bordered">
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Marca</th>
+                  <th>Modelo</th>
+                  <th>Año</th>
+                  <th>Patente</th>
+                  <th>Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                <?php
+                $vehiculos = Vehiculos::obtenerTodos();
+                while ($row = $vehiculos->fetch()) {
+                ?>
                   <tr>
-                    <th>Cliente</th>
-                    <th>Marca</th>
-                    <th>Modelo</th>
-                    <th>Año</th>
-                    <th>Patente</th>
-                    <th>Acciones</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <?php
-                    $vehiculos = Vehiculos::obtenerTodos();
-                    while ($row = $vehiculos->fetch()) {
-                      ?>
-                      <tr>
-                        <td><?php echo htmlspecialchars($row['cliente']); ?></td>
-                        <td><?php echo htmlspecialchars($row['marca']); ?></td>
-                        <td><?php echo htmlspecialchars($row['modelo']); ?></td>
-                        <td><?php echo htmlspecialchars($row['anio']); ?></td>
-                        <td><?php echo htmlspecialchars($row['patente']); ?></td>
-                        <td>
-                          <a href="../shields/procesar_vehiculo.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">Editar</a>
-                          <!-- <a href="ver_presupuesto.php?id=<?= $row['id']; ?>" 
+                    <td><?php echo htmlspecialchars($row['cliente']); ?></td>
+                    <td><?php echo htmlspecialchars($row['marca']); ?></td>
+                    <td><?php echo htmlspecialchars($row['modelo']); ?></td>
+                    <td><?php echo htmlspecialchars($row['anio']); ?></td>
+                    <td><?php echo htmlspecialchars($row['patente']); ?></td>
+                    <td>
+                      <a href="../shields/procesar_vehiculo.php?id=<?= $row['id'] ?>" class="btn btn-sm btn-primary">Editar</a>
+                      <!-- <a href="ver_presupuesto.php?id=<?= $row['id']; ?>" 
                             class="btn btn-sm btn-info">
                             Ver
                           </a> -->
-                        </td>
-                      </tr>
-                  <?php } ?>
-                </tbody>
-              </table>
-            </div>
+                    </td>
+                  </tr>
+                <?php } ?>
+              </tbody>
+            </table>
           </div>
         </div>
+      </div>
     </div>
   </div>
 
@@ -85,4 +87,5 @@
   <script src="../assets/js/styles.js"></script>
 
 </body>
+
 </html>

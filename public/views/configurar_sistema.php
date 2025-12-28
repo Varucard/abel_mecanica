@@ -8,6 +8,7 @@ $trabajo = $config_trabajo;
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +17,7 @@ $trabajo = $config_trabajo;
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
+
 <body>
   <div class="container">
     <div class="card">
@@ -23,8 +25,8 @@ $trabajo = $config_trabajo;
         <h1 class="mb-0">Configuración del Taller
           <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
           <button id="btnDarkMode"
-                  class="btn btn-sm btn-outline-light"
-                  type="button">
+            class="btn btn-sm btn-outline-light"
+            type="button">
             🌙 Modo oscuro
           </button>
         </h1>
@@ -58,41 +60,41 @@ $trabajo = $config_trabajo;
               <div class="row">
                 <div class="col-md-6 mb-3">
                   <label for="nombre" class="form-label">Nombre del Taller *</label>
-                  <input type="text" class="form-control" id="nombre" name="nombre" 
-                         value="<?= htmlspecialchars($taller['nombre']); ?>" required>
+                  <input type="text" class="form-control" id="nombre" name="nombre"
+                    value="<?= htmlspecialchars($taller['nombre']); ?>" required>
                 </div>
                 <div class="col-md-6 mb-3">
                   <label for="cuit" class="form-label">CUIT *</label>
-                  <input type="text" class="form-control" id="cuit" name="cuit" 
-                         value="<?= htmlspecialchars($taller['cuit']); ?>" 
-                         pattern="[0-9\-]{11,13}" 
-                         title="Formato: 20-12345678-9" required>
+                  <input type="text" class="form-control" id="cuit" name="cuit"
+                    value="<?= htmlspecialchars($taller['cuit']); ?>"
+                    pattern="[0-9\-]{11,13}"
+                    title="Formato: 20-12345678-9" required>
                 </div>
               </div>
 
               <div class="mb-3">
                 <label for="direccion" class="form-label">Dirección *</label>
-                <input type="text" class="form-control" id="direccion" name="direccion" 
-                       value="<?= htmlspecialchars($taller['direccion']); ?>" required>
+                <input type="text" class="form-control" id="direccion" name="direccion"
+                  value="<?= htmlspecialchars($taller['direccion']); ?>" required>
               </div>
 
               <div class="row">
                 <div class="col-md-4 mb-3">
                   <label for="telefono" class="form-label">Teléfono *</label>
-                  <input type="text" class="form-control" id="telefono" name="telefono" 
-                         value="<?= htmlspecialchars($taller['telefono']); ?>" required>
+                  <input type="text" class="form-control" id="telefono" name="telefono"
+                    value="<?= htmlspecialchars($taller['telefono']); ?>" required>
                 </div>
                 <div class="col-md-4 mb-3">
                   <label for="whatsapp" class="form-label">WhatsApp *</label>
-                  <input type="text" class="form-control" id="whatsapp" name="whatsapp" 
-                         value="<?= htmlspecialchars($taller['whatsapp']); ?>" 
-                         placeholder="+5491136359867"
-                         title="Formato: +549 + código de área + número (sin espacios)" required>
+                  <input type="text" class="form-control" id="whatsapp" name="whatsapp"
+                    value="<?= htmlspecialchars($taller['whatsapp']); ?>"
+                    placeholder="+5491136359867"
+                    title="Formato: +549 + código de área + número (sin espacios)" required>
                 </div>
                 <div class="col-md-4 mb-3">
                   <label for="email" class="form-label">Email *</label>
-                  <input type="email" class="form-control" id="email" name="email" 
-                         value="<?= htmlspecialchars($taller['email']); ?>" required>
+                  <input type="email" class="form-control" id="email" name="email"
+                    value="<?= htmlspecialchars($taller['email']); ?>" required>
                 </div>
               </div>
             </div>
@@ -107,21 +109,21 @@ $trabajo = $config_trabajo;
               <div class="row">
                 <div class="col-md-4 mb-3">
                   <label for="validez" class="form-label">Validez del Presupuesto (días) *</label>
-                  <input type="number" class="form-control" id="validez" name="validez" 
-                         value="<?= htmlspecialchars($trabajo['validez']); ?>" 
-                         min="1" max="365" required>
+                  <input type="number" class="form-control" id="validez" name="validez"
+                    value="<?= htmlspecialchars($trabajo['validez']); ?>"
+                    min="1" max="365" required>
                 </div>
                 <div class="col-md-4 mb-3">
                   <label for="garantia" class="form-label">Garantía (días) *</label>
-                  <input type="number" class="form-control" id="garantia" name="garantia" 
-                         value="<?= htmlspecialchars($trabajo['garantia']); ?>" 
-                         min="1" max="365" required>
+                  <input type="number" class="form-control" id="garantia" name="garantia"
+                    value="<?= htmlspecialchars($trabajo['garantia']); ?>"
+                    min="1" max="365" required>
                 </div>
                 <div class="col-md-4 mb-3">
                   <label for="tiempo_estimado" class="form-label">Tiempo Estimado (días) *</label>
-                  <input type="number" class="form-control" id="tiempo_estimado" name="tiempo_estimado" 
-                         value="<?= htmlspecialchars($trabajo['tiempo_estimado']); ?>" 
-                         min="1" max="365" required>
+                  <input type="number" class="form-control" id="tiempo_estimado" name="tiempo_estimado"
+                    value="<?= htmlspecialchars($trabajo['tiempo_estimado']); ?>"
+                    min="1" max="365" required>
                 </div>
               </div>
 
@@ -173,4 +175,5 @@ $trabajo = $config_trabajo;
   </script>
 
 </body>
+
 </html>

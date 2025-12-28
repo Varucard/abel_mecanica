@@ -1,6 +1,7 @@
 <?php
 
-class OrdenServicios {
+class OrdenServicios
+{
 
   private $id;
   private $orden_id;
@@ -8,7 +9,8 @@ class OrdenServicios {
   private $repuesto_id;
   private $costo;
 
-  public function __construct($orden_id = null, $servicio_id = null, $repuesto_id = null, $costo = null) {
+  public function __construct($orden_id = null, $servicio_id = null, $repuesto_id = null, $costo = null)
+  {
     $this->orden_id    = $orden_id;
     $this->servicio_id = $servicio_id;
     $this->repuesto_id = $repuesto_id;
@@ -16,21 +18,52 @@ class OrdenServicios {
   }
 
   /* ===================== GETTERS ===================== */
-  public function getId()         { return $this->id; }
-  public function getOrdenId()    { return $this->orden_id; }
-  public function getServicioId() { return $this->servicio_id; }
-  public function getRepuestoId() { return $this->repuesto_id; }
-  public function getCosto()      { return $this->costo; }
+  public function getId()
+  {
+    return $this->id;
+  }
+  public function getOrdenId()
+  {
+    return $this->orden_id;
+  }
+  public function getServicioId()
+  {
+    return $this->servicio_id;
+  }
+  public function getRepuestoId()
+  {
+    return $this->repuesto_id;
+  }
+  public function getCosto()
+  {
+    return $this->costo;
+  }
 
   /* ===================== SETTERS ===================== */
-  public function setId($id)                    { $this->id = $id; }
-  public function setOrdenId($orden_id)         { $this->orden_id = $orden_id; }
-  public function setServicioId($servicio_id)   { $this->servicio_id = $servicio_id; }
-  public function setRepuestoId($repuesto_id)   { $this->repuesto_id = $repuesto_id; }
-  public function setCosto($costo)              { $this->costo = $costo; }
+  public function setId($id)
+  {
+    $this->id = $id;
+  }
+  public function setOrdenId($orden_id)
+  {
+    $this->orden_id = $orden_id;
+  }
+  public function setServicioId($servicio_id)
+  {
+    $this->servicio_id = $servicio_id;
+  }
+  public function setRepuestoId($repuesto_id)
+  {
+    $this->repuesto_id = $repuesto_id;
+  }
+  public function setCosto($costo)
+  {
+    $this->costo = $costo;
+  }
 
   /* ===================== GUARDAR ===================== */
-  public function guardar() {
+  public function guardar()
+  {
     global $conn;
 
     try {
@@ -53,7 +86,6 @@ class OrdenServicios {
       }
 
       return false;
-
     } catch (PDOException $e) {
       throw new Exception(
         "Error al agregar servicio/repuesto a la orden: " . $e->getMessage()
@@ -62,7 +94,8 @@ class OrdenServicios {
   }
 
   /* ===================== OBTENER ÓRDENES ===================== */
-  public static function obtenerTodas() {
+  public static function obtenerTodas()
+  {
     global $conn;
 
     $sql = "
@@ -110,25 +143,29 @@ class OrdenServicios {
   }
 
 
-  public static function verOrdenes() {
+  public static function verOrdenes()
+  {
     return self::obtenerTodas();
   }
 
   /* ===================== SERVICIOS ===================== */
-  public static function obtenerServicios() {
+  public static function obtenerServicios()
+  {
     global $conn;
     $sql = "SELECT * FROM servicios WHERE id != 1 ORDER BY nombre";
     return $conn->query($sql);
   }
 
-  public static function obtenerRepuestos() {
+  public static function obtenerRepuestos()
+  {
     global $conn;
     $sql = "SELECT * FROM repuestos ORDER BY nombre";
     return $conn->query($sql);
   }
 
   /* ===================== CAMBIAR ESTADO ===================== */
-  public static function cambiarEstado($id, $estado) {
+  public static function cambiarEstado($id, $estado)
+  {
     global $conn;
 
     try {

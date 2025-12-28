@@ -1,14 +1,15 @@
 <?php
-  require_once '../includes/config_database.php';
-  require_once '../clases/Servicios.php';
+require_once '../includes/config_database.php';
+require_once '../clases/Servicios.php';
 
-  $serv = null;
-  if (isset($_GET['id'])) {
-    $serv = Servicios::obtenerPorId($conn, $_GET['id']);
-  }
+$serv = null;
+if (isset($_GET['id'])) {
+  $serv = Servicios::obtenerPorId($conn, $_GET['id']);
+}
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -18,6 +19,7 @@
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
+
 <body>
   <div class="container">
     <div class="card">
@@ -25,8 +27,8 @@
         <h1 class="mb-0">Registrar Servicio
           <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
           <button id="btnDarkMode"
-                  class="btn btn-sm btn-outline-light"
-                  type="button">
+            class="btn btn-sm btn-outline-light"
+            type="button">
             🌙 Modo oscuro
           </button>
         </h1>
@@ -64,20 +66,20 @@
                 <div class="col-md-6">
                   <label for="nombre" class="form-label">Nombre *</label>
                   <input type="text" class="form-control" id="nombre" name="nombre" required
-                         value="<?php echo htmlspecialchars($serv['nombre'] ?? ''); ?>">
+                    value="<?php echo htmlspecialchars($serv['nombre'] ?? ''); ?>">
                 </div>
                 <div class="col-md-6">
                   <label for="precio_base" class="form-label">Precio Base *</label>
                   <input type="number" class="form-control" id="precio_base" name="precio_base" step="0.01" required
-                         value="<?php echo htmlspecialchars($serv['precio_base'] ?? ''); ?>">
+                    value="<?php echo htmlspecialchars($serv['precio_base'] ?? ''); ?>">
                 </div>
               </div>
 
               <div class="mb-3">
                 <label for="descripcion" class="form-label">Descripción</label>
                 <textarea class="form-control" id="descripcion" name="descripcion" rows="3"><?php
-                  echo htmlspecialchars($serv['descripcion'] ?? '');
-                ?></textarea>
+                                                                                            echo htmlspecialchars($serv['descripcion'] ?? '');
+                                                                                            ?></textarea>
               </div>
 
               <button type="submit" class="btn btn-success">
@@ -104,19 +106,19 @@
               </thead>
               <tbody>
                 <?php
-                  $servicios = Servicios::obtenerTodos($conn);
-                  while ($row = $servicios->fetch()) {
+                $servicios = Servicios::obtenerTodos($conn);
+                while ($row = $servicios->fetch()) {
                 ?>
-                <tr>
-                  <td><?php echo htmlspecialchars($row['nombre']); ?></td>
-                  <td><?php echo htmlspecialchars($row['descripcion']); ?></td>
-                  <td>$<?php echo number_format($row['precio_base'], 2, ',', '.'); ?></td>
-                  <td>
-                    <a href="registrar_servicio.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary">Editar</a>
-                    <button class="btn btn-sm btn-danger"
-                            onclick="eliminarServicio(<?php echo $row['id']; ?>, '<?php echo $row['nombre']; ?>')">Eliminar</button>
-                  </td>
-                </tr>
+                  <tr>
+                    <td><?php echo htmlspecialchars($row['nombre']); ?></td>
+                    <td><?php echo htmlspecialchars($row['descripcion']); ?></td>
+                    <td>$<?php echo number_format($row['precio_base'], 2, ',', '.'); ?></td>
+                    <td>
+                      <a href="registrar_servicio.php?id=<?php echo $row['id']; ?>" class="btn btn-sm btn-primary">Editar</a>
+                      <button class="btn btn-sm btn-danger"
+                        onclick="eliminarServicio(<?php echo $row['id']; ?>, '<?php echo $row['nombre']; ?>')">Eliminar</button>
+                    </td>
+                  </tr>
                 <?php } ?>
               </tbody>
             </table>
@@ -134,4 +136,5 @@
   <script src="../assets/js/styles.js"></script>
 
 </body>
+
 </html>

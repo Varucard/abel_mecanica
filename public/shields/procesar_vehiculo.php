@@ -41,7 +41,7 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
   // Crear/Actualizar objeto Vehículo
   try {
     $vehiculo = new Vehiculos($marca_id, $modelo_id, $anio, $patente, $cliente_id, $kilometraje);
-    
+
     if ($id) {
       // EDITAR
       $vehiculo->setId($id);

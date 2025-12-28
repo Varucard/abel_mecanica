@@ -1,132 +1,159 @@
 <!doctype html>
 <html lang="es">
+
 <head>
-<meta charset="utf-8" />
-<style>
-  @page {
-    margin: 12mm 15mm;
-  }
-  body {
-    font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
-    font-size: 11px;
-    color: #222;
-    background-color: #ffffff;
-  }
-  .wrapper {
-    width: 100%;
-    max-width: 760px;
-    margin: 0 auto;
-    padding: 12px 16px 18px 16px;
-    border: 0.75pt solid #e0e0e0;
-    border-radius: 8px;
-    background-color: #ffffff;
-  }
-  .header-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 10px;
-  }
-  .header-table td {
-    vertical-align: top;
-    padding: 0;
-  }
-  .logo-cell {
-    width: 70px;
-  }
-  .logo-cell img {
-    width: 60px;
-    height: 60px;
-    border-radius: 8px;
-  }
-  .title {
-    font-size: 16px;
-    font-weight: bold;
-    margin-bottom: 2px;
-  }
-  .meta {
-    font-size: 10px;
-    color: #555;
-  }
-  .box {
-    border: 0.5pt solid #e0e0e0;
-    border-radius: 6px;
-    padding: 6px 8px;
-    font-size: 10px;
-    background-color: #fbfbfb;
-  }
-  .section-title {
-    font-weight: bold;
-    margin-bottom: 4px;
-  }
-  .two-cols {
-    width: 100%;
-    border-collapse: separate;
-    border-spacing: 6px;
-    margin-top: 14px;
-  }
-  .two-cols td {
-    width: 50%;
-    vertical-align: top;
-  }
-  .box-info {
-    min-height: 80px;
-  }
-  .detail-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-top: 16px;
-    font-size: 10px;
-  }
-  .detail-table th,
-  .detail-table td {
-    border-bottom: 0.5pt solid #e0e0e0;
-    padding: 5px 3px;
-  }
-  .detail-table th {
-    font-weight: bold;
-    color: #555;
-  }
-  .right {
-    text-align: right;
-  }
-  tfoot td {
-    font-weight: bold;
-    border-top: 0.75pt solid #999;
-  }
-  .notes {
-    margin-top: 16px;
-    font-size: 10px;
-  }
-  .notes ul {
-    margin: 4px 0 0 14px;
-    padding: 0;
-  }
-  .notes li {
-    margin-bottom: 2px;
-  }
-  .small {
-    font-size: 9px;
-    color: #555;
-  }
-  .legal {
-    margin-top: 16px;
-    padding: 6px 8px;
-    background: #fff8e0;
-    border-left: 2pt solid #f2c94c;
-    font-size: 9px;
-  }
-  .firma-block {
-    margin-top: 70px;
-    font-size: 9px;
-  }
-  .firma-line {
-    margin-top: 10px;
-    border-top: 0.5pt dashed #999;
-    width: 240px;
-    padding-top: 6px;
-  }
-</style>
+  <meta charset="utf-8" />
+  <style>
+    @page {
+      margin: 12mm 15mm;
+    }
+
+    body {
+      font-family: DejaVu Sans, Arial, Helvetica, sans-serif;
+      font-size: 11px;
+      color: #222;
+      background-color: #ffffff;
+    }
+
+    .wrapper {
+      width: 100%;
+      max-width: 760px;
+      margin: 0 auto;
+      padding: 12px 16px 18px 16px;
+      border: 0.75pt solid #e0e0e0;
+      border-radius: 8px;
+      background-color: #ffffff;
+    }
+
+    .header-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 10px;
+    }
+
+    .header-table td {
+      vertical-align: top;
+      padding: 0;
+    }
+
+    .logo-cell {
+      width: 70px;
+    }
+
+    .logo-cell img {
+      width: 60px;
+      height: 60px;
+      border-radius: 8px;
+    }
+
+    .title {
+      font-size: 16px;
+      font-weight: bold;
+      margin-bottom: 2px;
+    }
+
+    .meta {
+      font-size: 10px;
+      color: #555;
+    }
+
+    .box {
+      border: 0.5pt solid #e0e0e0;
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 10px;
+      background-color: #fbfbfb;
+    }
+
+    .section-title {
+      font-weight: bold;
+      margin-bottom: 4px;
+    }
+
+    .two-cols {
+      width: 100%;
+      border-collapse: separate;
+      border-spacing: 6px;
+      margin-top: 14px;
+    }
+
+    .two-cols td {
+      width: 50%;
+      vertical-align: top;
+    }
+
+    .box-info {
+      min-height: 80px;
+    }
+
+    .detail-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 16px;
+      font-size: 10px;
+    }
+
+    .detail-table th,
+    .detail-table td {
+      border-bottom: 0.5pt solid #e0e0e0;
+      padding: 5px 3px;
+    }
+
+    .detail-table th {
+      font-weight: bold;
+      color: #555;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    tfoot td {
+      font-weight: bold;
+      border-top: 0.75pt solid #999;
+    }
+
+    .notes {
+      margin-top: 16px;
+      font-size: 10px;
+    }
+
+    .notes ul {
+      margin: 4px 0 0 14px;
+      padding: 0;
+    }
+
+    .notes li {
+      margin-bottom: 2px;
+    }
+
+    .small {
+      font-size: 9px;
+      color: #555;
+    }
+
+    .legal {
+      margin-top: 16px;
+      padding: 6px 8px;
+      background: #fff8e0;
+      border-left: 2pt solid #f2c94c;
+      font-size: 9px;
+    }
+
+    .firma-block {
+      margin-top: 70px;
+      font-size: 9px;
+    }
+
+    .firma-line {
+      margin-top: 10px;
+      border-top: 0.5pt dashed #999;
+      width: 240px;
+      padding-top: 6px;
+    }
+  </style>
 </head>
+
 <body>
   <div class="wrapper">
     <!-- ENCABEZADO -->
@@ -192,22 +219,22 @@
       </thead>
       <tbody>
         <?php foreach ($servicios as $serv): ?>
-        <tr>
-          <td>
-            <?php
-            if (!empty($serv['repuesto_id']) && !empty($serv['repuesto_nombre'])) {
+          <tr>
+            <td>
+              <?php
+              if (!empty($serv['repuesto_id']) && !empty($serv['repuesto_nombre'])) {
                 echo 'Repuesto: ' . htmlspecialchars($serv['repuesto_nombre']);
-            } elseif (!empty($serv['servicio_nombre'])) {
+              } elseif (!empty($serv['servicio_nombre'])) {
                 echo htmlspecialchars($serv['servicio_nombre']);
-            } else {
+              } else {
                 echo 'Ítem sin descripción';
-            }
-            ?>
-          </td>
-          <td class="right">1</td>
-          <td class="right">$ <?= number_format($serv['costo'], 2, ',', '.'); ?></td>
-          <td class="right">$ <?= number_format($serv['costo'], 2, ',', '.'); ?></td>
-        </tr>
+              }
+              ?>
+            </td>
+            <td class="right">1</td>
+            <td class="right">$ <?= number_format($serv['costo'], 2, ',', '.'); ?></td>
+            <td class="right">$ <?= number_format($serv['costo'], 2, ',', '.'); ?></td>
+          </tr>
         <?php endforeach; ?>
       </tbody>
       <tfoot>
@@ -246,4 +273,5 @@
 
   </div>
 </body>
+
 </html>

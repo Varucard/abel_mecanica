@@ -1,63 +1,212 @@
 <!doctype html>
 <html lang="es">
+
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<link rel="icon" type="image/png" href="../assets/img/logo_64.png">
-<title>
-  Presupuesto #<?= str_pad($orden['id'], 4, '0', STR_PAD_LEFT); ?> - 
-  <?= htmlspecialchars($config_taller['nombre']); ?>
-</title>
-<style>
-  :root{
-    --accent:#0d6efd;
-    --text:#222;
-    --muted:#666;
-    --paper:#fff;
-    --page-bg:#f4f6f8;
-    --max-w:800px;
-  }
-  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial; background:var(--page-bg); color:var(--text); padding:20px; display:flex; justify-content:center;}
-  .card{width:100%; max-width:var(--max-w); background:var(--paper); border-radius:8px; box-shadow:0 6px 18px rgba(10,10,10,0.08); padding:20px; box-sizing:border-box;}
-  header{display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:12px;}
-  .brand{display:flex; gap:12px; align-items:center;}
-  .brand img{height:64px; width:64px; object-fit:contain; border-radius:6px;}
-  h1{font-size:20px; margin:0;}
-  .meta{font-size:13px; color:var(--muted);}
-  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin:12px 0 18px 0;}
-  .box{background:#fbfbfb; padding:12px; border-radius:6px; border:1px solid #efefef; font-size:14px;}
-  table{width:100%; border-collapse:collapse; margin-top:8px;}
-  th, td{padding:10px 8px; border-bottom:1px solid #eee; text-align:left; font-size:14px;}
-  th{background:transparent; color:var(--muted); font-weight:600;}
-  tfoot td{border-top:2px solid #ddd; font-weight:700;}
-  .right{text-align:right;}
-  .small{font-size:12px; color:var(--muted);}
-  .notes{margin-top:14px; font-size:13px;}
-  .legal{margin-top:14px; padding:10px; background:#fff8e6; border-left:4px solid #ffd54d; border-radius:4px; font-size:13px;}
-  .actions{display:flex; gap:10px; margin-top:14px;}
-  .btn{display:inline-block; padding:8px 12px; border-radius:6px; text-decoration:none; font-weight:600; font-size:13px;}
-  .btn-primary{background:var(--accent); color:white;}
-  .btn-outline{background:transparent; border:1px solid #ddd; color:var(--text);}
-  /* Print-friendly */
-  @media print{
-    body{background:white; padding:0;}
-    .card{box-shadow:none; border-radius:0; margin:0; width:100%;}
-    .brand img{height:48px; width:48px;}
-    .actions{display:none;}
-  }
-  /* Responsive */
-  @media (max-width:640px){
-    .grid{grid-template-columns:1fr; }
-    header{gap:8px;}
-    .brand img{height:48px; width:48px;}
-  }
-</style>
-<?php if ($print_mode): ?>
-<script>
-  window.onload = function() { window.print(); };
-</script>
-<?php endif; ?>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="../assets/img/logo_64.png">
+  <title>
+    Presupuesto #<?= str_pad($orden['id'], 4, '0', STR_PAD_LEFT); ?> -
+    <?= htmlspecialchars($config_taller['nombre']); ?>
+  </title>
+  <style>
+    :root {
+      --accent: #0d6efd;
+      --text: #222;
+      --muted: #666;
+      --paper: #fff;
+      --page-bg: #f4f6f8;
+      --max-w: 800px;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+      background: var(--page-bg);
+      color: var(--text);
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+    }
+
+    .card {
+      width: 100%;
+      max-width: var(--max-w);
+      background: var(--paper);
+      border-radius: 8px;
+      box-shadow: 0 6px 18px rgba(10, 10, 10, 0.08);
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+    }
+
+    .brand {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .brand img {
+      height: 64px;
+      width: 64px;
+      object-fit: contain;
+      border-radius: 6px;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0;
+    }
+
+    .meta {
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin: 12px 0 18px 0;
+    }
+
+    .box {
+      background: #fbfbfb;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #efefef;
+      font-size: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 8px;
+    }
+
+    th,
+    td {
+      padding: 10px 8px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background: transparent;
+      color: var(--muted);
+      font-weight: 600;
+    }
+
+    tfoot td {
+      border-top: 2px solid #ddd;
+      font-weight: 700;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .small {
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .notes {
+      margin-top: 14px;
+      font-size: 13px;
+    }
+
+    .legal {
+      margin-top: 14px;
+      padding: 10px;
+      background: #fff8e6;
+      border-left: 4px solid #ffd54d;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 14px;
+    }
+
+    .btn {
+      display: inline-block;
+      padding: 8px 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1px solid #ddd;
+      color: var(--text);
+    }
+
+    /* Print-friendly */
+    @media print {
+      body {
+        background: white;
+        padding: 0;
+      }
+
+      .card {
+        box-shadow: none;
+        border-radius: 0;
+        margin: 0;
+        width: 100%;
+      }
+
+      .brand img {
+        height: 48px;
+        width: 48px;
+      }
+
+      .actions {
+        display: none;
+      }
+    }
+
+    /* Responsive */
+    @media (max-width:640px) {
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      header {
+        gap: 8px;
+      }
+
+      .brand img {
+        height: 48px;
+        width: 48px;
+      }
+    }
+  </style>
+  <?php if ($print_mode): ?>
+    <script>
+      window.onload = function() {
+        window.print();
+      };
+    </script>
+  <?php endif; ?>
 </head>
+
 <body>
   <?php
   // Preparar email del cliente (evitar NULL)
@@ -100,17 +249,17 @@
 
     <section class="grid" aria-label="datos">
       <div class="box">
-        <strong>Cliente</strong><br/>
-        Nombre: <?= htmlspecialchars($cliente['nombre'] . ' ' . $cliente['apellido']); ?><br/>
-        Teléfono: <?= htmlspecialchars($cliente['telefono']); ?><br/>
-        DNI/CUIT: <?= htmlspecialchars($cliente['dni']); ?><br/>
+        <strong>Cliente</strong><br />
+        Nombre: <?= htmlspecialchars($cliente['nombre'] . ' ' . $cliente['apellido']); ?><br />
+        Teléfono: <?= htmlspecialchars($cliente['telefono']); ?><br />
+        DNI/CUIT: <?= htmlspecialchars($cliente['dni']); ?><br />
         Email: <?= htmlspecialchars($email_cliente); ?>
       </div>
       <div class="box">
-        <strong>Vehículo</strong><br/>
+        <strong>Vehículo</strong><br />
         Marca / Modelo / Año:
-        <?= htmlspecialchars($orden['marca'] . ' ' . $orden['modelo'] . ' (' . $orden['anio'] . ')'); ?><br/>
-        Patente: <?= htmlspecialchars($orden['patente']); ?><br/>
+        <?= htmlspecialchars($orden['marca'] . ' ' . $orden['modelo'] . ' (' . $orden['anio'] . ')'); ?><br />
+        Patente: <?= htmlspecialchars($orden['patente']); ?><br />
         Kilometraje: <?= htmlspecialchars($km); ?>
       </div>
     </section>
@@ -127,18 +276,18 @@
         </thead>
         <tbody>
           <?php foreach ($detalle as $item): ?>
-          <tr>
-            <td>
-              <?= htmlspecialchars(
-                $item['repuesto_id']
-                  ? 'Repuesto: ' . $item['repuesto_nombre']
-                  : $item['servicio_nombre']
-              ); ?>
-            </td>
-            <td class="right">1</td>
-            <td class="right">$ <?= number_format($item['costo'], 2, ',', '.'); ?></td>
-            <td class="right">$ <?= number_format($item['costo'], 2, ',', '.'); ?></td>
-          </tr>
+            <tr>
+              <td>
+                <?= htmlspecialchars(
+                  $item['repuesto_id']
+                    ? 'Repuesto: ' . $item['repuesto_nombre']
+                    : $item['servicio_nombre']
+                ); ?>
+              </td>
+              <td class="right">1</td>
+              <td class="right">$ <?= number_format($item['costo'], 2, ',', '.'); ?></td>
+              <td class="right">$ <?= number_format($item['costo'], 2, ',', '.'); ?></td>
+            </tr>
           <?php endforeach; ?>
         </tbody>
         <tfoot>
@@ -186,7 +335,7 @@
         <div class="actions">
           <a class="btn btn-primary" href="#" onclick="window.print();return false;">Imprimir</a>
           <a class="btn btn-outline" href="listar_orden.php">Volver</a>
-          <a class="btn btn-outline" 
+          <a class="btn btn-outline"
             href="../shields/descargar_presupuesto.php?id=<?= $orden['id']; ?>">
             Descargar PDF
           </a>
@@ -196,4 +345,5 @@
 
   </div>
 </body>
+
 </html>

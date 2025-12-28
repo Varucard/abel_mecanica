@@ -1,13 +1,15 @@
 <?php
 
-class Personas {
+class Personas
+{
   protected $id;
   protected $nombre;
   protected $apellido;
   protected $dni;
   protected $email; // puede ser null
 
-  public function __construct($nombre = null, $apellido = null, $dni = null, $email = null) {
+  public function __construct($nombre = null, $apellido = null, $dni = null, $email = null)
+  {
     $this->nombre   = $nombre;
     $this->apellido = $apellido;
     $this->dni      = $dni;
@@ -15,48 +17,59 @@ class Personas {
   }
 
   // Getters
-  public function getId() {
+  public function getId()
+  {
     return $this->id;
   }
 
-  public function getNombre() {
+  public function getNombre()
+  {
     return $this->nombre;
   }
 
-  public function getApellido() {
+  public function getApellido()
+  {
     return $this->apellido;
   }
 
-  public function getDni() {
+  public function getDni()
+  {
     return $this->dni;
   }
 
-  public function getEmail() {
+  public function getEmail()
+  {
     return $this->email;
   }
 
   // Setters
-  public function setId($id) {
+  public function setId($id)
+  {
     $this->id = $id;
   }
 
-  public function setNombre($nombre) {
+  public function setNombre($nombre)
+  {
     $this->nombre = $nombre;
   }
 
-  public function setApellido($apellido) {
+  public function setApellido($apellido)
+  {
     $this->apellido = $apellido;
   }
 
-  public function setDni($dni) {
+  public function setDni($dni)
+  {
     $this->dni = $dni;
   }
 
-  public function setEmail($email) {
+  public function setEmail($email)
+  {
     $this->email = $email;
   }
 
-  public function guardar($conn) {
+  public function guardar($conn)
+  {
     $sql = "INSERT INTO personas (nombre, apellido, dni, email) VALUES (?, ?, ?, ?)";
     $stmt = $conn->prepare($sql);
 
@@ -71,7 +84,8 @@ class Personas {
     return false;
   }
 
-  public static function buscarPorDni($conn, $dni) {
+  public static function buscarPorDni($conn, $dni)
+  {
     $sql = "SELECT * FROM personas WHERE dni = ?";
     $stmt = $conn->prepare($sql);
 
@@ -82,7 +96,8 @@ class Personas {
     return null;
   }
 
-  public static function buscarPorEmail($conn, $email) {
+  public static function buscarPorEmail($conn, $email)
+  {
     $sql = "SELECT * FROM personas WHERE email = ?";
     $stmt = $conn->prepare($sql);
 

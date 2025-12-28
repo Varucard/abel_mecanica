@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
       // Borrar detalles anteriores
       $conn->prepare("DELETE FROM ordenes_servicios WHERE orden_id = ?")
-           ->execute([$id]);
+        ->execute([$id]);
 
       $orden_id = $id;
     } else {
@@ -161,14 +161,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
        TOTAL
     ========================= */
     $conn->prepare("UPDATE ordenes SET total = ? WHERE id = ?")
-         ->execute([$total, $orden_id]);
+      ->execute([$total, $orden_id]);
 
     $conn->commit();
     ob_end_clean();
 
     header("Location: ../views/listar_orden.php?success=" . ($id ? "update" : "create"));
     exit;
-
   } catch (Exception $e) {
     if ($conn->inTransaction()) {
       $conn->rollBack();

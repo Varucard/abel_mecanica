@@ -4,6 +4,7 @@ require_once '../clases/Marcas.php';
 ?>
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -13,6 +14,7 @@ require_once '../clases/Marcas.php';
   <link rel="stylesheet" href="https://cdn.datatables.net/1.13.7/css/jquery.dataTables.min.css">
   <link rel="stylesheet" href="../assets/css/styles.css">
 </head>
+
 <body>
   <div class="container">
     <div class="card">
@@ -20,8 +22,8 @@ require_once '../clases/Marcas.php';
         <h1 class="mb-0">Registrar Marca
           <img src="../assets/img/logo.png" alt="Logo" style="height:80px; width:80px; border-radius: 50%;">
           <button id="btnDarkMode"
-                  class="btn btn-sm btn-outline-light"
-                  type="button">
+            class="btn btn-sm btn-outline-light"
+            type="button">
             🌙 Modo oscuro
           </button>
         </h1>
@@ -50,10 +52,10 @@ require_once '../clases/Marcas.php';
           </div>
           <div class="card-body">
             <?php
-              $marca = null;
-              if (isset($_GET['id'])) {
-                $marca = Marcas::obtenerPorId($conn, $_GET['id']);
-              }
+            $marca = null;
+            if (isset($_GET['id'])) {
+              $marca = Marcas::obtenerPorId($conn, $_GET['id']);
+            }
             ?>
             <form action="../shields/procesar_marca.php" method="POST" novalidate>
               <input type="hidden" name="action" value="<?= $marca ? 'actualizar' : 'guardar'; ?>">
@@ -63,10 +65,10 @@ require_once '../clases/Marcas.php';
 
               <div class="mb-3">
                 <label for="nombre" class="form-label">Nombre de la Marca *</label>
-                <input type="text" class="form-control" id="nombre" name="nombre" 
-                       value="<?= htmlspecialchars($marca['nombre'] ?? ''); ?>"
-                       pattern="[A-Za-zÁÉÍÓÚáéíóúñÑ\s]{2,50}" 
-                       title="Solo letras, entre 2 y 50 caracteres" required>
+                <input type="text" class="form-control" id="nombre" name="nombre"
+                  value="<?= htmlspecialchars($marca['nombre'] ?? ''); ?>"
+                  pattern="[A-Za-zÁÉÍÓÚáéíóúñÑ\s]{2,50}"
+                  title="Solo letras, entre 2 y 50 caracteres" required>
               </div>
               <button type="submit" class="btn btn-success">
                 <?= $marca ? 'Actualizar Marca' : 'Registrar Marca'; ?>
@@ -122,4 +124,5 @@ require_once '../clases/Marcas.php';
   <script src="../assets/js/styles.js"></script>
 
 </body>
+
 </html>
