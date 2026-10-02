@@ -10,6 +10,7 @@ use App\Exceptions\ValidationException;
 use App\Models\Cliente;
 use App\Repositories\ClienteRepository;
 use App\Repositories\Repository;
+use App\Support\ImageUpload;
 use App\Support\Validator;
 use PDOException;
 
@@ -47,6 +48,31 @@ final class ClienteService
     // El DNI es la identidad de la persona: no se modifica al editar.
     $input['dni'] = $actual['dni'];
     $this->clientes->update($this->construir($input, $id));
+  }
+
+  /** @param array<string, mixed> $archivo elemento de $_FILES */
+  public function cambiarFoto(int $id, array $archivo): void
+  {
+    $anterior = $this->obtener($id)['foto'];
+    $uploads = ImageUpload::en('clientes');
+
+    $this->clientes->setFoto($id, $uploads->guardar($archivo));
+    $uploads->eliminar($anterior);
+  }
+
+  public function quitarFoto(int $id): void
+  {
+    $anterior = $this->obtener($id)['foto'];
+    $this->clientes->setFoto($id, null);
+    ImageUpload::en('clientes')->eliminar($anterior);
+  }
+
+  public function rutaFoto(int $id): string
+  {
+    $foto = $this->obtener($id)['foto'];
+
+    return ($foto ? ImageUpload::en('clientes')->ruta($foto) : null)
+      ?? throw new NotFoundException('El cliente no tiene foto.');
   }
 
   public function alternarEstado(int $id): Estado

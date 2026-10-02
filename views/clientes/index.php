@@ -1,4 +1,9 @@
-<?php /** @var list<array<string, mixed>> $clientes */ ?>
+<?php
+/**
+ * @var list<array<string, mixed>> $clientes
+ * @var array<int, float> $saldos  deuda por cliente
+ */
+?>
 <div class="card mt-3">
   <div class="card-header bg-light d-flex justify-content-between align-items-center">
     <h4 class="mb-0">Clientes registrados</h4>
@@ -15,6 +20,7 @@
             <th>Teléfono</th>
             <th>Email</th>
             <th>Dirección</th>
+            <th>Saldo</th>
             <th>Estado</th>
             <th data-orderable="false">Acciones</th>
           </tr>
@@ -29,8 +35,12 @@
               <td><?= e($c['telefono']) ?></td>
               <td><?= e($c['email'] ?? '') ?></td>
               <td><?= e($c['direccion'] ?? '') ?></td>
+              <td data-order="<?= $saldos[$c['id']] ?? 0 ?>">
+                <?= isset($saldos[$c['id']]) ? '<span class="text-danger">$ ' . money($saldos[$c['id']]) . '</span>' : '—' ?>
+              </td>
               <td><span class="badge bg-<?= $activo ? 'success' : 'secondary' ?>"><?= e($c['estado']) ?></span></td>
               <td class="col-acciones text-nowrap">
+                <a href="<?= url("clientes/{$c['id']}") ?>" class="btn btn-sm btn-info">Ver</a>
                 <a href="<?= url("clientes/{$c['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
                 <?= $view->partial('partials/delete_button', [
                   'action' => "clientes/{$c['id']}/estado",

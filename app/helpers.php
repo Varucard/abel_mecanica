@@ -77,3 +77,17 @@ function qty(mixed $value): string
 {
   return rtrim(rtrim(number_format((float) $value, 2, ',', '.'), '0'), ',');
 }
+
+/**
+ * Link de WhatsApp (wa.me) para un teléfono argentino de 10 dígitos.
+ * Los celulares argentinos se marcan internacionalmente como 54 9 + área + número.
+ */
+function whatsapp_url(string $telefono, string $mensaje = ''): string
+{
+  $digitos = preg_replace('/\D/', '', $telefono);
+  if (strlen($digitos) === 10) {
+    $digitos = '549' . $digitos;
+  }
+
+  return 'https://wa.me/' . $digitos . ($mensaje !== '' ? '?text=' . rawurlencode($mensaje) : '');
+}

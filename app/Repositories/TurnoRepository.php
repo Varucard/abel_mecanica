@@ -12,6 +12,24 @@ final class TurnoRepository extends Repository
   /** @return list<array<string, mixed>> */
   public function all(): array
   {
+    return $this->listado('', []);
+  }
+
+  /** @return list<array<string, mixed>> */
+  public function porCliente(int $clienteId): array
+  {
+    return $this->listado('WHERE t.cliente_id = ?', [$clienteId]);
+  }
+
+  /** @return list<array<string, mixed>> */
+  public function porVehiculo(int $vehiculoId): array
+  {
+    return $this->listado('WHERE t.vehiculo_id = ?', [$vehiculoId]);
+  }
+
+  /** @return list<array<string, mixed>> */
+  private function listado(string $where, array $params): array
+  {
     return $this->fetchAll(
       "SELECT t.id, t.cliente_id, t.vehiculo_id, t.fecha, t.hora, t.descripcion, t.estado,
               CONCAT(p.apellido, ', ', p.nombre) AS cliente,
@@ -22,7 +40,9 @@ final class TurnoRepository extends Repository
          INNER JOIN vehiculos v ON v.id = t.vehiculo_id
          INNER JOIN marcas ma ON ma.id = v.marca_id
          INNER JOIN modelos mo ON mo.id = v.modelo_id
-        ORDER BY t.fecha DESC, t.hora DESC"
+        {$where}
+        ORDER BY t.fecha DESC, t.hora DESC",
+      $params
     );
   }
 

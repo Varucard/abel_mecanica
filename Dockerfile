@@ -25,6 +25,7 @@ RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-avail
     && a2enmod rewrite headers \
     && mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
+COPY docker/php.ini "$PHP_INI_DIR/conf.d/zz-app.ini"
 COPY docker/entrypoint.sh /usr/local/bin/app-entrypoint
 RUN chmod +x /usr/local/bin/app-entrypoint
 

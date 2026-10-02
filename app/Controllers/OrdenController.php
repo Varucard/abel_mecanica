@@ -11,10 +11,13 @@ use App\Core\Session;
 use App\Core\View;
 use App\Enums\EstadoOrden;
 use App\Exceptions\ValidationException;
+use App\Repositories\ClienteRepository;
 use App\Repositories\OrdenRepository;
+use App\Repositories\PagoRepository;
 use App\Repositories\RepuestoRepository;
 use App\Repositories\ServicioRepository;
 use App\Repositories\VehiculoRepository;
+use App\Services\ConfiguracionService;
 use App\Services\OrdenService;
 use App\Services\PresupuestoService;
 
@@ -30,6 +33,9 @@ final class OrdenController extends Controller
     private readonly RepuestoRepository $repuestos,
     private readonly PresupuestoService $presupuestos,
     private readonly Auth $auth,
+    private readonly PagoRepository $pagos,
+    private readonly ClienteRepository $clientes,
+    private readonly ConfiguracionService $configuracion,
   ) {
     parent::__construct($view, $session);
   }
@@ -45,7 +51,7 @@ final class OrdenController extends Controller
 
   public function create(Request $request): void
   {
-    $this->form('Nueva orden de servicio', null, ['servicio' => [], 'repuesto' => []]);
+    $this->form('Nueva orden de servicio', null, ['servicio' => [], 'repuesto' => []], (int) $request->int('vehiculo_id'));
   }
 
   public function store(Request $request): void
@@ -79,6 +85,24 @@ final class OrdenController extends Controller
     $this->save($request, $id);
   }
 
+  /** Ficha de la orden: detalle, pagos y accesos a presupuesto y comprobante. */
+  public function show(Request $request, int $id): void
+  {
+    $orden = $this->service->obtener($id);
+    $pagos = $this->pagos->porOrden($id);
+
+    $this->render('ordenes/show', [
+      'title' => "Orden #{$id}",
+      'orden' => $orden,
+      'cliente' => $this->clientes->find((int) $orden['cliente_id']),
+      'items' => $this->ordenes->items($id),
+      'pagos' => $pagos,
+      'saldo' => round((float) $orden['total'] - array_sum(array_column($pagos, 'monto')), 2),
+      'formasPago' => $this->configuracion->obtener()['trabajo']['forma_pago'],
+      'estado' => EstadoOrden::from($orden['estado']),
+    ]);
+  }
+
   public function cambiarEstado(Request $request, int $id): void
   {
     $this->verifyCsrf($request);
@@ -110,7 +134,7 @@ final class OrdenController extends Controller
     $this->verifyCsrf($request);
 
     try {
-      $this->service->guardar(
+      $nuevoId = $this->service->guardar(
         (int) $request->int('vehiculo_id'),
         $this->items($request, 'servicio'),
         $this->items($request, 'repuesto'),
@@ -121,7 +145,7 @@ final class OrdenController extends Controller
     }
 
     $this->success($id ? 'Orden actualizada correctamente.' : 'Orden creada correctamente.');
-    $this->redirect('/ordenes');
+    $this->redirect('/ordenes/' . ($id ?? $nuevoId));
   }
 
   /**
@@ -150,7 +174,7 @@ final class OrdenController extends Controller
    * @param array<string, mixed>|null $orden
    * @param array{servicio: array<int, array<string, mixed>>, repuesto: array<int, array<string, mixed>>} $detalle
    */
-  private function form(string $title, ?array $orden, array $detalle): void
+  private function form(string $title, ?array $orden, array $detalle, int $vehiculoSugerido = 0): void
   {
     $vehiculos = $this->vehiculos->activos();
 
@@ -178,6 +202,7 @@ final class OrdenController extends Controller
       'servicios' => $this->servicios->all(),
       'repuestos' => $this->repuestos->all(),
       'detalle' => $detalle,
+      'vehiculoSugerido' => $vehiculoSugerido,
     ]);
   }
 }

@@ -5,7 +5,7 @@
  * @var list<array<string, mixed>> $vehiculos  vehículos del cliente seleccionado
  * @var list<\App\Enums\EstadoTurno> $estados
  */
-$clienteId = (int) old('cliente_id', $turno['cliente_id'] ?? 0);
+$clienteId = (int) old('cliente_id', $turno['cliente_id'] ?? $clienteSugerido);
 $vehiculoId = (int) old('vehiculo_id', $turno['vehiculo_id'] ?? 0);
 $estadoActual = old('estado', $turno['estado'] ?? 'pendiente');
 $view->script('turnos.js');

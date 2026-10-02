@@ -12,8 +12,27 @@ final class OrdenRepository extends Repository
   /** Listado con cliente, vehículo y resumen de ítems. */
   public function all(): array
   {
+    return $this->listado('', []);
+  }
+
+  /** @return list<array<string, mixed>> */
+  public function porCliente(int $clienteId): array
+  {
+    return $this->listado('WHERE v.cliente_id = ?', [$clienteId]);
+  }
+
+  /** @return list<array<string, mixed>> */
+  public function porVehiculo(int $vehiculoId): array
+  {
+    return $this->listado('WHERE o.vehiculo_id = ?', [$vehiculoId]);
+  }
+
+  /** @return list<array<string, mixed>> */
+  private function listado(string $where, array $params): array
+  {
     return $this->fetchAll(
       "SELECT o.id, o.total, o.estado, o.created_at,
+              o.total - COALESCE((SELECT SUM(pg.monto) FROM pagos pg WHERE pg.orden_id = o.id), 0) AS saldo,
               CONCAT(p.apellido, ', ', p.nombre) AS cliente,
               CONCAT(v.patente, ' - ', ma.nombre, ' ', mo.nombre) AS vehiculo,
               (SELECT GROUP_CONCAT(s.nombre ORDER BY s.nombre SEPARATOR ', ')
@@ -28,7 +47,9 @@ final class OrdenRepository extends Repository
          INNER JOIN personas p ON p.id = c.persona_id
          INNER JOIN marcas ma ON ma.id = v.marca_id
          INNER JOIN modelos mo ON mo.id = v.modelo_id
-        ORDER BY o.id DESC"
+        {$where}
+        ORDER BY o.id DESC",
+      $params
     );
   }
 

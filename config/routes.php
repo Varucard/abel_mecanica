@@ -9,6 +9,7 @@ use App\Controllers\HomeController;
 use App\Controllers\MarcaController;
 use App\Controllers\ModeloController;
 use App\Controllers\OrdenController;
+use App\Controllers\PagoController;
 use App\Controllers\ProveedorController;
 use App\Controllers\RepuestoController;
 use App\Controllers\ServicioController;
@@ -33,7 +34,11 @@ return function (Router $r): void {
   $r->get('/clientes', [ClienteController::class, 'index']);
   $r->get('/clientes/crear', [ClienteController::class, 'create']);
   $r->post('/clientes', [ClienteController::class, 'store']);
+  $r->get('/clientes/{id}', [ClienteController::class, 'show']);
   $r->get('/clientes/{id}/editar', [ClienteController::class, 'edit']);
+  $r->get('/clientes/{id}/foto', [ClienteController::class, 'foto']);
+  $r->post('/clientes/{id}/foto', [ClienteController::class, 'subirFoto']);
+  $r->post('/clientes/{id}/foto/eliminar', [ClienteController::class, 'quitarFoto']);
   $r->post('/clientes/{id}', [ClienteController::class, 'update']);
   $r->post('/clientes/{id}/estado', [ClienteController::class, 'toggle']);
   $r->post('/clientes/{id}/eliminar', [ClienteController::class, 'destroy']);
@@ -43,7 +48,11 @@ return function (Router $r): void {
   $r->get('/vehiculos', [VehiculoController::class, 'index']);
   $r->get('/vehiculos/crear', [VehiculoController::class, 'create']);
   $r->post('/vehiculos', [VehiculoController::class, 'store']);
+  $r->get('/vehiculos/{id}', [VehiculoController::class, 'show']);
   $r->get('/vehiculos/{id}/editar', [VehiculoController::class, 'edit']);
+  $r->post('/vehiculos/{id}/imagenes', [VehiculoController::class, 'subirImagen']);
+  $r->get('/vehiculos/{id}/imagenes/{imagenId}', [VehiculoController::class, 'imagen']);
+  $r->post('/imagenes/{imagenId}/eliminar', [VehiculoController::class, 'eliminarImagen']);
   $r->post('/vehiculos/{id}', [VehiculoController::class, 'update']);
   $r->post('/vehiculos/{id}/estado', [VehiculoController::class, 'toggle']);
 
@@ -73,7 +82,10 @@ return function (Router $r): void {
   $r->get('/ordenes', [OrdenController::class, 'index']);
   $r->get('/ordenes/crear', [OrdenController::class, 'create']);
   $r->post('/ordenes', [OrdenController::class, 'store']);
+  $r->get('/ordenes/{id}', [OrdenController::class, 'show']);
   $r->get('/ordenes/{id}/editar', [OrdenController::class, 'edit']);
+  $r->post('/ordenes/{id}/pagos', [PagoController::class, 'store']);
+  $r->get('/deudores', [PagoController::class, 'deudores']);
   $r->post('/ordenes/{id}', [OrdenController::class, 'update']);
   $r->post('/ordenes/{id}/estado', [OrdenController::class, 'cambiarEstado']);
   $r->get('/ordenes/{id}/presupuesto', [OrdenController::class, 'presupuesto']);
@@ -97,4 +109,5 @@ return function (Router $r): void {
   $r->post('/usuarios', [UsuarioController::class, 'store'], $admin);
   $r->get('/usuarios/{id}/editar', [UsuarioController::class, 'edit'], $admin);
   $r->post('/usuarios/{id}', [UsuarioController::class, 'update'], $admin);
+  $r->post('/pagos/{id}/anular', [PagoController::class, 'destroy'], $admin);
 };

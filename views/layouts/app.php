@@ -7,6 +7,7 @@
  */
 $secciones = [
   'clientes' => 'bg-success text-white',
+  'deudores' => 'bg-success text-white',
   'vehiculos' => 'bg-info text-white',
   'ordenes' => 'bg-warning text-dark',
   'turnos' => 'bg-warning text-dark',

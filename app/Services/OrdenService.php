@@ -9,6 +9,7 @@ use App\Exceptions\NotFoundException;
 use App\Models\Orden;
 use App\Models\OrdenItem;
 use App\Repositories\OrdenRepository;
+use App\Repositories\PagoRepository;
 use App\Repositories\RepuestoRepository;
 use App\Repositories\ServicioRepository;
 use App\Repositories\VehiculoRepository;
@@ -22,6 +23,7 @@ final class OrdenService
     private readonly ServicioRepository $servicios,
     private readonly RepuestoRepository $repuestos,
     private readonly StockService $stock,
+    private readonly PagoRepository $pagos,
   ) {
   }
 
@@ -93,7 +95,13 @@ final class OrdenService
       $items[] = OrdenItem::repuesto($rid, $precio, $r['cantidad']);
     }
 
-    return $this->ordenes->save(new Orden($vehiculoId, $items, id: $id));
+    $orden = new Orden($vehiculoId, $items, id: $id);
+    $pagado = $id !== null ? $this->pagos->totalPagado($id) : 0.0;
+    (new Validator())
+      ->check($orden->total() >= $pagado, sprintf('El total no puede quedar por debajo de lo ya pagado ($ %s).', money($pagado)))
+      ->validate();
+
+    return $this->ordenes->save($orden);
   }
 
   /**

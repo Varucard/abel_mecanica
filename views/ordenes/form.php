@@ -6,7 +6,7 @@
  * @var list<array<string, mixed>> $repuestos
  * @var array{servicio: array<int, array<string, mixed>>, repuesto: array<int, array<string, mixed>>} $detalle
  */
-$vehiculoId = (int) old('vehiculo_id', $orden['vehiculo_id'] ?? 0);
+$vehiculoId = (int) old('vehiculo_id', $orden['vehiculo_id'] ?? $vehiculoSugerido);
 $view->script('ordenes.js');
 ?>
 <div class="card mt-3">

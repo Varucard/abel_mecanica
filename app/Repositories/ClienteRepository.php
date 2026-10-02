@@ -11,7 +11,7 @@ final class ClienteRepository extends Repository
 {
   private const SELECT = "
     SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, p.email,
-           c.telefono, c.direccion, c.estado
+           c.telefono, c.direccion, c.estado, c.foto
       FROM clientes c
       INNER JOIN personas p ON p.id = c.persona_id";
 
@@ -66,6 +66,11 @@ final class ClienteRepository extends Repository
         [$cliente->telefono, $cliente->direccion, $cliente->id]
       );
     });
+  }
+
+  public function setFoto(int $id, ?string $archivo): void
+  {
+    $this->execute('UPDATE clientes SET foto = ? WHERE id = ?', [$archivo, $id]);
   }
 
   public function setEstado(int $id, Estado $estado): void

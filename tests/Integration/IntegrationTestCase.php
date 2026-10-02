@@ -33,6 +33,10 @@ abstract class IntegrationTestCase extends TestCase
 
     $this->container = new Container();
     $this->container->set(PDO::class, fn() => $this->db);
+    $this->container->set(
+      \App\Services\ConfiguracionService::class,
+      fn() => new \App\Services\ConfiguracionService(dirname(__DIR__, 2))
+    );
   }
 
   protected function tearDown(): void

@@ -7,6 +7,7 @@
 # Datos generados en ejecución
 /storage/config/*
 /storage/logs/*
+/storage/uploads/
 !/storage/**/.gitkeep
 
 # Herramientas

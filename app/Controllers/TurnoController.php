@@ -39,7 +39,7 @@ final class TurnoController extends Controller
 
   public function create(Request $request): void
   {
-    $this->form('Agendar turno', null);
+    $this->form('Agendar turno', null, (int) $request->int('cliente_id'));
   }
 
   public function store(Request $request): void
@@ -89,9 +89,9 @@ final class TurnoController extends Controller
   }
 
   /** @param array<string, mixed>|null $turno */
-  private function form(string $title, ?array $turno): void
+  private function form(string $title, ?array $turno, int $clienteSugerido = 0): void
   {
-    $clienteId = (int) old('cliente_id', $turno['cliente_id'] ?? 0);
+    $clienteId = (int) old('cliente_id', $turno['cliente_id'] ?? $clienteSugerido);
 
     $this->render('turnos/form', [
       'title' => $title,
@@ -99,6 +99,7 @@ final class TurnoController extends Controller
       'clientes' => $this->clientes->activos(),
       'vehiculos' => $clienteId > 0 ? $this->vehiculos->activosPorCliente($clienteId) : [],
       'estados' => EstadoTurno::cases(),
+      'clienteSugerido' => $clienteSugerido,
     ]);
   }
 }

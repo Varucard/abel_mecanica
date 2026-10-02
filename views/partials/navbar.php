@@ -16,6 +16,7 @@
     <div class="dropdown-menu">
       <a href="<?= url('clientes/crear') ?>">Registrar cliente</a>
       <a href="<?= url('clientes') ?>">Ver clientes</a>
+      <a href="<?= url('deudores') ?>">Deudores</a>
     </div>
   </div>
   <div class="dropdown flex-fill">
