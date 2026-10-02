@@ -6,7 +6,7 @@ Estado: ✅ hecho · 🚧 en curso · ⏳ pendiente · 💭 a futuro (requiere d
 
 | # | Ítem | Estado |
 | --- | --- | --- |
-| 1 | **Seguridad**: login con usuario y clave, roles (administrador / empleado) y gestión de usuarios. | ⏳ |
+| 1 | **Seguridad**: login con usuario y clave, roles (administrador / empleado) y gestión de usuarios. | ✅ |
 | 2 | **Ficha del cliente**: vehículos, historial de órdenes y turnos, foto y estado de deuda. | ⏳ |
 | 3 | **Ficha del vehículo**: datos completos, historial de órdenes y turnos, imágenes. | ⏳ |
 | 4 | **Pagos y deudores**: registrar pagos por orden, saldo pendiente, clientes deudores. | ⏳ |

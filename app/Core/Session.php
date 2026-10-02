@@ -24,6 +24,7 @@ final class Session
 
     session_start([
       'cookie_httponly' => true,
+      'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
       'cookie_samesite' => 'Lax',
       'use_strict_mode' => true,
     ]);
@@ -62,6 +63,16 @@ final class Session
   public function hasOldInput(): bool
   {
     return !empty($this->current[self::OLD]);
+  }
+
+  /** Ruta a la que se quería entrar antes de iniciar sesión (se consume al leerla). */
+  public function pullIntended(string $default = '/'): string
+  {
+    $path = $_SESSION['_intended'] ?? $default;
+    unset($_SESSION['_intended']);
+
+    // Solo rutas internas: evita redirecciones abiertas.
+    return is_string($path) && str_starts_with($path, '/') && !str_starts_with($path, '//') ? $path : $default;
   }
 
   public function csrfToken(): string

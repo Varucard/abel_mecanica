@@ -40,7 +40,16 @@ $headerClass = $secciones[current_section()] ?? 'bg-primary text-white';
         <h1 class="mb-0 d-flex align-items-center gap-3 flex-wrap">
           <?= e($title ?? '') ?>
           <img src="<?= asset('img/logo.png') ?>" alt="Logo del taller" class="rounded-circle" width="80" height="80">
-          <button id="btnDarkMode" class="btn btn-sm btn-outline-light ms-auto" type="button">🌙 Modo oscuro</button>
+          <span class="ms-auto d-flex align-items-center gap-2 flex-wrap fs-6">
+            <?php if ($usuarioActual = auth()->user()): ?>
+              <a href="<?= url('perfil/clave') ?>" class="btn btn-sm btn-outline-light" title="Cambiar contraseña">👤 <?= e($usuarioActual['nombre']) ?></a>
+              <form action="<?= url('logout') ?>" method="POST" class="d-inline">
+                <?= csrf_field() ?>
+                <button type="submit" class="btn btn-sm btn-outline-light">Salir</button>
+              </form>
+            <?php endif; ?>
+            <button id="btnDarkMode" class="btn btn-sm btn-outline-light" type="button">🌙 Modo oscuro</button>
+          </span>
         </h1>
       </div>
 

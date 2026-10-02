@@ -6,7 +6,10 @@
       <a href="<?= url('repuestos') ?>">Repuestos</a>
       <a href="<?= url('marcas') ?>">Marcas</a>
       <a href="<?= url('modelos') ?>">Modelos</a>
-      <a href="<?= url('configuracion') ?>">Sistema</a>
+      <?php if (auth()->esAdministrador()): ?>
+        <a href="<?= url('configuracion') ?>">Sistema</a>
+        <a href="<?= url('usuarios') ?>">Usuarios</a>
+      <?php endif; ?>
     </div>
   </div>
   <div class="dropdown flex-fill">

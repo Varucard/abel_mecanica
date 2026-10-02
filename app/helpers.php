@@ -66,3 +66,8 @@ function current_section(): string
 
   return explode('/', trim($path, '/'))[0] ?? '';
 }
+
+function auth(): \App\Core\Auth
+{
+  return App::instance()->container->get(\App\Core\Auth::class);
+}
