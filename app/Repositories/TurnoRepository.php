@@ -32,6 +32,8 @@ final class TurnoRepository extends Repository
   {
     return $this->fetchAll(
       "SELECT t.id, t.cliente_id, t.vehiculo_id, t.fecha, t.hora, t.descripcion, t.estado,
+              t.recordatorio_enviado, t.recordatorio_canal,
+              p.nombre AS cliente_nombre, p.email AS cliente_email, c.telefono AS cliente_telefono,
               CONCAT(p.apellido, ', ', p.nombre) AS cliente,
               CONCAT(ma.nombre, ' ', mo.nombre, ' (', v.patente, ')') AS vehiculo
          FROM turnos t
@@ -44,6 +46,26 @@ final class TurnoRepository extends Repository
         ORDER BY t.fecha DESC, t.hora DESC",
       $params
     );
+  }
+
+  /** Turno con los datos de contacto del cliente y del vehículo. */
+  public function detalle(int $id): ?array
+  {
+    return $this->listado('WHERE t.id = ?', [$id])[0] ?? null;
+  }
+
+  /** @return list<array<string, mixed>> turnos activos de una fecha, por hora */
+  public function delDia(string $fecha): array
+  {
+    return array_reverse($this->listado(
+      "WHERE t.fecha = ? AND t.estado NOT IN ('cancelado', 'no_asistio')",
+      [$fecha]
+    ));
+  }
+
+  public function registrarRecordatorio(int $id, string $canal): void
+  {
+    $this->execute('UPDATE turnos SET recordatorio_enviado = NOW(), recordatorio_canal = ? WHERE id = ?', [$canal, $id]);
   }
 
   /** @return array<string, mixed>|null */

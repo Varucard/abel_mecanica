@@ -1,4 +1,5 @@
 <nav class="btn-group w-100 mb-3" role="navigation" style="gap: 5px;">
+  <a href="<?= url('/') ?>" class="btn btn-outline-secondary flex-grow-0" title="Inicio">🏠</a>
   <div class="dropdown flex-fill">
     <a href="#" class="btn btn-primary w-100">⚙️ Configuración</a>
     <div class="dropdown-menu">

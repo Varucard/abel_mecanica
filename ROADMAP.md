@@ -15,7 +15,7 @@ Estado: ✅ hecho · 🚧 en curso · ⏳ pendiente · 💭 a futuro (requiere d
 | 7 | **Empleados**: ABM (hereda de Persona) y mecánico asignado a cada orden. | ✅ |
 | 8 | **Comprobante de entrega / conformidad** al finalizar la orden. | ✅ |
 | 9 | **Más datos del vehículo**: motor, combustible, color, número de chasis, observaciones. | ✅ |
-| 10 | **Aviso de turnos**: recordatorio por WhatsApp y por email (opcional, con SMTP configurable). | ⏳ |
+| 10 | **Aviso de turnos**: recordatorio por WhatsApp y por email (opcional, con SMTP configurable). | ✅ |
 
 ## Mejoras técnicas y de producto
 
@@ -24,7 +24,7 @@ Estado: ✅ hecho · 🚧 en curso · ⏳ pendiente · 💭 a futuro (requiere d
 | 11 | **Migraciones versionadas** con ejecución automática al levantar el contenedor. | ✅ |
 | 12 | **Integración continua** (GitHub Actions): sintaxis, tests unitarios y de integración. | ✅ |
 | 13 | **Tests de integración** de servicios y repositorios contra MySQL. | ✅ |
-| 14 | **Panel de inicio**: turnos del día, órdenes abiertas, saldos pendientes, stock bajo. | ⏳ |
+| 14 | **Panel de inicio**: turnos del día, órdenes abiertas, saldos pendientes, stock bajo. | ✅ |
 | 15 | **Cantidades en las órdenes** (hoy cada ítem cuenta como 1). | ✅ |
 | 16 | **Backups** de la base con un comando. | ⏳ |
 | 17 | **Puertos configurables** en Docker y nombres de contenedor sin colisiones. | ✅ |

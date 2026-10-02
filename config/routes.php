@@ -102,6 +102,8 @@ return function (Router $r): void {
   $r->post('/turnos/{id}', [TurnoController::class, 'update']);
   $r->post('/turnos/{id}/estado', [TurnoController::class, 'cambiarEstado']);
   $r->post('/turnos/{id}/eliminar', [TurnoController::class, 'destroy']);
+  $r->post('/turnos/{id}/whatsapp', [TurnoController::class, 'whatsapp']);
+  $r->post('/turnos/{id}/email', [TurnoController::class, 'email']);
 
   // Solo administradores
   $admin = Router::ACCESO_ADMIN;

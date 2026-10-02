@@ -13,6 +13,7 @@ use App\Exceptions\ValidationException;
 use App\Repositories\ClienteRepository;
 use App\Repositories\TurnoRepository;
 use App\Repositories\VehiculoRepository;
+use App\Services\NotificacionService;
 use App\Services\TurnoService;
 
 final class TurnoController extends Controller
@@ -24,6 +25,7 @@ final class TurnoController extends Controller
     private readonly TurnoRepository $turnos,
     private readonly ClienteRepository $clientes,
     private readonly VehiculoRepository $vehiculos,
+    private readonly NotificacionService $notificaciones,
   ) {
     parent::__construct($view, $session);
   }
@@ -34,6 +36,7 @@ final class TurnoController extends Controller
       'title' => 'Agenda de turnos',
       'turnos' => $this->turnos->all(),
       'estados' => EstadoTurno::cases(),
+      'emailHabilitado' => $this->notificaciones->emailHabilitado(),
     ]);
   }
 
@@ -63,6 +66,29 @@ final class TurnoController extends Controller
 
     $estado = $this->service->cambiarEstado($id, $request->string('estado'));
     $this->json(['status' => 'success', 'message' => "Turno #{$id}: {$estado->label()}."]);
+  }
+
+  /** Registra el aviso y abre WhatsApp con el mensaje armado. */
+  public function whatsapp(Request $request, int $id): void
+  {
+    $this->verifyCsrf($request);
+
+    header('Location: ' . $this->notificaciones->whatsappTurno($id), true, 303);
+    exit;
+  }
+
+  public function email(Request $request, int $id): void
+  {
+    $this->verifyCsrf($request);
+
+    try {
+      $this->notificaciones->emailTurno($id);
+      $this->success('Recordatorio enviado por email.');
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+    }
+
+    $this->redirect($request->string('volver') === 'inicio' ? '/' : '/turnos');
   }
 
   public function destroy(Request $request, int $id): void
