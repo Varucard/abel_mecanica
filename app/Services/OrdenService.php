@@ -8,6 +8,7 @@ use App\Enums\EstadoOrden;
 use App\Exceptions\NotFoundException;
 use App\Models\Orden;
 use App\Models\OrdenItem;
+use App\Repositories\EmpleadoRepository;
 use App\Repositories\OrdenRepository;
 use App\Repositories\PagoRepository;
 use App\Repositories\RepuestoRepository;
@@ -24,6 +25,7 @@ final class OrdenService
     private readonly RepuestoRepository $repuestos,
     private readonly StockService $stock,
     private readonly PagoRepository $pagos,
+    private readonly EmpleadoRepository $empleados,
   ) {
   }
 
@@ -49,7 +51,7 @@ final class OrdenService
    * @param array<int, mixed> $servicios
    * @param array<int, mixed> $repuestos
    */
-  public function guardar(int $vehiculoId, array $servicios, array $repuestos, ?int $id = null): int
+  public function guardar(int $vehiculoId, array $servicios, array $repuestos, ?int $id = null, ?int $mecanicoId = null): int
   {
     $servicios = self::normalizarItems($servicios);
     $repuestos = self::normalizarItems($repuestos);
@@ -79,6 +81,7 @@ final class OrdenService
 
     (new Validator())
       ->check($vehiculo !== null && ($vehiculo['estado'] === 'activo' || $mantieneVehiculo), 'Seleccioná un vehículo activo.')
+      ->check($this->mecanicoValido($mecanicoId, $actual ?? null), 'Seleccioná un mecánico activo.')
       ->check($servicios !== [], 'Seleccioná al menos un servicio.')
       ->check(count($preciosServicios) === count($servicios), 'Alguno de los servicios seleccionados no existe.')
       ->check(count($preciosRepuestos) === count($repuestos), 'Alguno de los repuestos seleccionados no existe.')
@@ -95,13 +98,26 @@ final class OrdenService
       $items[] = OrdenItem::repuesto($rid, $precio, $r['cantidad']);
     }
 
-    $orden = new Orden($vehiculoId, $items, id: $id);
+    $orden = new Orden($vehiculoId, $items, id: $id, mecanicoId: $mecanicoId);
     $pagado = $id !== null ? $this->pagos->totalPagado($id) : 0.0;
     (new Validator())
       ->check($orden->total() >= $pagado, sprintf('El total no puede quedar por debajo de lo ya pagado ($ %s).', money($pagado)))
       ->validate();
 
     return $this->ordenes->save($orden);
+  }
+
+  /** Sin mecánico, uno activo, o el que la orden ya tenía asignado (aunque hoy esté inactivo). */
+  private function mecanicoValido(?int $mecanicoId, ?array $ordenActual): bool
+  {
+    if ($mecanicoId === null) {
+      return true;
+    }
+
+    $mecanico = $this->empleados->find($mecanicoId);
+
+    return $mecanico !== null
+      && ($mecanico['estado'] === 'activo' || (int) ($ordenActual['mecanico_id'] ?? 0) === $mecanicoId);
   }
 
   /**

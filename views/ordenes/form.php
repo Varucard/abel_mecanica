@@ -7,6 +7,11 @@
  * @var array{servicio: array<int, array<string, mixed>>, repuesto: array<int, array<string, mixed>>} $detalle
  */
 $vehiculoId = (int) old('vehiculo_id', $orden['vehiculo_id'] ?? $vehiculoSugerido);
+$mecanicoId = (int) old('mecanico_id', $orden['mecanico_id'] ?? 0);
+// Al editar, el mecánico asignado debe figurar aunque hoy esté inactivo.
+if ($orden && $orden['mecanico_id'] && !in_array((int) $orden['mecanico_id'], array_map('intval', array_column($mecanicos, 'id')), true)) {
+  $mecanicos[] = ['id' => $orden['mecanico_id'], 'apellido' => $orden['mecanico'], 'nombre' => null, 'puesto' => 'inactivo'];
+}
 $view->script('ordenes.js');
 ?>
 <div class="card mt-3">
@@ -18,7 +23,8 @@ $view->script('ordenes.js');
       data-detalle="<?= e(json_encode($detalle, JSON_FORCE_OBJECT)) ?>">
       <?= csrf_field() ?>
 
-      <div class="mb-3">
+      <div class="row mb-3">
+      <div class="col-md-8">
         <label for="vehiculo_id" class="form-label">Vehículo *</label>
         <select class="form-select js-select2" name="vehiculo_id" id="vehiculo_id" data-placeholder="Seleccione un vehículo" required>
           <option value=""></option>
@@ -28,6 +34,18 @@ $view->script('ordenes.js');
             </option>
           <?php endforeach; ?>
         </select>
+      </div>
+      <div class="col-md-4">
+        <label for="mecanico_id" class="form-label">Mecánico asignado</label>
+        <select class="form-select js-select2" name="mecanico_id" id="mecanico_id" data-placeholder="Sin asignar">
+          <option value=""></option>
+          <?php foreach ($mecanicos as $m): ?>
+            <option value="<?= (int) $m['id'] ?>" <?= selected($mecanicoId === (int) $m['id']) ?>>
+              <?= e(trim("{$m['apellido']}" . ($m['nombre'] ? ", {$m['nombre']}" : '') . " ({$m['puesto']})")) ?>
+            </option>
+          <?php endforeach; ?>
+        </select>
+      </div>
       </div>
 
       <div class="row mb-3">

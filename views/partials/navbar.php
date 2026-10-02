@@ -7,6 +7,7 @@
       <a href="<?= url('modelos') ?>">Modelos</a>
       <?php if (auth()->esAdministrador()): ?>
         <a href="<?= url('configuracion') ?>">Sistema</a>
+        <a href="<?= url('empleados') ?>">Empleados</a>
         <a href="<?= url('usuarios') ?>">Usuarios</a>
       <?php endif; ?>
     </div>

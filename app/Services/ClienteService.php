@@ -35,7 +35,7 @@ final class ClienteService
       return $this->clientes->create($cliente);
     } catch (PDOException $e) {
       throw Repository::isDuplicate($e)
-        ? new ValidationException(['Ese DNI ya está registrado en el sistema.'])
+        ? new ValidationException(['Ya existe un cliente con ese DNI.'])
         : $e;
     }
   }

@@ -29,6 +29,7 @@ $pagado = (float) $orden['total'] - $saldo;
       <div class="card-body">
         <p class="mb-1">Estado: <span class="badge bg-<?= $colores[$estado->value] ?>"><?= e($estado->label()) ?></span></p>
         <p class="mb-1">Fecha: <?= format_date($orden['created_at']) ?></p>
+        <p class="mb-1">Mecánico: <?= e($orden['mecanico'] ?? 'sin asignar') ?></p>
         <?php if ($orden['fecha_realizado']): ?><p class="mb-1">Finalizada: <?= format_date($orden['fecha_realizado']) ?></p><?php endif; ?>
       </div>
     </div>

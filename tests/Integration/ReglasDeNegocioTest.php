@@ -17,7 +17,7 @@ final class ReglasDeNegocioTest extends IntegrationTestCase
   {
     $this->crearCliente('30111222');
 
-    $this->expectExceptionMessage('Ese DNI ya está registrado');
+    $this->expectExceptionMessage('Ya existe un cliente con ese DNI');
     $this->crearCliente('30111222');
   }
 

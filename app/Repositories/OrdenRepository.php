@@ -35,6 +35,8 @@ final class OrdenRepository extends Repository
               o.total - COALESCE((SELECT SUM(pg.monto) FROM pagos pg WHERE pg.orden_id = o.id), 0) AS saldo,
               CONCAT(p.apellido, ', ', p.nombre) AS cliente,
               CONCAT(v.patente, ' - ', ma.nombre, ' ', mo.nombre) AS vehiculo,
+              (SELECT CONCAT(pm.apellido, ', ', pm.nombre) FROM empleados em
+                 INNER JOIN personas pm ON pm.id = em.persona_id WHERE em.id = o.mecanico_id) AS mecanico,
               (SELECT GROUP_CONCAT(s.nombre ORDER BY s.nombre SEPARATOR ', ')
                  FROM ordenes_servicios os INNER JOIN servicios s ON s.id = os.servicio_id
                 WHERE os.orden_id = o.id) AS servicios,
@@ -57,13 +59,16 @@ final class OrdenRepository extends Repository
   public function find(int $id): ?array
   {
     return $this->fetchOne(
-      'SELECT o.*, v.patente, v.anio, v.kilometraje, v.cliente_id,
-              ma.nombre AS marca, mo.nombre AS modelo
+      "SELECT o.*, v.patente, v.anio, v.kilometraje, v.cliente_id,
+              ma.nombre AS marca, mo.nombre AS modelo,
+              CONCAT(pm.apellido, ', ', pm.nombre) AS mecanico
          FROM ordenes o
+         LEFT JOIN empleados em ON em.id = o.mecanico_id
+         LEFT JOIN personas pm ON pm.id = em.persona_id
          INNER JOIN vehiculos v ON v.id = o.vehiculo_id
          INNER JOIN marcas ma ON ma.id = v.marca_id
          INNER JOIN modelos mo ON mo.id = v.modelo_id
-        WHERE o.id = ?',
+        WHERE o.id = ?",
       [$id]
     );
   }
@@ -89,14 +94,14 @@ final class OrdenRepository extends Repository
     return $this->transaction(function () use ($orden) {
       if ($orden->id === null) {
         $id = $this->insert(
-          'INSERT INTO ordenes (vehiculo_id, estado, total) VALUES (?, ?, ?)',
-          [$orden->vehiculoId, $orden->estado->value, $orden->total()]
+          'INSERT INTO ordenes (vehiculo_id, mecanico_id, estado, total) VALUES (?, ?, ?, ?)',
+          [$orden->vehiculoId, $orden->mecanicoId, $orden->estado->value, $orden->total()]
         );
       } else {
         $id = $orden->id;
         $this->execute(
-          'UPDATE ordenes SET vehiculo_id = ?, total = ? WHERE id = ?',
-          [$orden->vehiculoId, $orden->total(), $id]
+          'UPDATE ordenes SET vehiculo_id = ?, mecanico_id = ?, total = ? WHERE id = ?',
+          [$orden->vehiculoId, $orden->mecanicoId, $orden->total(), $id]
         );
         $this->execute('DELETE FROM ordenes_servicios WHERE orden_id = ?', [$id]);
       }

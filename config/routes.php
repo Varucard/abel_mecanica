@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Controllers\AuthController;
 use App\Controllers\ClienteController;
 use App\Controllers\ConfiguracionController;
+use App\Controllers\EmpleadoController;
 use App\Controllers\HomeController;
 use App\Controllers\MarcaController;
 use App\Controllers\ModeloController;
@@ -110,4 +111,10 @@ return function (Router $r): void {
   $r->get('/usuarios/{id}/editar', [UsuarioController::class, 'edit'], $admin);
   $r->post('/usuarios/{id}', [UsuarioController::class, 'update'], $admin);
   $r->post('/pagos/{id}/anular', [PagoController::class, 'destroy'], $admin);
+  $r->get('/empleados', [EmpleadoController::class, 'index'], $admin);
+  $r->get('/empleados/crear', [EmpleadoController::class, 'create'], $admin);
+  $r->post('/empleados', [EmpleadoController::class, 'store'], $admin);
+  $r->get('/empleados/{id}/editar', [EmpleadoController::class, 'edit'], $admin);
+  $r->post('/empleados/{id}', [EmpleadoController::class, 'update'], $admin);
+  $r->post('/empleados/{id}/estado', [EmpleadoController::class, 'toggle'], $admin);
 };

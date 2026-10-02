@@ -12,6 +12,7 @@ use App\Core\View;
 use App\Enums\EstadoOrden;
 use App\Exceptions\ValidationException;
 use App\Repositories\ClienteRepository;
+use App\Repositories\EmpleadoRepository;
 use App\Repositories\OrdenRepository;
 use App\Repositories\PagoRepository;
 use App\Repositories\RepuestoRepository;
@@ -36,6 +37,7 @@ final class OrdenController extends Controller
     private readonly PagoRepository $pagos,
     private readonly ClienteRepository $clientes,
     private readonly ConfiguracionService $configuracion,
+    private readonly EmpleadoRepository $empleados,
   ) {
     parent::__construct($view, $session);
   }
@@ -139,6 +141,7 @@ final class OrdenController extends Controller
         $this->items($request, 'servicio'),
         $this->items($request, 'repuesto'),
         $id,
+        $request->int('mecanico_id') ?: null,
       );
     } catch (ValidationException $e) {
       $this->backWithErrors($id ? "/ordenes/{$id}/editar" : '/ordenes/crear', $e, $request);
@@ -203,6 +206,7 @@ final class OrdenController extends Controller
       'repuestos' => $this->repuestos->all(),
       'detalle' => $detalle,
       'vehiculoSugerido' => $vehiculoSugerido,
+      'mecanicos' => $this->empleados->activos(),
     ]);
   }
 }

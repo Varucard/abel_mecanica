@@ -35,7 +35,10 @@ $view->script('ordenes.js');
             <tr>
               <td><?= (int) $o['id'] ?></td>
               <td class="col-achicada"><?= e($o['cliente']) ?></td>
-              <td class="col-achicada"><?= e($o['vehiculo']) ?></td>
+              <td class="col-achicada">
+                <?= e($o['vehiculo']) ?>
+                <?php if ($o['mecanico']): ?><div class="small text-muted">🔧 <?= e($o['mecanico']) ?></div><?php endif; ?>
+              </td>
               <td>
                 <?= e($o['servicios'] ?? '') ?>
                 <?php if (!empty($o['repuestos'])): ?>

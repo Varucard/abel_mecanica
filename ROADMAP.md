@@ -12,7 +12,7 @@ Estado: ✅ hecho · 🚧 en curso · ⏳ pendiente · 💭 a futuro (requiere d
 | 4 | **Pagos y deudores**: registrar pagos por orden, saldo pendiente, clientes deudores. | ✅ |
 | 5 | **Stock de repuestos**: stock actual y mínimo, ingresos, descuento al finalizar órdenes, alertas. | ✅ |
 | 6 | **Proveedores**: ABM y proveedor habitual de cada repuesto; ingresos de stock por proveedor. | ✅ |
-| 7 | **Empleados**: ABM (hereda de Persona) y mecánico asignado a cada orden. | ⏳ |
+| 7 | **Empleados**: ABM (hereda de Persona) y mecánico asignado a cada orden. | ✅ |
 | 8 | **Comprobante de entrega / conformidad** al finalizar la orden. | ⏳ |
 | 9 | **Más datos del vehículo**: motor, combustible, color, número de chasis, observaciones. | ✅ |
 | 10 | **Aviso de turnos**: recordatorio por WhatsApp y por email (opcional, con SMTP configurable). | ⏳ |

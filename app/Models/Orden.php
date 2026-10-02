@@ -17,6 +17,7 @@ final class Orden
     public readonly array $items,
     public readonly EstadoOrden $estado = EstadoOrden::Pendiente,
     public readonly ?int $id = null,
+    public readonly ?int $mecanicoId = null,
   ) {
   }
 
