@@ -18,7 +18,11 @@ $pagado = (float) $orden['total'] - $saldo;
     <a href="<?= url("ordenes/{$orden['id']}/editar") ?>" class="btn btn-primary">Editar orden</a>
   <?php endif; ?>
   <a href="<?= url("ordenes/{$orden['id']}/presupuesto") ?>" class="btn btn-info">Presupuesto</a>
-  <a href="<?= url("ordenes/{$orden['id']}/presupuesto/pdf") ?>" class="btn btn-outline-secondary">Descargar PDF</a>
+  <a href="<?= url("ordenes/{$orden['id']}/presupuesto/pdf") ?>" class="btn btn-outline-secondary">Presupuesto PDF</a>
+  <?php if ($estado->value === 'finalizado'): ?>
+    <a href="<?= url("ordenes/{$orden['id']}/entrega") ?>" class="btn btn-success">Comprobante de entrega</a>
+    <a href="<?= url("ordenes/{$orden['id']}/entrega/pdf") ?>" class="btn btn-outline-success">Entrega PDF</a>
+  <?php endif; ?>
   <a href="<?= url('ordenes') ?>" class="btn btn-secondary ms-auto">Volver al listado</a>
 </div>
 

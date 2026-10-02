@@ -5,7 +5,7 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/png" href="<?= asset('img/logo_64.png') ?>">
-  <title>Presupuesto #<?= e($numero) ?> - <?= e($taller['nombre']) ?></title>
+  <title><?= e($titulo) ?> #<?= e($numero) ?> - <?= e($taller['nombre']) ?></title>
   <style>
     :root {
       --accent: #0d6efd;
@@ -205,7 +205,7 @@
       <div class="brand">
         <img src="<?= asset('img/logo.png') ?>" alt="Logo del taller">
         <div>
-          <h1>Presupuesto de Servicio</h1>
+          <h1><?= e($titulo) ?></h1>
           <div class="meta"><?= e($taller['nombre']) ?> — CUIT: <?= e($taller['cuit']) ?></div>
           <div class="meta small">
             <?= e($taller['direccion']) ?> · Tel: <?= e($taller['telefono']) ?> · <?= e($taller['email']) ?>
@@ -213,9 +213,13 @@
         </div>
       </div>
       <div class="box small">
-        <div><strong>Nº Presupuesto:</strong> <?= e($numero) ?></div>
-        <div><strong>Fecha:</strong> <?= format_date($orden['created_at']) ?></div>
-        <div><strong>Validez:</strong> <?= (int) $trabajo['validez'] ?> días</div>
+        <div><strong>Nº <?= $entrega ? 'Orden' : 'Presupuesto' ?>:</strong> <?= e($numero) ?></div>
+        <div><strong>Fecha:</strong> <?= format_date($entrega ? $orden['fecha_realizado'] : $orden['created_at']) ?></div>
+        <?php if ($entrega): ?>
+          <div><strong>Mecánico:</strong> <?= e($orden['mecanico'] ?? '—') ?></div>
+        <?php else: ?>
+          <div><strong>Validez:</strong> <?= (int) $trabajo['validez'] ?> días</div>
+        <?php endif; ?>
       </div>
     </header>
 
@@ -257,25 +261,29 @@
         </tbody>
         <tfoot>
           <tr>
-            <td colspan="3" class="right">Total estimado</td>
+            <td colspan="3" class="right"><?= $entrega ? 'Total' : 'Total estimado' ?></td>
             <td class="right">$ <?= money($total) ?></td>
           </tr>
+          <?php if ($entrega): ?>
+            <tr><td colspan="3" class="right">Pagado</td><td class="right">$ <?= money($pagado) ?></td></tr>
+            <tr><td colspan="3" class="right">Saldo pendiente</td><td class="right">$ <?= money($saldo) ?></td></tr>
+          <?php endif; ?>
         </tfoot>
       </table>
     </section>
 
     <div class="notes">
-      <strong>Observaciones:</strong>
+      <?php if (!$entrega): ?><strong>Observaciones:</strong>
       <ul>
         <?php foreach ($trabajo['observaciones'] as $obs): ?>
           <li><?= e($obs) ?></li>
         <?php endforeach; ?>
-      </ul>
+      </ul><?php endif; ?>
       <p class="small" style="margin-top:8px;">
-        <strong>Formas de pago:</strong> <?= e(implode(' · ', $trabajo['forma_pago'])) ?>
+        <?php if (!$entrega): ?><strong>Formas de pago:</strong> <?= e(implode(' · ', $trabajo['forma_pago'])) ?><?php endif; ?>
       </p>
       <p class="small" style="margin-top:8px;">
-        <strong>Garantía del trabajo:</strong> <?= (int) $trabajo['garantia'] ?> días a partir de la entrega del vehículo.
+        <strong>Garantía del trabajo:</strong> <?= (int) $trabajo['garantia'] ?> días a partir de la entrega del vehículo<?= $entrega ? ' (vence el ' . e($vencimientoGarantia) . ')' : '' ?>.
       </p>
     </div>
 
@@ -283,15 +291,15 @@
 
     <div style="display:flex; gap:20px; margin-top:35px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
       <div>
-        <div class="small">Firma y conformidad del cliente:</div>
+        <div class="small"><?= $entrega ? 'Recibí el vehículo en conformidad con los trabajos detallados:' : 'Firma y conformidad del cliente:' ?></div>
         <div style="margin-top:100px; border-top:1px dashed #999; width:340px; max-width:100%; padding-top:16px; padding-bottom:24px; font-size:14px;">
           Nombre y Firma
         </div>
       </div>
       <div class="actions">
         <button type="button" class="btn btn-primary" onclick="window.print()">Imprimir</button>
-        <a class="btn btn-outline" href="<?= url('ordenes') ?>">Volver</a>
-        <a class="btn btn-outline" href="<?= url("ordenes/{$orden['id']}/presupuesto/pdf") ?>">Descargar PDF</a>
+        <a class="btn btn-outline" href="<?= url("ordenes/{$orden['id']}") ?>">Volver</a>
+        <a class="btn btn-outline" href="<?= url("ordenes/{$orden['id']}/" . ($entrega ? 'entrega' : 'presupuesto') . '/pdf') ?>">Descargar PDF</a>
       </div>
     </div>
   </div>

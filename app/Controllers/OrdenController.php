@@ -20,7 +20,7 @@ use App\Repositories\ServicioRepository;
 use App\Repositories\VehiculoRepository;
 use App\Services\ConfiguracionService;
 use App\Services\OrdenService;
-use App\Services\PresupuestoService;
+use App\Services\DocumentoService;
 
 final class OrdenController extends Controller
 {
@@ -32,7 +32,7 @@ final class OrdenController extends Controller
     private readonly VehiculoRepository $vehiculos,
     private readonly ServicioRepository $servicios,
     private readonly RepuestoRepository $repuestos,
-    private readonly PresupuestoService $presupuestos,
+    private readonly DocumentoService $documentos,
     private readonly Auth $auth,
     private readonly PagoRepository $pagos,
     private readonly ClienteRepository $clientes,
@@ -115,15 +115,44 @@ final class OrdenController extends Controller
 
   public function presupuesto(Request $request, int $id): void
   {
-    echo $this->view->render('presupuestos/show', [
-      ...$this->presupuestos->datos($id),
-      'imprimir' => $request->query('imprimir') === '1',
-    ], null);
+    $this->documento($request, $id, false);
+  }
+
+  public function entrega(Request $request, int $id): void
+  {
+    $this->documento($request, $id, true);
   }
 
   public function pdf(Request $request, int $id): void
   {
-    $pdf = $this->presupuestos->pdf($id);
+    $this->descargar($id, false);
+  }
+
+  public function entregaPdf(Request $request, int $id): void
+  {
+    $this->descargar($id, true);
+  }
+
+  private function documento(Request $request, int $id, bool $entrega): void
+  {
+    try {
+      $datos = $this->documentos->datos($id, $entrega);
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+      $this->redirect("/ordenes/{$id}");
+    }
+
+    echo $this->view->render('presupuestos/show', [...$datos, 'imprimir' => $request->query('imprimir') === '1'], null);
+  }
+
+  private function descargar(int $id, bool $entrega): void
+  {
+    try {
+      $pdf = $this->documentos->pdf($id, $entrega);
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+      $this->redirect("/ordenes/{$id}");
+    }
 
     header('Content-Type: application/pdf');
     header('Content-Disposition: attachment; filename="' . $pdf['nombre'] . '"');

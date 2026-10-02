@@ -91,6 +91,8 @@ return function (Router $r): void {
   $r->post('/ordenes/{id}/estado', [OrdenController::class, 'cambiarEstado']);
   $r->get('/ordenes/{id}/presupuesto', [OrdenController::class, 'presupuesto']);
   $r->get('/ordenes/{id}/presupuesto/pdf', [OrdenController::class, 'pdf']);
+  $r->get('/ordenes/{id}/entrega', [OrdenController::class, 'entrega']);
+  $r->get('/ordenes/{id}/entrega/pdf', [OrdenController::class, 'entregaPdf']);
 
   // Turnos
   $r->get('/turnos', [TurnoController::class, 'index']);

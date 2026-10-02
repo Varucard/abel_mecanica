@@ -37,6 +37,7 @@ abstract class IntegrationTestCase extends TestCase
       \App\Services\ConfiguracionService::class,
       fn() => new \App\Services\ConfiguracionService(dirname(__DIR__, 2))
     );
+    $this->container->set(\App\Core\View::class, fn() => new \App\Core\View(dirname(__DIR__, 2) . '/views'));
   }
 
   protected function tearDown(): void

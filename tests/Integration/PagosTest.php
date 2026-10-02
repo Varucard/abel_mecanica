@@ -80,6 +80,26 @@ final class PagosTest extends IntegrationTestCase
     }
   }
 
+  public function testComprobanteDeEntregaSoloParaOrdenesFinalizadas(): void
+  {
+    $orden = $this->orden(1000);
+    $this->pagar($orden['id'], '250');
+    $documentos = $this->make(\App\Services\DocumentoService::class);
+
+    try {
+      $documentos->datos($orden['id'], true);
+      $this->fail('No debía emitir el comprobante de una orden pendiente');
+    } catch (ValidationException) {
+    }
+
+    $this->make(OrdenService::class)->cambiarEstado($orden['id'], 'finalizado');
+    $datos = $documentos->datos($orden['id'], true);
+
+    $this->assertSame('Comprobante de entrega', $datos['titulo']);
+    $this->assertSame(250.0, $datos['pagado']);
+    $this->assertSame(750.0, $datos['saldo']);
+  }
+
   public function testOrdenCanceladaNoAdmitePagos(): void
   {
     $orden = $this->orden();
