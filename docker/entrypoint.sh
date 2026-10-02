@@ -10,4 +10,7 @@ fi
 mkdir -p storage/config storage/logs
 chown -R www-data:www-data storage
 
+# Aplica las migraciones pendientes (reintenta mientras la base termina de iniciar).
+php bin/migrate.php 15 || echo "AVISO: no se pudieron aplicar las migraciones." >&2
+
 exec docker-php-entrypoint "$@"

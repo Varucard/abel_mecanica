@@ -4,7 +4,8 @@
 --
 --   docker compose exec database sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" taller_mecanico' > backup.sql
 --
--- Se ejecuta una sola vez. Cambios:
+-- Se ejecuta una sola vez, ANTES de las migraciones de database/migrations
+-- (que luego se aplican solas al levantar el contenedor). Cambios:
 --   1. Juego de caracteres latin1 -> utf8mb4 (acentos, ñ y emojis correctos).
 --   2. Repuestos en órdenes ya no usan el "Servicio de sistema" (id 1):
 --      servicio_id pasa a ser NULL y repuesto_id tiene clave foránea.

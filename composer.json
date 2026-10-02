@@ -28,7 +28,8 @@
   },
   "scripts": {
     "test": "phpunit",
-    "lint": "find app config public views tests -name '*.php' -print0 | xargs -0 -n1 php -l"
+    "migrate": "php bin/migrate.php",
+    "lint": "find app bin config public views tests -name '*.php' -print0 | xargs -0 -n1 php -l"
   },
   "config": {
     "sort-packages": true,

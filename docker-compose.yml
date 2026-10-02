@@ -1,10 +1,9 @@
 services:
   database:
     image: mysql:8.4
-    container_name: database
     restart: unless-stopped
     ports:
-      - "3309:3306"
+      - "${DB_HOST_PORT:-3309}:3306"
     environment:
       TZ: ${TZ}
       MYSQL_DATABASE: ${DB_DATABASE}
@@ -14,8 +13,6 @@ services:
     volumes:
       - db_data:/var/lib/mysql
       - ./mysqld.cnf:/etc/mysql/conf.d/taller.cnf:ro
-      # Solo se ejecuta la primera vez, con el volumen vacío.
-      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 5s
@@ -24,10 +21,9 @@ services:
 
   admin:
     image: phpmyadmin:5
-    container_name: admin
     restart: unless-stopped
     ports:
-      - "8051:80"
+      - "${PMA_PORT:-8051}:80"
     environment:
       PMA_HOST: database
     depends_on:
@@ -35,10 +31,9 @@ services:
 
   public:
     build: ./
-    container_name: public
     restart: unless-stopped
     ports:
-      - "8050:80"
+      - "${APP_PORT:-8050}:80"
     env_file: .env
     environment:
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
