@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Core;
 
+use App\Exceptions\ForbiddenException;
 use App\Exceptions\NotFoundException;
 use App\Exceptions\ValidationException;
 use PDO;
@@ -61,16 +62,46 @@ final class App
       $this->container->get(Session::class);
 
       $router = new Router($this->container);
+      $router->setGuard(fn(string $acceso, Request $r) => $this->guard($acceso, $r));
       (require $this->rootPath . '/config/routes.php')($router);
       $router->dispatch($request);
     } catch (ValidationException $e) {
       $this->handleValidation($e, $request);
     } catch (NotFoundException $e) {
       $this->renderError(404, $e->getMessage(), $request);
+    } catch (ForbiddenException $e) {
+      $this->renderError(403, $e->getMessage(), $request);
     } catch (Throwable $e) {
       error_log((string) $e);
       $message = Env::bool('APP_DEBUG') ? $e->getMessage() : 'Ocurrió un error inesperado. Intentá nuevamente.';
       $this->renderError(500, $message, $request);
+    }
+  }
+
+  /** Control de acceso de cada ruta según su nivel (ver Router::ACCESO_*). */
+  private function guard(string $acceso, Request $request): void
+  {
+    if ($acceso === Router::ACCESO_PUBLICO) {
+      return;
+    }
+
+    $auth = $this->container->get(Auth::class);
+
+    if (!$auth->check()) {
+      if ($request->isAjax()) {
+        $this->sendJson(['status' => 'error', 'message' => 'La sesión expiró. Volvé a iniciar sesión.'], 401);
+        exit;
+      }
+
+      if ($request->method === 'GET') {
+        $_SESSION['_intended'] = $request->path;
+      }
+      header('Location: ' . url('login'), true, 303);
+      exit;
+    }
+
+    if ($acceso === Router::ACCESO_ADMIN && !$auth->esAdministrador()) {
+      throw new ForbiddenException('Esta sección es solo para administradores.');
     }
   }
 
@@ -108,7 +139,11 @@ final class App
 
     try {
       echo $this->container->get(View::class)->render('errors/error', [
-        'title' => $status === 404 ? 'Página no encontrada' : 'Error del sistema',
+        'title' => match ($status) {
+          404 => 'Página no encontrada',
+          403 => 'Acceso denegado',
+          default => 'Error del sistema',
+        },
         'status' => $status,
         'message' => $message,
       ]);

@@ -13,6 +13,7 @@ use App\Exceptions\ValidationException;
 use App\Repositories\ClienteRepository;
 use App\Repositories\TurnoRepository;
 use App\Repositories\VehiculoRepository;
+use App\Services\NotificacionService;
 use App\Services\TurnoService;
 
 final class TurnoController extends Controller
@@ -24,6 +25,7 @@ final class TurnoController extends Controller
     private readonly TurnoRepository $turnos,
     private readonly ClienteRepository $clientes,
     private readonly VehiculoRepository $vehiculos,
+    private readonly NotificacionService $notificaciones,
   ) {
     parent::__construct($view, $session);
   }
@@ -34,12 +36,13 @@ final class TurnoController extends Controller
       'title' => 'Agenda de turnos',
       'turnos' => $this->turnos->all(),
       'estados' => EstadoTurno::cases(),
+      'emailHabilitado' => $this->notificaciones->emailHabilitado(),
     ]);
   }
 
   public function create(Request $request): void
   {
-    $this->form('Agendar turno', null);
+    $this->form('Agendar turno', null, (int) $request->int('cliente_id'));
   }
 
   public function store(Request $request): void
@@ -63,6 +66,29 @@ final class TurnoController extends Controller
 
     $estado = $this->service->cambiarEstado($id, $request->string('estado'));
     $this->json(['status' => 'success', 'message' => "Turno #{$id}: {$estado->label()}."]);
+  }
+
+  /** Registra el aviso y abre WhatsApp con el mensaje armado. */
+  public function whatsapp(Request $request, int $id): void
+  {
+    $this->verifyCsrf($request);
+
+    header('Location: ' . $this->notificaciones->whatsappTurno($id), true, 303);
+    exit;
+  }
+
+  public function email(Request $request, int $id): void
+  {
+    $this->verifyCsrf($request);
+
+    try {
+      $this->notificaciones->emailTurno($id);
+      $this->success('Recordatorio enviado por email.');
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+    }
+
+    $this->redirect($request->string('volver') === 'inicio' ? '/' : '/turnos');
   }
 
   public function destroy(Request $request, int $id): void
@@ -89,9 +115,9 @@ final class TurnoController extends Controller
   }
 
   /** @param array<string, mixed>|null $turno */
-  private function form(string $title, ?array $turno): void
+  private function form(string $title, ?array $turno, int $clienteSugerido = 0): void
   {
-    $clienteId = (int) old('cliente_id', $turno['cliente_id'] ?? 0);
+    $clienteId = (int) old('cliente_id', $turno['cliente_id'] ?? $clienteSugerido);
 
     $this->render('turnos/form', [
       'title' => $title,
@@ -99,6 +125,7 @@ final class TurnoController extends Controller
       'clientes' => $this->clientes->activos(),
       'vehiculos' => $clienteId > 0 ? $this->vehiculos->activosPorCliente($clienteId) : [],
       'estados' => EstadoTurno::cases(),
+      'clienteSugerido' => $clienteSugerido,
     ]);
   }
 }

@@ -1,8 +1,8 @@
 -- =====================================================================
--- Taller Mecánico - Esquema completo (instalación nueva)
+-- Taller Mecánico - Esquema inicial
 -- Compatible con MySQL 8.x
 --
--- Para actualizar una base existente usar database/migrations/.
+-- Bases de la versión anterior: aplicar antes database/legacy/ (ver README).
 -- =====================================================================
 
 SET NAMES utf8mb4;

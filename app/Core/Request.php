@@ -13,12 +13,14 @@ final class Request
    * @param array<string, mixed> $query
    * @param array<string, mixed> $body
    */
+  /** @param array<string, array<string, mixed>> $files */
   public function __construct(
     public readonly string $method,
     public readonly string $path,
     private readonly array $query,
     private readonly array $body,
     private readonly bool $ajax = false,
+    private readonly array $files = [],
   ) {
   }
 
@@ -38,6 +40,7 @@ final class Request
       $_GET,
       $_POST,
       ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest',
+      $_FILES,
     );
   }
 
@@ -50,6 +53,14 @@ final class Request
   public function input(string $key, mixed $default = null): mixed
   {
     return $this->body[$key] ?? $this->query[$key] ?? $default;
+  }
+
+  /** Archivo subido (formato de $_FILES) o null si no se envió ninguno. */
+  public function file(string $name): ?array
+  {
+    $file = $this->files[$name] ?? null;
+
+    return is_array($file) && ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_NO_FILE ? $file : null;
   }
 
   public function header(string $name): ?string

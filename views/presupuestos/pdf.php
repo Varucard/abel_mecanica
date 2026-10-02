@@ -167,7 +167,7 @@
           <?php endif; ?>
         </td>
         <td>
-          <div class="title">Presupuesto de Servicio</div>
+          <div class="title"><?= e($titulo) ?></div>
           <div class="meta">
             <?= e($taller['nombre']) ?> — CUIT: <?= e($taller['cuit']) ?><br>
             <?= e($taller['direccion']) ?> — Tel: <?= e($taller['telefono']) ?> — <?= e($taller['email']) ?>
@@ -175,9 +175,13 @@
         </td>
         <td style="width: 150px; padding-left: 8px;">
           <div class="box" style="font-size:9px;">
-            <div><strong>Nº Presupuesto:</strong> <?= e($numero) ?></div>
-            <div><strong>Fecha:</strong> <?= format_date($orden['created_at']) ?></div>
-            <div><strong>Validez:</strong> <?= (int) $trabajo['validez'] ?> días</div>
+            <div><strong>Nº <?= $entrega ? 'Orden' : 'Presupuesto' ?>:</strong> <?= e($numero) ?></div>
+            <div><strong>Fecha:</strong> <?= format_date($entrega ? $orden['fecha_realizado'] : $orden['created_at']) ?></div>
+            <?php if ($entrega): ?>
+          <div><strong>Mecánico:</strong> <?= e($orden['mecanico'] ?? '—') ?></div>
+        <?php else: ?>
+          <div><strong>Validez:</strong> <?= (int) $trabajo['validez'] ?> días</div>
+        <?php endif; ?>
           </div>
         </td>
       </tr>
@@ -221,33 +225,37 @@
         <?php foreach ($items as $item): ?>
           <tr>
             <td><?= e($item['repuesto_id'] !== null ? 'Repuesto: ' . $item['repuesto_nombre'] : $item['servicio_nombre']) ?></td>
-            <td class="right">1</td>
-            <td class="right">$ <?= money($item['costo']) ?></td>
+            <td class="right"><?= qty($item['cantidad']) ?></td>
+            <td class="right">$ <?= money($item['precio_unitario']) ?></td>
             <td class="right">$ <?= money($item['costo']) ?></td>
           </tr>
         <?php endforeach; ?>
       </tbody>
       <tfoot>
         <tr>
-          <td colspan="3" class="right">Total estimado</td>
+          <td colspan="3" class="right"><?= $entrega ? 'Total' : 'Total estimado' ?></td>
           <td class="right">$ <?= money($total) ?></td>
         </tr>
+        <?php if ($entrega): ?>
+          <tr><td colspan="3" class="right">Pagado</td><td class="right">$ <?= money($pagado) ?></td></tr>
+          <tr><td colspan="3" class="right">Saldo pendiente</td><td class="right">$ <?= money($saldo) ?></td></tr>
+        <?php endif; ?>
       </tfoot>
     </table>
 
     <!-- OBSERVACIONES -->
     <div class="notes">
-      <strong>Observaciones:</strong>
+      <?php if (!$entrega): ?><strong>Observaciones:</strong>
       <ul>
         <?php foreach ($trabajo['observaciones'] as $obs): ?>
           <li><?= e($obs) ?></li>
         <?php endforeach; ?>
-      </ul>
+      </ul><?php endif; ?>
       <p class="small" style="margin-top:4px;">
-        <strong>Formas de pago:</strong> <?= e(implode(' · ', $trabajo['forma_pago'])) ?>
+        <?php if (!$entrega): ?><strong>Formas de pago:</strong> <?= e(implode(' · ', $trabajo['forma_pago'])) ?><?php endif; ?>
       </p>
       <p class="small" style="margin-top:4px;">
-        <strong>Garantía del trabajo:</strong> <?= (int) $trabajo['garantia'] ?> días a partir de la entrega del vehículo.
+        <strong>Garantía del trabajo:</strong> <?= (int) $trabajo['garantia'] ?> días a partir de la entrega del vehículo<?= $entrega ? ' (vence el ' . e($vencimientoGarantia) . ')' : '' ?>.
       </p>
     </div>
 
@@ -258,7 +266,7 @@
 
     <!-- FIRMA -->
     <div class="firma-block">
-      <div class="small">Firma y conformidad del cliente:</div>
+      <div class="small"><?= $entrega ? 'Recibí el vehículo en conformidad con los trabajos detallados:' : 'Firma y conformidad del cliente:' ?></div>
       <div class="firma-line">Nombre y Firma</div>
     </div>
 

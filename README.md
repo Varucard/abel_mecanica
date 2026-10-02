@@ -1,8 +1,19 @@
 # Mecánica Abel — Sistema de gestión de taller
 
-Aplicación web en PHP para administrar un taller mecánico: clientes, vehículos,
-órdenes de servicio con presupuesto imprimible/PDF, agenda de turnos y catálogos
-(marcas, modelos, servicios y repuestos).
+Aplicación web en PHP para administrar un taller mecánico.
+
+## Funcionalidades
+
+- **Clientes** con ficha (foto, vehículos, historial de órdenes y turnos, deuda) y acceso directo a WhatsApp.
+- **Vehículos** con motor, combustible, color, VIN, observaciones, galería de imágenes e historial.
+- **Órdenes de servicio** con cantidades y precios por ítem, mecánico asignado, estados, presupuesto y
+  comprobante de entrega con conformidad (HTML imprimible y PDF).
+- **Pagos** parciales por orden, saldos y listado de **deudores**.
+- **Stock de repuestos**: ingresos por proveedor, ajustes por conteo, descuento automático al finalizar
+  órdenes, historial de movimientos y alerta de stock mínimo. **Proveedores**.
+- **Turnos** sin superposición, con recordatorios por WhatsApp y email.
+- **Panel de inicio** con la actividad del día.
+- **Usuarios** con roles (administrador / empleado) y **empleados** del taller.
 
 ## Stack
 
@@ -13,6 +24,7 @@ Aplicación web en PHP para administrar un taller mecánico: clientes, vehículo
 | phpMyAdmin | 5 |
 | Dompdf (vía Composer) | 3.1 |
 | Bootstrap · jQuery · DataTables · Select2 | 5.3.8 · 3.7.1 · 1.13.11 · 4.1.0 |
+| Symfony Mailer | 7.4 |
 | PHPUnit | 11.5 |
 
 ## Puesta en marcha
@@ -22,11 +34,30 @@ cp .env.example .env        # completar las claves
 docker compose up -d --build
 ```
 
-- Aplicación: <http://localhost:8050>
+- Aplicación: <http://localhost:8050> (puertos configurables en `.env`)
 - phpMyAdmin: <http://localhost:8051>
 
-En el primer arranque el contenedor ejecuta `composer install` y MySQL crea las
-tablas desde `database/schema.sql` (solo cuando el volumen de datos está vacío).
+Al iniciar, el contenedor `public` instala las dependencias (si faltan) y aplica
+las migraciones pendientes. **La primera vez que entrás, la aplicación pide crear
+el usuario administrador.**
+
+Si se olvida la contraseña del administrador:
+
+```bash
+docker compose exec public php bin/usuario.php clave <usuario>
+```
+
+### Recordatorios por email (opcional)
+
+Completar `MAIL_DSN` en `.env` con un servidor SMTP, por ejemplo con Gmail y una
+[contraseña de aplicación](https://myaccount.google.com/apppasswords):
+
+```
+MAIL_DSN=smtp://usuario%40gmail.com:CLAVE_DE_APLICACION@smtp.gmail.com:587
+MAIL_FROM=usuario@gmail.com
+```
+
+Sin `MAIL_DSN` el botón de email no aparece; WhatsApp funciona siempre.
 
 ### Sin Docker
 
@@ -35,6 +66,7 @@ Requiere PHP 8.2+ con `pdo_mysql`, `gd`, `mbstring` y `dom`, más un MySQL acces
 ```bash
 composer install
 cp .env.example .env        # DB_HOST=127.0.0.1, etc.
+composer migrate
 php -S localhost:8000 -t public public/index.php
 ```
 
@@ -52,22 +84,27 @@ app/
 ├── Repositories/   Único lugar con SQL (PDO + sentencias preparadas).
 ├── Models/         Entidades del dominio (Persona → Cliente, Vehiculo, Orden, Turno…).
 ├── Enums/          Estados de órdenes, turnos y clientes/vehículos.
-├── Support/        Validator.
+├── Support/        Validator, ImageUpload.
 └── helpers.php     Funciones para vistas: e(), url(), asset(), money(), csrf_field()…
+bin/                migrate.php (migraciones) y usuario.php (recuperar acceso).
 config/
-├── routes.php      Todas las rutas de la aplicación.
+├── routes.php      Todas las rutas de la aplicación y su nivel de acceso.
 └── taller.php      Valores por defecto de la configuración del taller.
 views/              Templates PHP (layout, parciales y una carpeta por módulo).
 public/             Única carpeta expuesta por Apache: index.php + assets.
 database/
-├── schema.sql      Esquema completo para instalaciones nuevas.
-└── migrations/     Scripts para actualizar bases existentes.
-storage/            Configuración editada desde la app y logs (no versionado).
-tests/              Tests unitarios (PHPUnit).
+├── migrations/     NNNN_*.sql, se aplican en orden y quedan registradas en `migraciones`.
+└── legacy/         Script único para bases de la versión anterior.
+scripts/            backup.sh y restore.sh.
+storage/            Configuración, imágenes subidas y logs (no versionado).
+tests/              Unit/ (sin base) e Integration/ (contra MySQL).
 ```
 
-Flujo de una petición: `public/index.php` → `App` → `Router` → `Controller` →
-`Service` → `Repository` → vista.
+Flujo de una petición: `public/index.php` → `App` → `Router` (control de acceso)
+→ `Controller` → `Service` → `Repository` → vista.
+
+Para cambiar la base de datos se agrega un archivo nuevo en `database/migrations/`
+(por ejemplo `0008_descripcion.sql`); nunca se modifica uno ya aplicado.
 
 ### Rutas principales
 
@@ -78,7 +115,13 @@ Flujo de una petición: `public/index.php` → `App` → `Router` → `Controlle
 | Órdenes | `/ordenes`, `/ordenes/crear`, `/ordenes/{id}/editar`, `/ordenes/{id}/presupuesto`, `/ordenes/{id}/presupuesto/pdf` |
 | Turnos | `/turnos`, `/turnos/crear`, `/turnos/{id}/editar` |
 | Catálogos | `/marcas`, `/modelos`, `/servicios`, `/repuestos` |
-| Sistema | `/configuracion` |
+| Inicio | `/` (panel) |
+| Clientes | `/clientes/{id}` (ficha), `/deudores` |
+| Vehículos | `/vehiculos/{id}` (ficha con imágenes) |
+| Órdenes | `/ordenes/{id}` (ficha con pagos), `/ordenes/{id}/entrega`, `/ordenes/{id}/entrega/pdf` |
+| Stock | `/repuestos/{id}/stock`, `/proveedores` |
+| Acceso | `/login`, `/perfil/clave` |
+| Solo administradores | `/configuracion`, `/usuarios`, `/empleados` |
 
 Todas las acciones que modifican datos (alta, edición, baja, cambio de estado)
 son `POST` con token CSRF.
@@ -89,12 +132,23 @@ son `POST` con token CSRF.
   no se elimina (se desactiva).
 - **Vehículos**: patente Mercosur (`AB123CD`) o anterior (`ABC123`); año entre 1940
   y el año próximo. Se activan/desactivan en lugar de borrarse.
-- **Órdenes**: al menos un servicio. El costo de cada ítem queda congelado: si
-  cambia el precio del catálogo, las órdenes existentes no se alteran. Solo se
-  editan órdenes pendientes o en proceso. Al finalizar se registra la fecha.
+- **Órdenes**: al menos un servicio. Cada ítem tiene cantidad y precio unitario;
+  el precio sugerido es el del catálogo y queda congelado en la orden. Solo se
+  editan órdenes pendientes o en proceso, y el total no puede quedar por debajo
+  de lo pagado. Al finalizar se registra la fecha y se descuenta el stock de los
+  repuestos (se repone si la orden se reabre o cancela).
+- **Pagos**: parciales, sin superar el saldo, con las formas de pago configuradas.
+  Un cliente es deudor si tiene órdenes finalizadas con saldo. Anular un pago es
+  solo para administradores.
 - **Turnos**: el vehículo debe pertenecer al cliente; no se agenda en fechas
   pasadas ni en un horario ya ocupado (los cancelados y ausentes liberan el horario).
-- **Catálogos**: no se puede borrar una marca, modelo, servicio o repuesto en uso.
+- **Catálogos**: no se puede borrar una marca, modelo, servicio, repuesto o
+  proveedor en uso.
+- **Seguridad**: contraseñas con `password_hash`, bloqueo de 15 minutos tras 5
+  intentos fallidos, cierre de sesión por 8 h de inactividad, CSRF en todos los
+  formularios y siempre al menos un administrador activo.
+- **Imágenes**: JPG/PNG/WEBP hasta 8 MB, guardadas fuera de `public/` y
+  re-codificadas (se eliminan metadatos como la ubicación GPS).
 
 ## Migrar desde la versión anterior
 
@@ -108,25 +162,46 @@ se tocan y se migran así:
    ```
 2. Bajar el stack anterior, actualizar el código y crear el `.env` nuevo a partir
    de `.env.example`.
-3. Levantar **solo** la base nueva **sin** el esquema automático, importar y migrar:
+3. Levantar **solo** la base nueva, importar el backup y aplicar el script de
+   la versión anterior:
    ```bash
    docker compose up -d database
-   docker compose exec -T database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE taller_mecanico; CREATE DATABASE taller_mecanico"'
    docker compose exec -T database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" taller_mecanico' < backup.sql
-   docker compose exec -T database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" taller_mecanico' < database/migrations/2026_10_02_profesionalizacion.sql
+   docker compose exec -T database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" taller_mecanico' < database/legacy/2026_10_02_desde_version_anterior.sql
    docker compose up -d
    ```
-4. La configuración del taller ahora se guarda en `storage/config/taller.json`.
+   Al levantar `public` se aplican solas las migraciones nuevas.
+4. Entrar a la aplicación y crear el usuario administrador.
+5. La configuración del taller ahora se guarda en `storage/config/taller.json`.
    Si se había modificado desde la pantalla de Sistema, volver a cargarla ahí.
 
 La migración también funciona directamente sobre MySQL 5.7.
 
+## Backups
+
+```bash
+scripts/backup.sh                       # base + imágenes + configuración en backups/ (conserva 14)
+scripts/restore.sh backups/db_<fecha>.sql.gz backups/archivos_<fecha>.tar.gz
+```
+
+Para un backup diario automático, agregar al crontab del servidor:
+
+```
+0 22 * * * cd /ruta/al/proyecto && scripts/backup.sh >> backups/backup.log 2>&1
+```
+
 ## Desarrollo
 
 ```bash
-docker compose exec public composer test   # tests unitarios
-docker compose exec public composer lint   # chequeo de sintaxis
+docker compose exec public composer lint     # sintaxis
+docker compose exec public composer migrate  # aplicar migraciones
+docker compose exec -e DB_TEST_HOST=database -e DB_TEST_PASSWORD="$MYSQL_ROOT_PASSWORD" public composer test
 ```
+
+Los tests de integración usan una base descartable (`taller_test`) y se omiten si
+no está definida `DB_TEST_HOST`. En GitHub Actions corren en cada push y PR.
+
+La hoja de ruta con lo hecho y lo pendiente está en [ROADMAP.md](ROADMAP.md).
 
 Para depurar con Xdebug: `XDEBUG_MODE=debug` en `.env`, reiniciar el contenedor
 `public` y usar la configuración de `.vscode/launch.json` (puerto 9004).

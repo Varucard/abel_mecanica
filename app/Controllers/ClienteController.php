@@ -11,7 +11,12 @@ use App\Core\View;
 use App\Enums\Estado;
 use App\Exceptions\ValidationException;
 use App\Repositories\ClienteRepository;
+use App\Repositories\OrdenRepository;
+use App\Repositories\PagoRepository;
+use App\Repositories\TurnoRepository;
+use App\Repositories\VehiculoRepository;
 use App\Services\ClienteService;
+use App\Support\ImageUpload;
 
 final class ClienteController extends Controller
 {
@@ -20,6 +25,10 @@ final class ClienteController extends Controller
     Session $session,
     private readonly ClienteService $service,
     private readonly ClienteRepository $clientes,
+    private readonly VehiculoRepository $vehiculos,
+    private readonly OrdenRepository $ordenes,
+    private readonly TurnoRepository $turnos,
+    private readonly PagoRepository $pagos,
   ) {
     parent::__construct($view, $session);
   }
@@ -29,7 +38,50 @@ final class ClienteController extends Controller
     $this->render('clientes/index', [
       'title' => 'Clientes',
       'clientes' => $this->clientes->all(),
+      'saldos' => $this->pagos->saldosPorCliente(),
     ]);
+  }
+
+  /** Ficha del cliente: datos, vehículos, órdenes, turnos y saldo. */
+  public function show(Request $request, int $id): void
+  {
+    $this->render('clientes/show', [
+      'title' => 'Ficha del cliente',
+      'cliente' => $this->service->obtener($id),
+      'vehiculos' => $this->vehiculos->porCliente($id),
+      'ordenes' => $this->ordenes->porCliente($id),
+      'turnos' => $this->turnos->porCliente($id),
+      'saldo' => $this->pagos->saldosPorCliente()[$id] ?? 0.0,
+    ]);
+  }
+
+  public function foto(Request $request, int $id): void
+  {
+    ImageUpload::enviar($this->service->rutaFoto($id));
+  }
+
+  public function subirFoto(Request $request, int $id): void
+  {
+    $this->verifyCsrf($request);
+
+    try {
+      $archivo = $request->file('foto') ?? throw new ValidationException(['Seleccioná una imagen.']);
+      $this->service->cambiarFoto($id, $archivo);
+      $this->success('Foto actualizada.');
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+    }
+
+    $this->redirect("/clientes/{$id}");
+  }
+
+  public function quitarFoto(Request $request, int $id): void
+  {
+    $this->verifyCsrf($request);
+
+    $this->service->quitarFoto($id);
+    $this->success('Foto eliminada.');
+    $this->redirect("/clientes/{$id}");
   }
 
   public function create(Request $request): void
@@ -42,13 +94,13 @@ final class ClienteController extends Controller
     $this->verifyCsrf($request);
 
     try {
-      $this->service->crear($request->all());
+      $id = $this->service->crear($request->all());
     } catch (ValidationException $e) {
       $this->backWithErrors('/clientes/crear', $e, $request);
     }
 
     $this->success('Cliente registrado correctamente.');
-    $this->redirect('/clientes');
+    $this->redirect("/clientes/{$id}");
   }
 
   public function edit(Request $request, int $id): void
@@ -70,7 +122,7 @@ final class ClienteController extends Controller
     }
 
     $this->success('Cliente actualizado correctamente.');
-    $this->redirect('/clientes');
+    $this->redirect("/clientes/{$id}");
   }
 
   public function toggle(Request $request, int $id): void

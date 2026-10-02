@@ -8,16 +8,28 @@ use App\Models\Repuesto;
 
 final class RepuestoRepository extends Repository
 {
+  private const SELECT = '
+    SELECT r.id, r.codigo, r.nombre, r.descripcion, r.precio, r.stock_actual, r.stock_minimo,
+           r.proveedor_id, p.nombre AS proveedor
+      FROM repuestos r
+      LEFT JOIN proveedores p ON p.id = r.proveedor_id';
+
   /** @return list<array<string, mixed>> */
   public function all(): array
   {
-    return $this->fetchAll('SELECT id, nombre, descripcion, precio FROM repuestos ORDER BY nombre');
+    return $this->fetchAll(self::SELECT . ' ORDER BY r.nombre');
   }
 
   /** @return array<string, mixed>|null */
   public function find(int $id): ?array
   {
-    return $this->fetchOne('SELECT id, nombre, descripcion, precio FROM repuestos WHERE id = ?', [$id]);
+    return $this->fetchOne(self::SELECT . ' WHERE r.id = ?', [$id]);
+  }
+
+  /** Repuestos con stock en o por debajo del mínimo (solo los que tienen mínimo definido). */
+  public function bajoMinimo(): array
+  {
+    return $this->fetchAll(self::SELECT . ' WHERE r.stock_minimo > 0 AND r.stock_actual <= r.stock_minimo ORDER BY r.nombre');
   }
 
   /**
@@ -35,17 +47,23 @@ final class RepuestoRepository extends Repository
     return array_map('floatval', $this->fetchPairs("SELECT id, precio FROM repuestos WHERE id IN ({$placeholders})", $ids));
   }
 
-  public function save(Repuesto $repuesto): int
+  public function save(Repuesto $r): int
   {
-    $params = [$repuesto->nombre, $repuesto->descripcion, $repuesto->precio];
+    $params = [$r->codigo, $r->nombre, $r->descripcion, $r->precio, $r->stockMinimo, $r->proveedorId];
 
-    if ($repuesto->id === null) {
-      return $this->insert('INSERT INTO repuestos (nombre, descripcion, precio) VALUES (?, ?, ?)', $params);
+    if ($r->id === null) {
+      return $this->insert(
+        'INSERT INTO repuestos (codigo, nombre, descripcion, precio, stock_minimo, proveedor_id) VALUES (?, ?, ?, ?, ?, ?)',
+        $params
+      );
     }
 
-    $this->execute('UPDATE repuestos SET nombre = ?, descripcion = ?, precio = ? WHERE id = ?', [...$params, $repuesto->id]);
+    $this->execute(
+      'UPDATE repuestos SET codigo = ?, nombre = ?, descripcion = ?, precio = ?, stock_minimo = ?, proveedor_id = ? WHERE id = ?',
+      [...$params, $r->id]
+    );
 
-    return $repuesto->id;
+    return $r->id;
   }
 
   public function delete(int $id): void

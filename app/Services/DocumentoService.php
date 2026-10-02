@@ -6,33 +6,54 @@ namespace App\Services;
 
 use App\Core\App;
 use App\Core\View;
+use App\Enums\EstadoOrden;
 use App\Repositories\ClienteRepository;
 use App\Repositories\OrdenRepository;
+use App\Repositories\PagoRepository;
+use App\Support\Validator;
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
 /**
- * Arma los datos del presupuesto de una orden y genera su PDF.
+ * Documentos imprimibles de una orden: presupuesto y comprobante de entrega
+ * (con conformidad del cliente), en HTML y PDF.
  */
-final class PresupuestoService
+final class DocumentoService
 {
   public function __construct(
     private readonly OrdenService $ordenService,
     private readonly OrdenRepository $ordenes,
     private readonly ClienteRepository $clientes,
+    private readonly PagoRepository $pagos,
     private readonly ConfiguracionService $configuracion,
     private readonly View $view,
   ) {
   }
 
-  /** @return array<string, mixed> Variables para las vistas del presupuesto. */
-  public function datos(int $ordenId): array
+  /**
+   * Variables para las vistas del documento.
+   *
+   * @param bool $entrega true: comprobante de entrega (solo órdenes finalizadas)
+   * @return array<string, mixed>
+   */
+  public function datos(int $ordenId, bool $entrega = false): array
   {
     $orden = $this->ordenService->obtener($ordenId);
+    (new Validator())
+      ->check(!$entrega || $orden['estado'] === EstadoOrden::Finalizado->value, 'El comprobante de entrega solo está disponible para órdenes finalizadas.')
+      ->validate();
+
     $items = $this->ordenes->items($ordenId);
     $config = $this->configuracion->obtener();
+    $pagado = $this->pagos->totalPagado($ordenId);
+    $finalizada = $orden['fecha_realizado'] ?? date('Y-m-d');
 
     return [
+      'entrega' => $entrega,
+      'titulo' => $entrega ? 'Comprobante de entrega' : 'Presupuesto de Servicio',
+      'pagado' => $pagado,
+      'saldo' => round((float) $orden['total'] - $pagado, 2),
+      'vencimientoGarantia' => date('d/m/Y', strtotime("{$finalizada} +{$config['trabajo']['garantia']} days")),
       'orden' => $orden,
       'numero' => str_pad((string) $orden['id'], 4, '0', STR_PAD_LEFT),
       'cliente' => $this->clientes->find((int) $orden['cliente_id']),
@@ -47,9 +68,9 @@ final class PresupuestoService
   }
 
   /** @return array{nombre: string, contenido: string} */
-  public function pdf(int $ordenId): array
+  public function pdf(int $ordenId, bool $entrega = false): array
   {
-    $datos = $this->datos($ordenId);
+    $datos = $this->datos($ordenId, $entrega);
     $datos['logo'] = $this->logoDataUri();
 
     $options = new Options();
@@ -62,7 +83,7 @@ final class PresupuestoService
     $dompdf->render();
 
     return [
-      'nombre' => "Presupuesto_{$datos['numero']}.pdf",
+      'nombre' => ($entrega ? 'Entrega' : 'Presupuesto') . "_{$datos['numero']}.pdf",
       'contenido' => (string) $dompdf->output(),
     ];
   }

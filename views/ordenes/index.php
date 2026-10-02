@@ -23,6 +23,7 @@ $view->script('ordenes.js');
             <th class="col-vehiculo">Vehículo</th>
             <th>Servicio(s) - Repuesto(s)</th>
             <th>Total</th>
+            <th>Saldo</th>
             <th>Fecha</th>
             <th>Estado</th>
             <th data-orderable="false">Acciones</th>
@@ -34,7 +35,10 @@ $view->script('ordenes.js');
             <tr>
               <td><?= (int) $o['id'] ?></td>
               <td class="col-achicada"><?= e($o['cliente']) ?></td>
-              <td class="col-achicada"><?= e($o['vehiculo']) ?></td>
+              <td class="col-achicada">
+                <?= e($o['vehiculo']) ?>
+                <?php if ($o['mecanico']): ?><div class="small text-muted">🔧 <?= e($o['mecanico']) ?></div><?php endif; ?>
+              </td>
               <td>
                 <?= e($o['servicios'] ?? '') ?>
                 <?php if (!empty($o['repuestos'])): ?>
@@ -42,6 +46,11 @@ $view->script('ordenes.js');
                 <?php endif; ?>
               </td>
               <td data-order="<?= (float) $o['total'] ?>">$ <?= money($o['total']) ?></td>
+              <td data-order="<?= (float) $o['saldo'] ?>">
+                <?php if ($estado->value === 'cancelado'): ?>—
+                <?php elseif ((float) $o['saldo'] > 0): ?><span class="text-danger">$ <?= money($o['saldo']) ?></span>
+                <?php else: ?><span class="badge bg-success">Pagada</span><?php endif; ?>
+              </td>
               <td data-order="<?= e($o['created_at']) ?>"><?= format_date($o['created_at']) ?></td>
               <td data-order="<?= e($estado->value) ?>">
                 <select class="form-select form-select-sm estado-orden-select estado-<?= e($estado->value) ?>"
@@ -52,10 +61,10 @@ $view->script('ordenes.js');
                 </select>
               </td>
               <td class="col-acciones text-nowrap">
+                <a href="<?= url("ordenes/{$o['id']}") ?>" class="btn btn-sm btn-info">Ver</a>
                 <?php if (OrdenService::editable($estado)): ?>
                   <a href="<?= url("ordenes/{$o['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
                 <?php endif; ?>
-                <a href="<?= url("ordenes/{$o['id']}/presupuesto") ?>" class="btn btn-sm btn-info">Presupuesto</a>
               </td>
             </tr>
           <?php endforeach; ?>

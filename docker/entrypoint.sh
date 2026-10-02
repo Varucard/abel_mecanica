@@ -7,7 +7,10 @@ if [ ! -f vendor/autoload.php ]; then
 fi
 
 # Apache necesita poder escribir la configuración del taller y los logs.
-mkdir -p storage/config storage/logs
+mkdir -p storage/config storage/logs storage/uploads/clientes storage/uploads/vehiculos
 chown -R www-data:www-data storage
+
+# Aplica las migraciones pendientes (reintenta mientras la base termina de iniciar).
+php bin/migrate.php 15 || echo "AVISO: no se pudieron aplicar las migraciones." >&2
 
 exec docker-php-entrypoint "$@"

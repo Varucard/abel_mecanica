@@ -1,12 +1,16 @@
 <nav class="btn-group w-100 mb-3" role="navigation" style="gap: 5px;">
+  <a href="<?= url('/') ?>" class="btn btn-outline-secondary flex-grow-0" title="Inicio">🏠</a>
   <div class="dropdown flex-fill">
     <a href="#" class="btn btn-primary w-100">⚙️ Configuración</a>
     <div class="dropdown-menu">
       <a href="<?= url('servicios') ?>">Servicios</a>
-      <a href="<?= url('repuestos') ?>">Repuestos</a>
       <a href="<?= url('marcas') ?>">Marcas</a>
       <a href="<?= url('modelos') ?>">Modelos</a>
-      <a href="<?= url('configuracion') ?>">Sistema</a>
+      <?php if (auth()->esAdministrador()): ?>
+        <a href="<?= url('configuracion') ?>">Sistema</a>
+        <a href="<?= url('empleados') ?>">Empleados</a>
+        <a href="<?= url('usuarios') ?>">Usuarios</a>
+      <?php endif; ?>
     </div>
   </div>
   <div class="dropdown flex-fill">
@@ -14,6 +18,7 @@
     <div class="dropdown-menu">
       <a href="<?= url('clientes/crear') ?>">Registrar cliente</a>
       <a href="<?= url('clientes') ?>">Ver clientes</a>
+      <a href="<?= url('deudores') ?>">Deudores</a>
     </div>
   </div>
   <div class="dropdown flex-fill">
@@ -28,6 +33,13 @@
     <div class="dropdown-menu">
       <a href="<?= url('ordenes/crear') ?>">Registrar orden</a>
       <a href="<?= url('ordenes') ?>">Ver órdenes</a>
+    </div>
+  </div>
+  <div class="dropdown flex-fill">
+    <a href="<?= url('repuestos') ?>" class="btn btn-dark w-100">📦 Stock</a>
+    <div class="dropdown-menu">
+      <a href="<?= url('repuestos') ?>">Repuestos</a>
+      <a href="<?= url('proveedores') ?>">Proveedores</a>
     </div>
   </div>
   <div class="dropdown flex-fill">

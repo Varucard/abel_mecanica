@@ -9,8 +9,12 @@ use App\Core\Request;
 use App\Core\Session;
 use App\Core\View;
 use App\Exceptions\ValidationException;
+use App\Core\Auth;
+use App\Repositories\ProveedorRepository;
 use App\Repositories\RepuestoRepository;
+use App\Repositories\StockRepository;
 use App\Services\RepuestoService;
+use App\Services\StockService;
 
 final class RepuestoController extends Controller
 {
@@ -19,6 +23,10 @@ final class RepuestoController extends Controller
     Session $session,
     private readonly RepuestoService $service,
     private readonly RepuestoRepository $repuestos,
+    private readonly ProveedorRepository $proveedores,
+    private readonly StockRepository $movimientos,
+    private readonly StockService $stock,
+    private readonly Auth $auth,
   ) {
     parent::__construct($view, $session);
   }
@@ -78,6 +86,45 @@ final class RepuestoController extends Controller
       'title' => 'Repuestos',
       'repuesto' => $repuesto,
       'repuestos' => $this->repuestos->all(),
+      'proveedores' => $this->proveedores->activos(),
     ]);
+  }
+
+  public function stock(Request $request, int $id): void
+  {
+    $this->render('repuestos/stock', [
+      'title' => 'Stock de repuesto',
+      'repuesto' => $this->service->obtener($id),
+      'movimientos' => $this->movimientos->historial($id),
+      'proveedores' => $this->proveedores->activos(),
+    ]);
+  }
+
+  public function ingresar(Request $request, int $id): void
+  {
+    $this->verifyCsrf($request);
+
+    try {
+      $stock = $this->stock->ingresar($id, $request->string('cantidad'), $request->int('proveedor_id') ?: null, $request->string('motivo'), $this->auth->id());
+      $this->success('Ingreso registrado. Stock actual: ' . qty($stock) . '.');
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+    }
+
+    $this->redirect("/repuestos/{$id}/stock");
+  }
+
+  public function ajustar(Request $request, int $id): void
+  {
+    $this->verifyCsrf($request);
+
+    try {
+      $stock = $this->stock->ajustar($id, $request->string('stock_real'), $request->string('motivo'), $this->auth->id());
+      $this->success('Stock ajustado a ' . qty($stock) . '.');
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+    }
+
+    $this->redirect("/repuestos/{$id}/stock");
   }
 }

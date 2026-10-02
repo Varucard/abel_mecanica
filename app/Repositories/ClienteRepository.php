@@ -9,9 +9,14 @@ use App\Models\Cliente;
 
 final class ClienteRepository extends Repository
 {
+  public function __construct(\PDO $db, private readonly PersonaRepository $personas)
+  {
+    parent::__construct($db);
+  }
+
   private const SELECT = "
     SELECT c.id, c.persona_id, p.nombre, p.apellido, p.dni, p.email,
-           c.telefono, c.direccion, c.estado
+           c.telefono, c.direccion, c.estado, c.foto
       FROM clientes c
       INNER JOIN personas p ON p.id = c.persona_id";
 
@@ -37,10 +42,7 @@ final class ClienteRepository extends Repository
   public function create(Cliente $cliente): int
   {
     return $this->transaction(function () use ($cliente) {
-      $personaId = $this->insert(
-        'INSERT INTO personas (nombre, apellido, dni, email) VALUES (?, ?, ?, ?)',
-        [$cliente->nombre, $cliente->apellido, $cliente->dni, $cliente->email]
-      );
+      $personaId = $this->personas->obtenerOCrear($cliente);
 
       return $this->insert(
         'INSERT INTO clientes (persona_id, telefono, direccion, estado) VALUES (?, ?, ?, ?)',
@@ -68,18 +70,27 @@ final class ClienteRepository extends Repository
     });
   }
 
+  public function setFoto(int $id, ?string $archivo): void
+  {
+    $this->execute('UPDATE clientes SET foto = ? WHERE id = ?', [$archivo, $id]);
+  }
+
   public function setEstado(int $id, Estado $estado): void
   {
     $this->execute('UPDATE clientes SET estado = ? WHERE id = ?', [$estado->value, $id]);
   }
 
-  /** Borra la persona; el cliente se elimina en cascada. */
+  /** Borra el cliente y también la persona si no es empleado. */
   public function delete(int $id): void
   {
-    $this->execute(
-      'DELETE p FROM personas p INNER JOIN clientes c ON c.persona_id = p.id WHERE c.id = ?',
-      [$id]
-    );
+    $this->transaction(function () use ($id) {
+      $personaId = (int) $this->fetchOne('SELECT persona_id FROM clientes WHERE id = ?', [$id])['persona_id'];
+      $this->execute('DELETE FROM clientes WHERE id = ?', [$id]);
+      $this->execute(
+        'DELETE FROM personas WHERE id = ? AND NOT EXISTS (SELECT 1 FROM empleados WHERE persona_id = ?)',
+        [$personaId, $personaId]
+      );
+    });
   }
 
   public function tieneHistorial(int $id): bool

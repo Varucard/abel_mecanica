@@ -5,7 +5,8 @@
  * @var list<array<string, mixed>> $marcas
  * @var list<array<string, mixed>> $modelos
  */
-$clienteId = (int) old('cliente_id', $vehiculo['cliente_id'] ?? 0);
+$clienteId = (int) old('cliente_id', $vehiculo['cliente_id'] ?? $clienteSugerido);
+$combustibleActual = old('combustible', $vehiculo['combustible'] ?? '');
 $marcaId = (int) old('marca_id', $vehiculo['marca_id'] ?? 0);
 $modeloId = (int) old('modelo_id', $vehiculo['modelo_id'] ?? 0);
 $view->script('vehiculos.js');
@@ -70,10 +71,41 @@ $view->script('vehiculos.js');
       </div>
 
       <div class="row mb-3">
-        <div class="col-md-6">
-          <label for="kilometraje" class="form-label">Kilometraje (opcional)</label>
+        <div class="col-md-3">
+          <label for="kilometraje" class="form-label">Kilometraje</label>
           <input type="number" class="form-control" id="kilometraje" name="kilometraje" min="0" max="9999999" step="1"
             placeholder="Ej: 125000" value="<?= e(old('kilometraje', $vehiculo['kilometraje'] ?? '')) ?>">
+        </div>
+        <div class="col-md-3">
+          <label for="motor" class="form-label">Motor</label>
+          <input type="text" class="form-control" id="motor" name="motor" maxlength="50" placeholder="Ej: 1.6 16v"
+            value="<?= e(old('motor', $vehiculo['motor'] ?? '')) ?>">
+        </div>
+        <div class="col-md-3">
+          <label for="combustible" class="form-label">Combustible</label>
+          <select class="form-select" id="combustible" name="combustible">
+            <option value="">—</option>
+            <?php foreach ($combustibles as $c): ?>
+              <option value="<?= e($c->value) ?>" <?= selected($c->value === $combustibleActual) ?>><?= e($c->label()) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+        <div class="col-md-3">
+          <label for="color" class="form-label">Color</label>
+          <input type="text" class="form-control" id="color" name="color" maxlength="30"
+            value="<?= e(old('color', $vehiculo['color'] ?? '')) ?>">
+        </div>
+      </div>
+
+      <div class="row mb-3">
+        <div class="col-md-4">
+          <label for="numero_chasis" class="form-label">N° de chasis (VIN)</label>
+          <input type="text" class="form-control text-uppercase" id="numero_chasis" name="numero_chasis" maxlength="17"
+            value="<?= e(old('numero_chasis', $vehiculo['numero_chasis'] ?? '')) ?>">
+        </div>
+        <div class="col-md-8">
+          <label for="detalle" class="form-label">Observaciones</label>
+          <textarea class="form-control" id="detalle" name="detalle" rows="1" placeholder="Ej: golpe en paragolpes trasero, usa aceite sintético"><?= e(old('detalle', $vehiculo['detalle'] ?? '')) ?></textarea>
         </div>
       </div>
 

@@ -10,6 +10,9 @@ final class Repuesto
     public readonly string $nombre,
     public readonly float $precio,
     public readonly ?string $descripcion = null,
+    public readonly ?string $codigo = null,
+    public readonly float $stockMinimo = 0,
+    public readonly ?int $proveedorId = null,
     public readonly ?int $id = null,
   ) {
   }

@@ -42,6 +42,9 @@ $view->script('turnos.js');
                 </select>
               </td>
               <td class="col-acciones text-nowrap">
+                <?php if (in_array($t['estado'], ['pendiente', 'confirmado'], true) && $t['fecha'] >= date('Y-m-d')): ?>
+                  <?= $view->partial('turnos/_recordatorio', ['turno' => $t, 'emailHabilitado' => $emailHabilitado, 'volver' => '']) ?>
+                <?php endif; ?>
                 <a href="<?= url("turnos/{$t['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
                 <?= $view->partial('partials/delete_button', [
                   'action' => "turnos/{$t['id']}/eliminar",

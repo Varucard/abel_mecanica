@@ -1,0 +1,108 @@
+<?php
+/**
+ * @var array<string, mixed> $cliente
+ * @var list<array<string, mixed>> $vehiculos
+ * @var list<array<string, mixed>> $ordenes
+ * @var list<array<string, mixed>> $turnos
+ * @var float $saldo
+ */
+$activo = $cliente['estado'] === 'activo';
+?>
+<div class="row g-3 mt-1">
+  <div class="col-md-4">
+    <div class="card h-100">
+      <div class="card-body text-center">
+        <?php if ($cliente['foto']): ?>
+          <img src="<?= url("clientes/{$cliente['id']}/foto") ?>" alt="Foto de <?= e($cliente['nombre']) ?>" class="rounded-circle mb-3" style="width: 160px; height: 160px; object-fit: cover;">
+        <?php else: ?>
+          <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 160px; height: 160px; font-size: 3.5rem;">
+            <?= e(mb_substr($cliente['nombre'], 0, 1) . mb_substr($cliente['apellido'], 0, 1)) ?>
+          </div>
+        <?php endif; ?>
+        <h4 class="mb-1"><?= e("{$cliente['apellido']}, {$cliente['nombre']}") ?></h4>
+        <span class="badge bg-<?= $activo ? 'success' : 'secondary' ?>"><?= e($cliente['estado']) ?></span>
+        <?php if ($saldo > 0): ?>
+          <span class="badge bg-danger">Debe $ <?= money($saldo) ?></span>
+        <?php else: ?>
+          <span class="badge bg-light text-dark">Sin deuda</span>
+        <?php endif; ?>
+
+        <form action="<?= url("clientes/{$cliente['id']}/foto") ?>" method="POST" enctype="multipart/form-data" class="mt-3">
+          <?= csrf_field() ?>
+          <div class="input-group input-group-sm">
+            <input type="file" class="form-control" name="foto" accept="image/jpeg,image/png,image/webp" required aria-label="Foto del cliente">
+            <button type="submit" class="btn btn-outline-primary">Subir foto</button>
+          </div>
+        </form>
+        <?php if ($cliente['foto']): ?>
+          <div class="mt-2">
+            <?= $view->partial('partials/delete_button', [
+              'action' => "clientes/{$cliente['id']}/foto/eliminar", 'label' => 'Quitar foto',
+              'class' => 'btn-outline-danger', 'confirm' => '¿Quitar la foto del cliente?',
+            ]) ?>
+          </div>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-8">
+    <div class="card h-100">
+      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+        <strong>Datos</strong>
+        <a href="<?= url("clientes/{$cliente['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
+      </div>
+      <div class="card-body">
+        <dl class="row mb-0">
+          <dt class="col-sm-3">DNI</dt><dd class="col-sm-9"><?= e($cliente['dni']) ?></dd>
+          <dt class="col-sm-3">Teléfono</dt>
+          <dd class="col-sm-9">
+            <?= e($cliente['telefono']) ?>
+            <a href="<?= e(whatsapp_url($cliente['telefono'])) ?>" target="_blank" rel="noopener" class="btn btn-sm btn-success ms-2">WhatsApp</a>
+          </dd>
+          <dt class="col-sm-3">Email</dt>
+          <dd class="col-sm-9"><?= $cliente['email'] ? '<a href="mailto:' . e($cliente['email']) . '">' . e($cliente['email']) . '</a>' : '—' ?></dd>
+          <dt class="col-sm-3">Dirección</dt><dd class="col-sm-9"><?= e($cliente['direccion'] ?? '—') ?></dd>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <strong>Vehículos</strong>
+    <a href="<?= url('vehiculos/crear?cliente_id=' . $cliente['id']) ?>" class="btn btn-sm btn-info">+ Agregar vehículo</a>
+  </div>
+  <div class="card-body">
+    <?php if ($vehiculos === []): ?>
+      <p class="text-muted mb-0">Sin vehículos registrados.</p>
+    <?php else: ?>
+      <div class="row g-2">
+        <?php foreach ($vehiculos as $v): ?>
+          <div class="col-md-4">
+            <a href="<?= url("vehiculos/{$v['id']}") ?>" class="card text-decoration-none h-100 <?= $v['estado'] !== 'activo' ? 'opacity-50' : '' ?>">
+              <div class="card-body py-2">
+                <strong><?= e($v['patente']) ?></strong> · <?= e("{$v['marca']} {$v['modelo']}") ?>
+                <div class="small text-muted"><?= (int) $v['anio'] ?><?= $v['estado'] !== 'activo' ? ' · inactivo' : '' ?></div>
+              </div>
+            </a>
+          </div>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header bg-light"><strong>Historial de órdenes</strong></div>
+  <div class="card-body"><?= $view->partial('partials/historial_ordenes', ['ordenes' => $ordenes]) ?></div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <strong>Historial de turnos</strong>
+    <a href="<?= url('turnos/crear?cliente_id=' . $cliente['id']) ?>" class="btn btn-sm btn-warning">+ Agendar turno</a>
+  </div>
+  <div class="card-body"><?= $view->partial('partials/historial_turnos', ['turnos' => $turnos]) ?></div>
+</div>

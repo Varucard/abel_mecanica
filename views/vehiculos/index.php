@@ -33,6 +33,7 @@
               </td>
               <td><span class="badge bg-<?= $activo ? 'success' : 'secondary' ?>"><?= e($v['estado']) ?></span></td>
               <td class="col-acciones text-nowrap">
+                <a href="<?= url("vehiculos/{$v['id']}") ?>" class="btn btn-sm btn-info">Ver</a>
                 <a href="<?= url("vehiculos/{$v['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
                 <?= $view->partial('partials/delete_button', [
                   'action' => "vehiculos/{$v['id']}/estado",

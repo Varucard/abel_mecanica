@@ -8,7 +8,9 @@ use App\Enums\EstadoOrden;
 use App\Exceptions\NotFoundException;
 use App\Models\Orden;
 use App\Models\OrdenItem;
+use App\Repositories\EmpleadoRepository;
 use App\Repositories\OrdenRepository;
+use App\Repositories\PagoRepository;
 use App\Repositories\RepuestoRepository;
 use App\Repositories\ServicioRepository;
 use App\Repositories\VehiculoRepository;
@@ -21,6 +23,9 @@ final class OrdenService
     private readonly VehiculoRepository $vehiculos,
     private readonly ServicioRepository $servicios,
     private readonly RepuestoRepository $repuestos,
+    private readonly StockService $stock,
+    private readonly PagoRepository $pagos,
+    private readonly EmpleadoRepository $empleados,
   ) {
   }
 
@@ -38,15 +43,19 @@ final class OrdenService
   /**
    * Crea o actualiza una orden.
    *
-   * Los precios se toman del catálogo al agregar cada ítem y quedan congelados:
-   * al editar, los ítems que ya estaban conservan el costo original.
+   * Cada lista de ítems puede ser una lista de ids (cantidad 1) o un mapa
+   * id => ['cantidad' => x, 'precio' => y]. Si no se indica precio, se usa el
+   * que el ítem ya tenía en la orden o, si es nuevo, el del catálogo: así los
+   * precios quedan congelados aunque cambie el catálogo.
    *
-   * @param list<int> $servicioIds
-   * @param list<int> $repuestoIds
+   * @param array<int, mixed> $servicios
+   * @param array<int, mixed> $repuestos
    */
-  public function guardar(int $vehiculoId, array $servicioIds, array $repuestoIds, ?int $id = null): int
+  public function guardar(int $vehiculoId, array $servicios, array $repuestos, ?int $id = null, ?int $mecanicoId = null): int
   {
-    $costosPrevios = ['servicio' => [], 'repuesto' => []];
+    $servicios = self::normalizarItems($servicios);
+    $repuestos = self::normalizarItems($repuestos);
+    $preciosPrevios = ['servicio' => [], 'repuesto' => []];
 
     if ($id !== null) {
       $actual = $this->obtener($id);
@@ -56,41 +65,103 @@ final class OrdenService
 
       foreach ($this->ordenes->items($id) as $item) {
         $tipo = $item['repuesto_id'] !== null ? 'repuesto' : 'servicio';
-        $costosPrevios[$tipo][(int) $item["{$tipo}_id"]] = (float) $item['costo'];
+        $preciosPrevios[$tipo][(int) $item["{$tipo}_id"]] = (float) $item['precio_unitario'];
       }
     }
 
     $vehiculo = $vehiculoId > 0 ? $this->vehiculos->find($vehiculoId) : null;
     $mantieneVehiculo = isset($actual) && (int) $actual['vehiculo_id'] === $vehiculoId;
-    $preciosServicios = $this->servicios->precios($servicioIds);
-    $preciosRepuestos = $this->repuestos->precios($repuestoIds);
+    $preciosServicios = $this->servicios->precios(array_keys($servicios));
+    $preciosRepuestos = $this->repuestos->precios(array_keys($repuestos));
+    $valoresValidos = fn(array $items) => array_reduce(
+      $items,
+      fn(bool $ok, array $i) => $ok && $i['cantidad'] !== null && $i['cantidad'] > 0 && ($i['precio'] === null || $i['precio'] >= 0),
+      true
+    );
 
     (new Validator())
       ->check($vehiculo !== null && ($vehiculo['estado'] === 'activo' || $mantieneVehiculo), 'Seleccioná un vehículo activo.')
-      ->check($servicioIds !== [], 'Seleccioná al menos un servicio.')
-      ->check(count($preciosServicios) === count($servicioIds), 'Alguno de los servicios seleccionados no existe.')
-      ->check(count($preciosRepuestos) === count($repuestoIds), 'Alguno de los repuestos seleccionados no existe.')
+      ->check($this->mecanicoValido($mecanicoId, $actual ?? null), 'Seleccioná un mecánico activo.')
+      ->check($servicios !== [], 'Seleccioná al menos un servicio.')
+      ->check(count($preciosServicios) === count($servicios), 'Alguno de los servicios seleccionados no existe.')
+      ->check(count($preciosRepuestos) === count($repuestos), 'Alguno de los repuestos seleccionados no existe.')
+      ->check($valoresValidos($servicios) && $valoresValidos($repuestos), 'Las cantidades deben ser mayores a 0 y los precios no pueden ser negativos.')
       ->validate();
 
     $items = [];
-    foreach ($servicioIds as $sid) {
-      $items[] = OrdenItem::servicio($sid, $costosPrevios['servicio'][$sid] ?? $preciosServicios[$sid]);
+    foreach ($servicios as $sid => $s) {
+      $precio = $s['precio'] ?? $preciosPrevios['servicio'][$sid] ?? $preciosServicios[$sid];
+      $items[] = OrdenItem::servicio($sid, $precio, $s['cantidad']);
     }
-    foreach ($repuestoIds as $rid) {
-      $items[] = OrdenItem::repuesto($rid, $costosPrevios['repuesto'][$rid] ?? $preciosRepuestos[$rid]);
+    foreach ($repuestos as $rid => $r) {
+      $precio = $r['precio'] ?? $preciosPrevios['repuesto'][$rid] ?? $preciosRepuestos[$rid];
+      $items[] = OrdenItem::repuesto($rid, $precio, $r['cantidad']);
     }
 
-    return $this->ordenes->save(new Orden($vehiculoId, $items, id: $id));
+    $orden = new Orden($vehiculoId, $items, id: $id, mecanicoId: $mecanicoId);
+    $pagado = $id !== null ? $this->pagos->totalPagado($id) : 0.0;
+    (new Validator())
+      ->check($orden->total() >= $pagado, sprintf('El total no puede quedar por debajo de lo ya pagado ($ %s).', money($pagado)))
+      ->validate();
+
+    return $this->ordenes->save($orden);
   }
 
-  public function cambiarEstado(int $id, string $estado): EstadoOrden
+  /** Sin mecánico, uno activo, o el que la orden ya tenía asignado (aunque hoy esté inactivo). */
+  private function mecanicoValido(?int $mecanicoId, ?array $ordenActual): bool
   {
-    $this->obtener($id);
+    if ($mecanicoId === null) {
+      return true;
+    }
+
+    $mecanico = $this->empleados->find($mecanicoId);
+
+    return $mecanico !== null
+      && ($mecanico['estado'] === 'activo' || (int) ($ordenActual['mecanico_id'] ?? 0) === $mecanicoId);
+  }
+
+  /**
+   * @param array<int, mixed> $items
+   * @return array<int, array{cantidad: ?float, precio: ?float}>
+   */
+  private static function normalizarItems(array $items): array
+  {
+    if (array_is_list($items) && ($items === [] || !is_array($items[0]))) {
+      $items = array_fill_keys(array_map('intval', $items), []);
+    }
+
+    $normalizados = [];
+    foreach ($items as $id => $datos) {
+      $cantidad = Validator::importe((string) ($datos['cantidad'] ?? '1'));
+      $precioTexto = trim((string) ($datos['precio'] ?? ''));
+      $normalizados[(int) $id] = [
+        'cantidad' => $cantidad,
+        'precio' => $precioTexto === '' ? null : (Validator::importe($precioTexto) ?? -1.0),
+      ];
+    }
+
+    return $normalizados;
+  }
+
+  /** Cambia el estado y mueve el stock de repuestos al entrar o salir de "finalizado". */
+  public function cambiarEstado(int $id, string $estado, ?int $usuarioId = null): EstadoOrden
+  {
+    $orden = $this->obtener($id);
 
     $nuevo = EstadoOrden::tryFrom($estado);
     (new Validator())->check($nuevo !== null, 'Estado de orden inválido.')->validate();
 
-    $this->ordenes->setEstado($id, $nuevo);
+    $this->ordenes->transaction(function () use ($id, $orden, $nuevo, $usuarioId) {
+      $descontado = (bool) $orden['stock_descontado'];
+
+      if ($nuevo === EstadoOrden::Finalizado && !$descontado) {
+        $this->stock->descontarOrden($id, $usuarioId);
+      } elseif ($nuevo !== EstadoOrden::Finalizado && $descontado) {
+        $this->stock->reponerOrden($id, $usuarioId);
+      }
+
+      $this->ordenes->setEstado($id, $nuevo);
+    });
 
     return $nuevo;
   }
