@@ -26,7 +26,7 @@ Estado: ✅ hecho · 🚧 en curso · ⏳ pendiente · 💭 a futuro (requiere d
 | 13 | **Tests de integración** de servicios y repositorios contra MySQL. | ✅ |
 | 14 | **Panel de inicio**: turnos del día, órdenes abiertas, saldos pendientes, stock bajo. | ✅ |
 | 15 | **Cantidades en las órdenes** (hoy cada ítem cuenta como 1). | ✅ |
-| 16 | **Backups** de la base con un comando. | ⏳ |
+| 16 | **Backups** de la base con un comando. | ✅ |
 | 17 | **Puertos configurables** en Docker y nombres de contenedor sin colisiones. | ✅ |
 
 ## A futuro (requieren definiciones del negocio)
