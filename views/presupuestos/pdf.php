@@ -221,8 +221,8 @@
         <?php foreach ($items as $item): ?>
           <tr>
             <td><?= e($item['repuesto_id'] !== null ? 'Repuesto: ' . $item['repuesto_nombre'] : $item['servicio_nombre']) ?></td>
-            <td class="right">1</td>
-            <td class="right">$ <?= money($item['costo']) ?></td>
+            <td class="right"><?= qty($item['cantidad']) ?></td>
+            <td class="right">$ <?= money($item['precio_unitario']) ?></td>
             <td class="right">$ <?= money($item['costo']) ?></td>
           </tr>
         <?php endforeach; ?>

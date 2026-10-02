@@ -51,7 +51,7 @@ final class OrdenRepository extends Repository
   public function items(int $ordenId): array
   {
     return $this->fetchAll(
-      'SELECT os.servicio_id, os.repuesto_id, os.costo,
+      'SELECT os.servicio_id, os.repuesto_id, os.cantidad, os.precio_unitario, os.costo,
               s.nombre AS servicio_nombre, r.nombre AS repuesto_nombre
          FROM ordenes_servicios os
          LEFT JOIN servicios s ON s.id = os.servicio_id
@@ -81,14 +81,20 @@ final class OrdenRepository extends Repository
       }
 
       $stmt = $this->db->prepare(
-        'INSERT INTO ordenes_servicios (orden_id, servicio_id, repuesto_id, costo) VALUES (?, ?, ?, ?)'
+        'INSERT INTO ordenes_servicios (orden_id, servicio_id, repuesto_id, cantidad, precio_unitario, costo)
+         VALUES (?, ?, ?, ?, ?, ?)'
       );
       foreach ($orden->items as $item) {
-        $stmt->execute([$id, $item->servicioId, $item->repuestoId, $item->costo]);
+        $stmt->execute([$id, $item->servicioId, $item->repuestoId, $item->cantidad, $item->precioUnitario, $item->subtotal()]);
       }
 
       return $id;
     });
+  }
+
+  public function setStockDescontado(int $id, bool $descontado): void
+  {
+    $this->execute('UPDATE ordenes SET stock_descontado = ? WHERE id = ?', [(int) $descontado, $id]);
   }
 
   public function setEstado(int $id, EstadoOrden $estado): void

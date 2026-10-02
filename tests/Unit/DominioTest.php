@@ -29,6 +29,17 @@ final class DominioTest extends TestCase
     $this->assertNull($orden->items[2]->servicioId);
   }
 
+  public function testElSubtotalMultiplicaCantidadPorPrecio(): void
+  {
+    $orden = new Orden(1, [
+      OrdenItem::servicio(1, 1000, 2),
+      OrdenItem::repuesto(1, 2500.50, 1.5),
+    ]);
+
+    $this->assertSame(3750.75, $orden->items[1]->subtotal());
+    $this->assertSame(5750.75, $orden->total());
+  }
+
   public function testSoloSeEditanOrdenesAbiertas(): void
   {
     $this->assertTrue(OrdenService::editable(EstadoOrden::Pendiente));

@@ -9,6 +9,7 @@ use App\Controllers\HomeController;
 use App\Controllers\MarcaController;
 use App\Controllers\ModeloController;
 use App\Controllers\OrdenController;
+use App\Controllers\ProveedorController;
 use App\Controllers\RepuestoController;
 use App\Controllers\ServicioController;
 use App\Controllers\TurnoController;
@@ -56,6 +57,17 @@ return function (Router $r): void {
     $r->post("/{$path}/{id}/eliminar", [$controller, 'destroy']);
   }
   $r->get('/marcas/{marcaId}/modelos', [VehiculoController::class, 'modelosPorMarca']);
+
+  // Stock y proveedores
+  $r->get('/repuestos/{id}/stock', [RepuestoController::class, 'stock']);
+  $r->post('/repuestos/{id}/ingresos', [RepuestoController::class, 'ingresar']);
+  $r->post('/repuestos/{id}/ajustes', [RepuestoController::class, 'ajustar']);
+  $r->get('/proveedores', [ProveedorController::class, 'index']);
+  $r->get('/proveedores/crear', [ProveedorController::class, 'create']);
+  $r->post('/proveedores', [ProveedorController::class, 'store']);
+  $r->get('/proveedores/{id}/editar', [ProveedorController::class, 'edit']);
+  $r->post('/proveedores/{id}', [ProveedorController::class, 'update']);
+  $r->post('/proveedores/{id}/eliminar', [ProveedorController::class, 'destroy']);
 
   // Órdenes y presupuestos
   $r->get('/ordenes', [OrdenController::class, 'index']);

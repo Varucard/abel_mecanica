@@ -3,7 +3,6 @@
     <a href="#" class="btn btn-primary w-100">⚙️ Configuración</a>
     <div class="dropdown-menu">
       <a href="<?= url('servicios') ?>">Servicios</a>
-      <a href="<?= url('repuestos') ?>">Repuestos</a>
       <a href="<?= url('marcas') ?>">Marcas</a>
       <a href="<?= url('modelos') ?>">Modelos</a>
       <?php if (auth()->esAdministrador()): ?>
@@ -31,6 +30,13 @@
     <div class="dropdown-menu">
       <a href="<?= url('ordenes/crear') ?>">Registrar orden</a>
       <a href="<?= url('ordenes') ?>">Ver órdenes</a>
+    </div>
+  </div>
+  <div class="dropdown flex-fill">
+    <a href="<?= url('repuestos') ?>" class="btn btn-dark w-100">📦 Stock</a>
+    <div class="dropdown-menu">
+      <a href="<?= url('repuestos') ?>">Repuestos</a>
+      <a href="<?= url('proveedores') ?>">Proveedores</a>
     </div>
   </div>
   <div class="dropdown flex-fill">

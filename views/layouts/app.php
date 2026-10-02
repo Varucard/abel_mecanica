@@ -10,8 +10,11 @@ $secciones = [
   'vehiculos' => 'bg-info text-white',
   'ordenes' => 'bg-warning text-dark',
   'turnos' => 'bg-warning text-dark',
+  'repuestos' => 'bg-dark text-white',
+  'proveedores' => 'bg-dark text-white',
 ];
 $headerClass = $secciones[current_section()] ?? 'bg-primary text-white';
+$btnHeader = str_contains($headerClass, 'text-dark') ? 'btn-outline-dark' : 'btn-outline-light';
 ?>
 <!DOCTYPE html>
 <html lang="es">
@@ -42,13 +45,13 @@ $headerClass = $secciones[current_section()] ?? 'bg-primary text-white';
           <img src="<?= asset('img/logo.png') ?>" alt="Logo del taller" class="rounded-circle" width="80" height="80">
           <span class="ms-auto d-flex align-items-center gap-2 flex-wrap fs-6">
             <?php if ($usuarioActual = auth()->user()): ?>
-              <a href="<?= url('perfil/clave') ?>" class="btn btn-sm btn-outline-light" title="Cambiar contraseña">👤 <?= e($usuarioActual['nombre']) ?></a>
+              <a href="<?= url('perfil/clave') ?>" class="btn btn-sm <?= $btnHeader ?>" title="Cambiar contraseña">👤 <?= e($usuarioActual['nombre']) ?></a>
               <form action="<?= url('logout') ?>" method="POST" class="d-inline">
                 <?= csrf_field() ?>
-                <button type="submit" class="btn btn-sm btn-outline-light">Salir</button>
+                <button type="submit" class="btn btn-sm <?= $btnHeader ?>">Salir</button>
               </form>
             <?php endif; ?>
-            <button id="btnDarkMode" class="btn btn-sm btn-outline-light" type="button">🌙 Modo oscuro</button>
+            <button id="btnDarkMode" class="btn btn-sm <?= $btnHeader ?>" type="button">🌙 Modo oscuro</button>
           </span>
         </h1>
       </div>

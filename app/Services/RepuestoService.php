@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Exceptions\NotFoundException;
 use App\Exceptions\ValidationException;
 use App\Models\Repuesto;
+use App\Repositories\ProveedorRepository;
 use App\Repositories\Repository;
 use App\Repositories\RepuestoRepository;
 use App\Support\Validator;
@@ -14,8 +15,10 @@ use PDOException;
 
 final class RepuestoService
 {
-  public function __construct(private readonly RepuestoRepository $repuestos)
-  {
+  public function __construct(
+    private readonly RepuestoRepository $repuestos,
+    private readonly ProveedorRepository $proveedores,
+  ) {
   }
 
   /** @return array<string, mixed> */
@@ -32,15 +35,25 @@ final class RepuestoService
     }
 
     $nombre = trim((string) ($input['nombre'] ?? ''));
+    $codigo = Validator::nullable(mb_strtoupper((string) ($input['codigo'] ?? '')));
     $precio = Validator::importe((string) ($input['precio'] ?? ''));
+    $minimo = Validator::importe((string) ($input['stock_minimo'] ?? '0') ?: '0');
+    $proveedorId = (int) ($input['proveedor_id'] ?? 0) ?: null;
     $descripcion = Validator::nullable((string) ($input['descripcion'] ?? ''));
 
     (new Validator())
       ->check(Validator::largo($nombre, 2, 150), 'El nombre del repuesto debe tener entre 2 y 150 caracteres.')
+      ->check($codigo === null || Validator::largo($codigo, 1, 50), 'El código no puede superar los 50 caracteres.')
       ->check($precio !== null, 'El precio debe ser un número mayor o igual a 0.')
+      ->check($minimo !== null, 'El stock mínimo debe ser un número mayor o igual a 0.')
+      ->check($proveedorId === null || $this->proveedores->find($proveedorId) !== null, 'El proveedor seleccionado no existe.')
       ->validate();
 
-    return $this->repuestos->save(new Repuesto($nombre, $precio, $descripcion, $id));
+    try {
+      return $this->repuestos->save(new Repuesto($nombre, $precio, $descripcion, $codigo, $minimo, $proveedorId, $id));
+    } catch (PDOException $e) {
+      throw Repository::isDuplicate($e) ? new ValidationException(['Ya existe un repuesto con ese código.']) : $e;
+    }
   }
 
   public function eliminar(int $id): void
@@ -51,7 +64,7 @@ final class RepuestoService
       $this->repuestos->delete($id);
     } catch (PDOException $e) {
       throw Repository::isReferenced($e)
-        ? new ValidationException(['El repuesto figura en órdenes existentes y no se puede eliminar.'])
+        ? new ValidationException(['El repuesto tiene órdenes o movimientos de stock y no se puede eliminar.'])
         : $e;
     }
   }

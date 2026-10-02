@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Request;
 use App\Core\Session;
@@ -28,6 +29,7 @@ final class OrdenController extends Controller
     private readonly ServicioRepository $servicios,
     private readonly RepuestoRepository $repuestos,
     private readonly PresupuestoService $presupuestos,
+    private readonly Auth $auth,
   ) {
     parent::__construct($view, $session);
   }
@@ -43,7 +45,7 @@ final class OrdenController extends Controller
 
   public function create(Request $request): void
   {
-    $this->form('Nueva orden de servicio', null, [], []);
+    $this->form('Nueva orden de servicio', null, ['servicio' => [], 'repuesto' => []]);
   }
 
   public function store(Request $request): void
@@ -60,13 +62,16 @@ final class OrdenController extends Controller
       $this->redirect('/ordenes');
     }
 
-    $items = $this->ordenes->items($id);
-    $this->form(
-      "Editar orden #{$id}",
-      $orden,
-      array_map('intval', array_filter(array_column($items, 'servicio_id'))),
-      array_map('intval', array_filter(array_column($items, 'repuesto_id'))),
-    );
+    $detalle = ['servicio' => [], 'repuesto' => []];
+    foreach ($this->ordenes->items($id) as $item) {
+      $tipo = $item['repuesto_id'] !== null ? 'repuesto' : 'servicio';
+      $detalle[$tipo][(int) $item["{$tipo}_id"]] = [
+        'cantidad' => (float) $item['cantidad'],
+        'precio' => (float) $item['precio_unitario'],
+      ];
+    }
+
+    $this->form("Editar orden #{$id}", $orden, $detalle);
   }
 
   public function update(Request $request, int $id): void
@@ -78,7 +83,7 @@ final class OrdenController extends Controller
   {
     $this->verifyCsrf($request);
 
-    $estado = $this->service->cambiarEstado($id, $request->string('estado'));
+    $estado = $this->service->cambiarEstado($id, $request->string('estado'), $this->auth->id());
     $this->json(['status' => 'success', 'message' => "Orden #{$id}: {$estado->label()}."]);
   }
 
@@ -107,8 +112,8 @@ final class OrdenController extends Controller
     try {
       $this->service->guardar(
         (int) $request->int('vehiculo_id'),
-        $request->intList('servicio_id'),
-        $request->intList('repuesto_id'),
+        $this->items($request, 'servicio'),
+        $this->items($request, 'repuesto'),
         $id,
       );
     } catch (ValidationException $e) {
@@ -120,11 +125,32 @@ final class OrdenController extends Controller
   }
 
   /**
-   * @param array<string, mixed>|null $orden
-   * @param list<int> $servicioIds
-   * @param list<int> $repuestoIds
+   * Arma el mapa id => [cantidad, precio] a partir de los campos del formulario
+   * (servicio_id[], cantidad_servicio[id], precio_servicio[id]).
+   *
+   * @return array<int, array{cantidad: string, precio: string}>
    */
-  private function form(string $title, ?array $orden, array $servicioIds, array $repuestoIds): void
+  private function items(Request $request, string $tipo): array
+  {
+    $cantidades = (array) $request->input("cantidad_{$tipo}", []);
+    $precios = (array) $request->input("precio_{$tipo}", []);
+
+    $items = [];
+    foreach ($request->intList("{$tipo}_id") as $id) {
+      $items[$id] = [
+        'cantidad' => (string) ($cantidades[$id] ?? '1'),
+        'precio' => (string) ($precios[$id] ?? ''),
+      ];
+    }
+
+    return $items;
+  }
+
+  /**
+   * @param array<string, mixed>|null $orden
+   * @param array{servicio: array<int, array<string, mixed>>, repuesto: array<int, array<string, mixed>>} $detalle
+   */
+  private function form(string $title, ?array $orden, array $detalle): void
   {
     $vehiculos = $this->vehiculos->activos();
 
@@ -133,14 +159,25 @@ final class OrdenController extends Controller
       $vehiculos[] = $this->vehiculos->find((int) $orden['vehiculo_id']);
     }
 
+    // Si se vuelve con errores, se respeta lo que se había cargado.
+    if ($this->session->hasOldInput()) {
+      foreach (['servicio', 'repuesto'] as $tipo) {
+        $detalle[$tipo] = [];
+        $cantidades = (array) old("cantidad_{$tipo}", []);
+        $precios = (array) old("precio_{$tipo}", []);
+        foreach ((array) old("{$tipo}_id", []) as $itemId) {
+          $detalle[$tipo][(int) $itemId] = ['cantidad' => $cantidades[$itemId] ?? 1, 'precio' => $precios[$itemId] ?? ''];
+        }
+      }
+    }
+
     $this->render('ordenes/form', [
       'title' => $title,
       'orden' => $orden,
       'vehiculos' => $vehiculos,
       'servicios' => $this->servicios->all(),
       'repuestos' => $this->repuestos->all(),
-      'servicioIds' => $this->session->hasOldInput() ? array_map('intval', (array) old('servicio_id', [])) : $servicioIds,
-      'repuestoIds' => $this->session->hasOldInput() ? array_map('intval', (array) old('repuesto_id', [])) : $repuestoIds,
+      'detalle' => $detalle,
     ]);
   }
 }

@@ -22,6 +22,6 @@ final class Orden
 
   public function total(): float
   {
-    return round(array_sum(array_map(fn(OrdenItem $item) => $item->costo, $this->items)), 2);
+    return round(array_sum(array_map(fn(OrdenItem $item) => $item->subtotal(), $this->items)), 2);
   }
 }

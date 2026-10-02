@@ -71,3 +71,9 @@ function auth(): \App\Core\Auth
 {
   return App::instance()->container->get(\App\Core\Auth::class);
 }
+
+/** Cantidad sin decimales innecesarios: 2 → "2", 1.5 → "1,5". */
+function qty(mixed $value): string
+{
+  return rtrim(rtrim(number_format((float) $value, 2, ',', '.'), '0'), ',');
+}
