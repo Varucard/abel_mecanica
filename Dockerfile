@@ -1,38 +1,34 @@
-FROM php:8.2-apache
+FROM php:8.4-apache
 
-# Establecer directorio de trabajo
-WORKDIR /var/www/
-
-# Instalar dependencias y extensiones PHP necesarias
+# Extensiones necesarias: PDO MySQL, GD (Dompdf), mbstring/zip (Composer)
 RUN apt-get update && apt-get install --yes --no-install-recommends \
-        zlib1g-dev \
-        libzip-dev \
-        unzip \
         libfreetype6-dev \
         libjpeg62-turbo-dev \
         libpng-dev \
-        libssl-dev \
-        curl \
-    && docker-php-ext-install zip \
+        libzip-dev \
+        libonig-dev \
+        unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install -j$(nproc) gd \
-    && docker-php-ext-install pdo pdo_mysql \
-    \
-    # Instalar MongoDB driver
-    && pecl install mongodb \
-    && docker-php-ext-enable mongodb \
-    && echo "extension=mongodb.so" >> /usr/local/etc/php/php.ini \
-    \
-    # Instalar Xdebug
+    && docker-php-ext-install -j"$(nproc)" gd pdo_mysql zip mbstring \
     && pecl install xdebug \
-    && docker-php-ext-enable xdebug
+    && docker-php-ext-enable xdebug \
+    && rm -rf /var/lib/apt/lists/* /tmp/pear
 
-# Copiar configuración de Xdebug
-COPY ./xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
+COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
-# Instalar Composer globalmente
-RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/bin --filename=composer \
-    && composer require mongodb/mongodb
+# Solo la carpeta public/ queda expuesta por Apache; el resto del código no es accesible por web.
+ENV APACHE_DOCUMENT_ROOT=/var/www/html/public
+RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf \
+    && sed -ri 's!AllowOverride None!AllowOverride All!g' /etc/apache2/apache2.conf \
+    && a2enmod rewrite headers \
+    && mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 
-# Etiqueta descriptiva
-LABEL description="PHP 8.2 + Apache + GD + PDO + MongoDB + Xdebug + Composer"
+COPY docker/entrypoint.sh /usr/local/bin/app-entrypoint
+RUN chmod +x /usr/local/bin/app-entrypoint
+
+WORKDIR /var/www/html
+
+ENTRYPOINT ["app-entrypoint"]
+CMD ["apache2-foreground"]
+
+LABEL description="Taller Mecánico - PHP 8.4 + Apache + PDO MySQL + GD + Composer + Xdebug"

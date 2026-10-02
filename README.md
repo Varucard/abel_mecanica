@@ -1,194 +1,135 @@
-# abel_mecanica
+# Mecánica Abel — Sistema de gestión de taller
 
-**abel_mecanica** es un entorno de desarrollo dockerizado que integra múltiples servicios (bases de datos SQL y NoSQL, servidor web PHP/Apache y herramientas de administración). Es ideal para desarrollar proyectos web en PHP, realizar prácticas, prototipos y trabajos de clase con una infraestructura completa lista para usar.
+Aplicación web en PHP para administrar un taller mecánico: clientes, vehículos,
+órdenes de servicio con presupuesto imprimible/PDF, agenda de turnos y catálogos
+(marcas, modelos, servicios y repuestos).
 
-Este stack proporciona una base homogénea para trabajar con múltiples proyectos sin necesitar instalaciones locales complejas.
+## Stack
 
----
+| Componente | Versión |
+| --- | --- |
+| PHP + Apache | 8.4 (compatible con 8.2+) |
+| MySQL | 8.4 LTS |
+| phpMyAdmin | 5 |
+| Dompdf (vía Composer) | 3.1 |
+| Bootstrap · jQuery · DataTables · Select2 | 5.3.8 · 3.7.1 · 1.13.11 · 4.1.0 |
+| PHPUnit | 11.5 |
 
-## 🚀 Stack Tecnológico
-
-- **PHP 8.x + Apache** — Contenedor principal que ejecuta las aplicaciones ubicadas en `/public`.
-- **MySQL 5.7** — Base de datos relacional.
-- **phpMyAdmin** — Administración visual de MySQL.
-- **MongoDB** — Base de datos NoSQL.
-- **Mongo‑Express** — Interfaz web para MongoDB.
-- **ChartDB** — Herramienta de diagramación de bases de datos.
-- **Docker + docker-compose** — Orquestación completa del entorno.
-
----
-
-## 📁 Estructura del Repositorio
-
-```
-/
-├── Dockerfile
-├── docker-compose.yml
-├── mysqld.cnf
-├── xdebug.ini
-├── NOTAS.MD
-├── README.md
-├── public/
-│   └── <proyecto_php>
-├── mysql/
-├── files/
-└── .env (no incluido)
-```
-
-### 📌 Sobre la carpeta `/public`
-
-Dentro de `/public` se encuentran los proyectos PHP que serán servidos por Apache dentro del contenedor principal.  
-Cada subcarpeta representa un proyecto independiente. Por ejemplo:
-
-```
-/public
-└── mecanica_app/
-    ├── index.php
-    ├── css/
-    ├── js/
-    ├── vistas/
-    ├── controladores/
-    └── modelos/
-```
-
-Para acceder al proyecto:
-
-```
-http://localhost:8050/mecanica_app/
-```
-
-Este entorno permite desarrollar aplicaciones PHP estructuradas bajo MVC, API REST, sistemas escolares, CRUDs y cualquier aplicación que requiera una base de datos SQL o NoSQL.
-
----
-
-## 📝 Configuración Inicial
-
-### 1. Clonar el repositorio
+## Puesta en marcha
 
 ```bash
-git clone https://github.com/Varucard/abel_mecanica.git
-cd abel_mecanica
+cp .env.example .env        # completar las claves
+docker compose up -d --build
 ```
 
-### 2. Crear el archivo `.env`
+- Aplicación: <http://localhost:8050>
+- phpMyAdmin: <http://localhost:8051>
 
-Ejemplo mínimo:
+En el primer arranque el contenedor ejecuta `composer install` y MySQL crea las
+tablas desde `database/schema.sql` (solo cuando el volumen de datos está vacío).
 
-```
-TZ=America/Argentina/Buenos_Aires
-SQL_SERVER=database
-MYSQL_ROOT_PASSWORD=root
+### Sin Docker
 
-# phpMyAdmin
-PMA_HOST=mysqldb
-
-# Mongo
-MONGO_INITDB_ROOT_USERNAME=root
-MONGO_INITDB_ROOT_PASSWORD=root
-
-# Mongo Express
-ME_CONFIG_OPTIONS_EDITORTHEME=neo
-ME_CONFIG_MONGODB_SERVER=mongodb
-ME_CONFIG_MONGODB_PORT=27017
-ME_CONFIG_MONGODB_ENABLE_ADMIN=true
-ME_CONFIG_MONGODB_ADMINUSERNAME=root
-ME_CONFIG_MONGODB_ADMINPASSWORD=root
-ME_CONFIG_BASICAUTH_USERNAME=admin
-ME_CONFIG_BASICAUTH_PASSWORD=zaq123
-```
-
-> ⚠️ No uses estas credenciales en producción.
-
----
-
-## ▶️ Cómo Levantar el Entorno
+Requiere PHP 8.2+ con `pdo_mysql`, `gd`, `mbstring` y `dom`, más un MySQL accesible.
 
 ```bash
-docker-compose up -d --build
+composer install
+cp .env.example .env        # DB_HOST=127.0.0.1, etc.
+php -S localhost:8000 -t public public/index.php
 ```
 
-Servicios disponibles:
+## Arquitectura
 
-| Servicio | URL |
-|---------|-----|
-| Proyecto PHP/Apache | http://localhost:8050/<tu_proyecto>/ |
-| phpMyAdmin | http://localhost:8051 |
-| Mongo‑Express | http://localhost:8052 |
-| ChartDB | http://localhost:8053 |
-
----
-
-## 🧑‍💻 Desarrollo dentro de `/public`
-
-Para agregar un proyecto nuevo:
-
-1. Crear carpeta dentro de `/public`, ej.:
+Patrón MVC liviano, sin framework, con separación estricta de responsabilidades:
 
 ```
-public/mi_sistema/
+app/
+├── Core/           Infraestructura: App, Router, Container (autowiring), Request,
+│                   View, Session (flash + CSRF), Database, Env
+├── Controllers/    Reciben la petición, llaman al servicio y renderizan. Sin SQL ni reglas.
+├── Services/       Lógica de negocio y validaciones (precios congelados, disponibilidad
+│                   de turnos, bajas protegidas, configuración, PDF).
+├── Repositories/   Único lugar con SQL (PDO + sentencias preparadas).
+├── Models/         Entidades del dominio (Persona → Cliente, Vehiculo, Orden, Turno…).
+├── Enums/          Estados de órdenes, turnos y clientes/vehículos.
+├── Support/        Validator.
+└── helpers.php     Funciones para vistas: e(), url(), asset(), money(), csrf_field()…
+config/
+├── routes.php      Todas las rutas de la aplicación.
+└── taller.php      Valores por defecto de la configuración del taller.
+views/              Templates PHP (layout, parciales y una carpeta por módulo).
+public/             Única carpeta expuesta por Apache: index.php + assets.
+database/
+├── schema.sql      Esquema completo para instalaciones nuevas.
+└── migrations/     Scripts para actualizar bases existentes.
+storage/            Configuración editada desde la app y logs (no versionado).
+tests/              Tests unitarios (PHPUnit).
 ```
 
-2. Crear un `index.php`:
+Flujo de una petición: `public/index.php` → `App` → `Router` → `Controller` →
+`Service` → `Repository` → vista.
 
-```php
-<?php
-echo "Proyecto funcionando";
+### Rutas principales
+
+| Módulo | Rutas |
+| --- | --- |
+| Clientes | `/clientes`, `/clientes/crear`, `/clientes/{id}/editar` |
+| Vehículos | `/vehiculos`, `/vehiculos/crear`, `/vehiculos/{id}/editar` |
+| Órdenes | `/ordenes`, `/ordenes/crear`, `/ordenes/{id}/editar`, `/ordenes/{id}/presupuesto`, `/ordenes/{id}/presupuesto/pdf` |
+| Turnos | `/turnos`, `/turnos/crear`, `/turnos/{id}/editar` |
+| Catálogos | `/marcas`, `/modelos`, `/servicios`, `/repuestos` |
+| Sistema | `/configuracion` |
+
+Todas las acciones que modifican datos (alta, edición, baja, cambio de estado)
+son `POST` con token CSRF.
+
+## Reglas de negocio
+
+- **Clientes**: el DNI no se modifica al editar. Un cliente con vehículos o turnos
+  no se elimina (se desactiva).
+- **Vehículos**: patente Mercosur (`AB123CD`) o anterior (`ABC123`); año entre 1940
+  y el año próximo. Se activan/desactivan en lugar de borrarse.
+- **Órdenes**: al menos un servicio. El costo de cada ítem queda congelado: si
+  cambia el precio del catálogo, las órdenes existentes no se alteran. Solo se
+  editan órdenes pendientes o en proceso. Al finalizar se registra la fecha.
+- **Turnos**: el vehículo debe pertenecer al cliente; no se agenda en fechas
+  pasadas ni en un horario ya ocupado (los cancelados y ausentes liberan el horario).
+- **Catálogos**: no se puede borrar una marca, modelo, servicio o repuesto en uso.
+
+## Migrar desde la versión anterior
+
+La versión anterior usaba MySQL 5.7 con los datos en la carpeta `mysql/`. La
+nueva usa MySQL 8.4 con el volumen Docker `db_data`, así que los datos viejos no
+se tocan y se migran así:
+
+1. **Backup** con el stack anterior todavía levantado:
+   ```bash
+   docker exec database sh -c 'mysqldump -uroot -p"$MYSQL_ROOT_PASSWORD" taller_mecanico' > backup.sql
+   ```
+2. Bajar el stack anterior, actualizar el código y crear el `.env` nuevo a partir
+   de `.env.example`.
+3. Levantar **solo** la base nueva **sin** el esquema automático, importar y migrar:
+   ```bash
+   docker compose up -d database
+   docker compose exec -T database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "DROP DATABASE taller_mecanico; CREATE DATABASE taller_mecanico"'
+   docker compose exec -T database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" taller_mecanico' < backup.sql
+   docker compose exec -T database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" taller_mecanico' < database/migrations/2026_10_02_profesionalizacion.sql
+   docker compose up -d
+   ```
+4. La configuración del taller ahora se guarda en `storage/config/taller.json`.
+   Si se había modificado desde la pantalla de Sistema, volver a cargarla ahí.
+
+La migración también funciona directamente sobre MySQL 5.7.
+
+## Desarrollo
+
+```bash
+docker compose exec public composer test   # tests unitarios
+docker compose exec public composer lint   # chequeo de sintaxis
 ```
 
-3. Acceder desde el navegador:
+Para depurar con Xdebug: `XDEBUG_MODE=debug` en `.env`, reiniciar el contenedor
+`public` y usar la configuración de `.vscode/launch.json` (puerto 9004).
 
-```
-http://localhost:8050/mi_sistema/
-```
-
-### Interacciones con la base de datos
-
-El contenedor MySQL expone:
-
-- **Host:** `mysqldb`
-- **Usuario:** `root`
-- **Contraseña:** definida en `.env`
-
-Ejemplo conexión PDO:
-
-```php
-$pdo = new PDO("mysql:host=mysqldb;dbname=test;charset=utf8", "root", "root");
-```
-
----
-
-## ⚠️ Consideraciones Importantes
-
-- El `.env` no está incluido: cada usuario debe generar el suyo.
-- Las contraseñas por defecto deben cambiarse si se despliega fuera de entornos escolares/privados.
-- Si agregas más proyectos, recomendación: cada uno tenga su propio README.
-- La carpeta `/mysql` permite almacenar configuraciones y persistencia.
-- El entorno está pensado para **desarrollo**, no para producción directa.
-
----
-
-## 📌 Mejoras Futuras Sugeridas
-
-- Añadir migraciones para MySQL.
-- Incorporar Composer en los proyectos PHP.
-- Agregar tests automatizados.
-- Añadir script de backup/restore de bases de datos.
-- Documentar la estructura de los proyectos dentro de `/public`.
-
----
-
-## 📄 Licencia
-
-Actualmente el proyecto **no declara licencia**.  
-Si deseas compartirlo públicamente, se recomienda agregar un archivo `LICENSE`.
-
----
-
-## ✨ Autor / Mantenimiento
-
-Proyecto preparado para facilitar el desarrollo web en entornos educativos y personales.  
-Ideal para prácticas de PHP, MySQL, MongoDB y Docker.
-
----
-
-¡Entorno listo para desarrollar! 🚀
+Con `APP_DEBUG=true` se muestran los mensajes de error; en producción dejarlo en
+`false` (los errores quedan en `storage/logs/app.log`).

@@ -1,48 +1,27 @@
-$(document).ready(function() {
-  // Inicializar DataTable
-  $('#tabla_turnos').DataTable({
-    language: { 
-      url: 'https://cdn.datatables.net/plug-ins/1.13.4/i18n/es-ES.json' 
-    },
-    order: [[0, 'desc']], // Ordenar por fecha descendente
-    pageLength: 25
-  });
+/**
+ * Turnos: vehículos según el cliente elegido y cambio de estado en la agenda.
+ */
+$(function () {
+  const $form = $('#form_turno');
 
-  // Cambiar estado del turno
-  $('.estado-turno-select').on('change', function() {
-  const id = $(this).data('id');
-  const nuevo_estado = $(this).val();
+  if ($form.length) {
+    const $vehiculo = $('#vehiculo_id');
 
-  if (confirm('¿Confirmar cambio de estado?')) {
-    $.ajax({
-      url: 'listar_turno.php',
-      method: 'POST',
-      data: { 
-        cambiar_estado: true, 
-        id: id, 
-        nuevo_estado: nuevo_estado 
-      },
-      dataType: 'json',
-      success: function(response) {
-        if (response.status === 'success') {
-          // redirecciona con success=estado
-          window.location.href = 'listar_turno.php?success=estado';
-        } else {
-          window.location.href = 'listar_turno.php?error=estado';
-        }
-      },
-      error: function() {
-        window.location.href = 'listar_turno.php?error=estado';
+    $('#cliente_id').on('change', function () {
+      const clienteId = $(this).val();
+
+      if (!clienteId) {
+        window.cargarOpciones($vehiculo, [], 'Seleccione primero un cliente');
+        return;
       }
-    });
-  } else {
-    // Si cancela, recargo para restaurar el valor original del select
-    location.reload();
-  }
-});
 
-  // Auto-ocultar alertas existentes
-  setTimeout(function() {
-    $('#success-alert, #error-alert').fadeOut('slow');
-  }, 3000);
+      $.getJSON($form.data('vehiculos-url').replace('{id}', clienteId))
+        .done((vehiculos) => {
+          window.cargarOpciones($vehiculo, vehiculos, vehiculos.length ? 'Seleccione un vehículo' : 'El cliente no tiene vehículos activos');
+        })
+        .fail(() => window.alert('No se pudieron cargar los vehículos del cliente.'));
+    });
+  }
+
+  window.estadoInline('.estado-turno-select', 'del turno');
 });

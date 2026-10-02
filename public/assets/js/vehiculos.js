@@ -1,0 +1,51 @@
+/**
+ * Formulario de vehículos: cascada marca → modelo y aviso si el cliente ya tiene vehículos.
+ */
+$(function () {
+  const $form = $('#form_vehiculo');
+  const $modelo = $('#modelo_id');
+
+  $('#marca_id').on('change', function () {
+    const marcaId = $(this).val();
+
+    if (!marcaId) {
+      window.cargarOpciones($modelo, [], 'Seleccione primero una marca');
+      return;
+    }
+
+    $.getJSON($form.data('modelos-url').replace('{id}', marcaId))
+      .done((modelos) => {
+        const opciones = modelos.map((m) => ({ id: m.id, texto: m.nombre }));
+        window.cargarOpciones($modelo, opciones, opciones.length ? 'Seleccione un modelo' : 'La marca no tiene modelos cargados');
+      })
+      .fail(() => window.alert('No se pudieron cargar los modelos.'));
+  });
+
+  // Solo al dar de alta: avisar si el cliente ya tiene vehículos asignados.
+  if ($form.data('nuevo') !== 1) {
+    return;
+  }
+
+  let confirmado = false;
+
+  $form.on('submit', function (event) {
+    const clienteId = $('#cliente_id').val();
+    if (confirmado || !clienteId) {
+      return;
+    }
+
+    event.preventDefault();
+    $.getJSON($form.data('vehiculos-url').replace('{id}', clienteId))
+      .done((vehiculos) => {
+        const mensaje = `Este cliente ya tiene ${vehiculos.length} vehículo(s) asignado(s). ¿Desea cargarle otro?`;
+        if (vehiculos.length === 0 || window.confirm(mensaje)) {
+          confirmado = true;
+          $form.trigger('submit');
+        }
+      })
+      .fail(() => {
+        confirmado = true;
+        $form.trigger('submit');
+      });
+  });
+});

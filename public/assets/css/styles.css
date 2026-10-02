@@ -526,7 +526,7 @@ body.dark-mode select.form-select option {
 .estado-orden-select.estado-pendiente { border-color: #ffc107; }
 .estado-orden-select.estado-en_proceso { border-color: #0dcaf0; }
 .estado-orden-select.estado-finalizado { border-color: #198754; }
-.estado-orden-select.estado-cancelada  { border-color: #6c757d; }
+.estado-orden-select.estado-cancelado  { border-color: #6c757d; }
 
 /* Forzamos que las opciones sean siempre legibles (fondo blanco, texto negro) */
 .estado-orden-select option {
@@ -554,7 +554,7 @@ body.dark-mode .estado-orden-select.estado-finalizado {
   border-color: #065f46;
 }
 
-body.dark-mode .estado-orden-select.estado-cancelada {
+body.dark-mode .estado-orden-select.estado-cancelado {
   background-color: #4b5563;
   border-color: #4b5563;
 }

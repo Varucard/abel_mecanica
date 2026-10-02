@@ -7,14 +7,8 @@
       "request": "launch",
       "port": 9004,
       "pathMappings": {
-        "/var/www/html": "${workspaceFolder}/public"
-      },
-      "xdebugSettings": {
-        "max_children": 256,
-        "max_data": 1024,
-        "max_depth": 3
-      },
-      "log": true
+        "/var/www/html": "${workspaceFolder}"
+      }
     }
   ]
 }

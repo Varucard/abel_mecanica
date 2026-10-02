@@ -9,10 +9,10 @@ Modulo Vehiculos:
 Vista para vehiculo:
   - Detalles del vehiculo.
   - Imagenes.
-  - Como no puedo eliminar vehiculos por la asociación con Ordenes, deberia de poder desactivarlos.
+  - [HECHO] Como no puedo eliminar vehiculos por la asociación con Ordenes, deberia de poder desactivarlos.
 
 Modulo de Turnos:
-ABM turnos.
+[HECHO] ABM turnos.
 Agregar modulo de turnos => Que notifiquen por email?
 Modificar turnos => pedir comprobación de parte del cliente?
 
@@ -30,6 +30,6 @@ Una vez entregado el vehiculo o terminada la Orden imprimir un papel de entrega 
 Capaz agregar modulo de seguridad al sistema => Clave - Usuario.
 Que el Cliente pueda ver como va su auto ingresando como un cliente?.
 ¿Agregar mas data de los modelos? - año - motor - etc.
-Capaz generar una clase para ORDEN.
-Posible que se pueda eliminar algo que arrastre ids de BD?.
-Eliminar codigo de negocio de las vistas.
+[HECHO] Capaz generar una clase para ORDEN. (App\Models\Orden + OrdenItem)
+[HECHO] Posible que se pueda eliminar algo que arrastre ids de BD?. (FK en RESTRICT + validación en servicios)
+[HECHO] Eliminar codigo de negocio de las vistas. (Controllers / Services / Repositories)

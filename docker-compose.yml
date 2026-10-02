@@ -1,35 +1,53 @@
-version: '3.8'
-
 services:
   database:
-    image: mysql:5.7
+    image: mysql:8.4
     container_name: database
-    restart: always
+    restart: unless-stopped
     ports:
-     - "3309:3306"
+      - "3309:3306"
+    environment:
+      TZ: ${TZ}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
     volumes:
-     - ./mysql:/var/lib/mysql
-     - ./mysqld.cnf:/etc/mysql/mysql.conf.d/mysqld.cnf
-     - ./files:/var/lib/mysql-files
-    env_file: .env
-    
+      - db_data:/var/lib/mysql
+      - ./mysqld.cnf:/etc/mysql/conf.d/taller.cnf:ro
+      # Solo se ejecuta la primera vez, con el volumen vacío.
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
   admin:
-    image: phpmyadmin:latest
+    image: phpmyadmin:5
     container_name: admin
-    restart: always
+    restart: unless-stopped
     ports:
-     - "8051:80"
-    env_file: .env
-    links:
-     - database:mysqldb
+      - "8051:80"
+    environment:
+      PMA_HOST: database
+    depends_on:
+      - database
 
   public:
     build: ./
     container_name: public
-    restart: always
+    restart: unless-stopped
     ports:
-     - "8050:80"       # Apache
+      - "8050:80"
     env_file: .env
+    environment:
+      XDEBUG_MODE: ${XDEBUG_MODE:-off}
     volumes:
-     - ./public:/var/www/html
-     - ./xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini
+      - ./:/var/www/html
+      - ./xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini:ro
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  db_data:
