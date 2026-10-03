@@ -51,7 +51,10 @@ final class HomeController extends Controller
       'deudores' => array_slice($deudores, 0, 5),
       'totalAdeudado' => array_sum(array_column($deudores, 'saldo')),
       'stockBajo' => $this->repuestos->bajoMinimo(),
-      'emailHabilitado' => $this->notificaciones->emailHabilitado(),
+      'avisos' => [
+        'canal' => $this->notificaciones->hayCanalDisponible(),
+        'whatsapp' => $this->notificaciones->botonWhatsappManual(),
+      ],
     ]);
   }
 }

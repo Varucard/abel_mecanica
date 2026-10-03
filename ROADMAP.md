@@ -29,11 +29,19 @@ Estado: ✅ hecho · 🚧 en curso · ⏳ pendiente · 💭 a futuro (requiere d
 | 16 | **Backups** de la base con un comando. | ✅ |
 | 17 | **Puertos configurables** en Docker y nombres de contenedor sin colisiones. | ✅ |
 
-## A futuro (requieren definiciones del negocio)
+## Segunda etapa (definida con el negocio)
 
-| Ítem | Qué hay que definir |
+| # | Ítem | Estado |
+| --- | --- | --- |
+| 18 | **Todo configurable** desde Configuración: plantillas de mensajes, horario de atención, feriados, turnos simultáneos, stock negativo, portal, canales de aviso. | ✅ |
+| 19 | **Confirmación de turnos por email**: link para que el cliente confirme o cancele; se vuelve a pedir si se reprograma. | ✅ |
+| 20 | **Recordatorios automáticos** el día hábil anterior, solo en horario laboral argentino y sin feriados (importables desde ArgentinaDatos). | ✅ |
+| 21 | **Portal "Seguí tu vehículo"**: consulta pública con DNI (+ patente, configurable) y mini historial de trabajos y turnos. | ✅ |
+| 22 | **Canales de aviso intercambiables**: email activo; WhatsApp Business preparado (interfaz y plantillas listas). | ✅ |
+
+## A futuro
+
+| Ítem | Qué falta |
 | --- | --- |
-| 💭 Portal del cliente para seguir el estado de su vehículo | Cómo se registra/identifica el cliente y qué información ve. |
-| 💭 Confirmación del turno por parte del cliente | Canal (link por email/WhatsApp) y qué pasa si no confirma. |
-| 💭 Envío automático de recordatorios | Servidor SMTP o API de WhatsApp Business y horario del envío. |
-| 💭 Facturación electrónica (AFIP/ARCA) | Condición fiscal del taller, certificado y punto de venta. |
+| 💭 Activar WhatsApp Business (API de Meta) | Cuenta verificada, número dedicado, plantillas aprobadas e implementar `WhatsAppCanal::enviar()`. |
+| 💭 Facturación electrónica (AFIP/ARCA) | Fuera de alcance por ahora. |

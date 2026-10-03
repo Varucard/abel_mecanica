@@ -12,6 +12,7 @@ use App\Controllers\ModeloController;
 use App\Controllers\OrdenController;
 use App\Controllers\PagoController;
 use App\Controllers\ProveedorController;
+use App\Controllers\PublicoController;
 use App\Controllers\RepuestoController;
 use App\Controllers\ServicioController;
 use App\Controllers\TurnoController;
@@ -26,6 +27,14 @@ return function (Router $r): void {
   $r->post('/logout', [AuthController::class, 'logout']);
   $r->get('/instalacion', [AuthController::class, 'setupForm'], Router::ACCESO_PUBLICO);
   $r->post('/instalacion', [AuthController::class, 'setup'], Router::ACCESO_PUBLICO);
+  // Páginas públicas para clientes
+  $publico = Router::ACCESO_PUBLICO;
+  $r->get('/turno/{token:token}', [PublicoController::class, 'turno'], $publico);
+  $r->post('/turno/{token:token}/confirmar', [PublicoController::class, 'confirmarTurno'], $publico);
+  $r->post('/turno/{token:token}/cancelar', [PublicoController::class, 'cancelarTurno'], $publico);
+  $r->get('/seguimiento', [PublicoController::class, 'seguimiento'], $publico);
+  $r->post('/seguimiento', [PublicoController::class, 'consultar'], $publico);
+
   $r->get('/perfil/clave', [UsuarioController::class, 'claveForm']);
   $r->post('/perfil/clave', [UsuarioController::class, 'cambiarClave']);
 
@@ -103,12 +112,15 @@ return function (Router $r): void {
   $r->post('/turnos/{id}/estado', [TurnoController::class, 'cambiarEstado']);
   $r->post('/turnos/{id}/eliminar', [TurnoController::class, 'destroy']);
   $r->post('/turnos/{id}/whatsapp', [TurnoController::class, 'whatsapp']);
-  $r->post('/turnos/{id}/email', [TurnoController::class, 'email']);
+  $r->post('/turnos/{id}/recordar', [TurnoController::class, 'recordar']);
+  $r->post('/turnos/{id}/confirmacion', [TurnoController::class, 'pedirConfirmacion']);
 
   // Solo administradores
   $admin = Router::ACCESO_ADMIN;
-  $r->get('/configuracion', [ConfiguracionController::class, 'edit'], $admin);
-  $r->post('/configuracion', [ConfiguracionController::class, 'update'], $admin);
+  $r->get('/configuracion', [ConfiguracionController::class, 'index'], $admin);
+  $r->post('/configuracion/feriados/importar', [ConfiguracionController::class, 'importarFeriados'], $admin);
+  $r->get('/configuracion/{seccion:slug}', [ConfiguracionController::class, 'edit'], $admin);
+  $r->post('/configuracion/{seccion:slug}', [ConfiguracionController::class, 'update'], $admin);
   $r->get('/usuarios', [UsuarioController::class, 'index'], $admin);
   $r->get('/usuarios/crear', [UsuarioController::class, 'create'], $admin);
   $r->post('/usuarios', [UsuarioController::class, 'store'], $admin);

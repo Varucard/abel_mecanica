@@ -25,6 +25,7 @@ final class StockService
     private readonly RepuestoRepository $repuestos,
     private readonly ProveedorRepository $proveedores,
     private readonly OrdenRepository $ordenes,
+    private readonly ConfiguracionService $configuracion,
   ) {
   }
 
@@ -63,6 +64,20 @@ final class StockService
 
   public function descontarOrden(int $ordenId, ?int $usuarioId): void
   {
+    if (!$this->configuracion->seccion('stock')['permitir_negativo']) {
+      $faltantes = [];
+      foreach ($this->ordenes->items($ordenId) as $item) {
+        if ($item['repuesto_id'] === null) {
+          continue;
+        }
+        $repuesto = $this->repuesto((int) $item['repuesto_id']);
+        if ((float) $repuesto['stock_actual'] < (float) $item['cantidad']) {
+          $faltantes[] = sprintf('%s (hay %s, se necesitan %s)', $repuesto['nombre'], qty($repuesto['stock_actual']), qty($item['cantidad']));
+        }
+      }
+      (new Validator())->check($faltantes === [], 'No hay stock suficiente para finalizar la orden: ' . implode('; ', $faltantes) . '.')->validate();
+    }
+
     $this->moverOrden($ordenId, -1, $usuarioId, "Orden #{$ordenId} finalizada");
   }
 

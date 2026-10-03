@@ -9,7 +9,7 @@
  * @var list<array<string, mixed>> $deudores
  * @var float $totalAdeudado
  * @var list<array<string, mixed>> $stockBajo
- * @var bool $emailHabilitado
+ * @var array{canal: bool, whatsapp: bool} $avisos
  */
 use App\Enums\EstadoTurno;
 
@@ -68,7 +68,7 @@ $tarjetas = [
                   <div class="small text-muted"><?= e($t['vehiculo']) ?></div>
                 </div>
                 <div class="text-end">
-                  <?= $view->partial('turnos/_recordatorio', ['turno' => $t, 'emailHabilitado' => $emailHabilitado, 'volver' => 'inicio']) ?>
+                  <?= $view->partial('turnos/_recordatorio', ['turno' => $t, 'avisos' => $avisos, 'volver' => 'inicio']) ?>
                 </div>
               </li>
             <?php endforeach; ?>

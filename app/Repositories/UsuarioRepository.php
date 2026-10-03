@@ -65,23 +65,4 @@ final class UsuarioRepository extends Repository
   {
     $this->execute('UPDATE usuarios SET ultimo_acceso = NOW() WHERE id = ?', [$id]);
   }
-
-  public function registrarIntentoFallido(string $usuario, string $ip): void
-  {
-    $this->execute('INSERT INTO intentos_login (usuario, ip) VALUES (?, ?)', [$usuario, $ip]);
-  }
-
-  public function intentosRecientes(string $usuario, string $ip, int $minutos): int
-  {
-    return (int) $this->fetchOne(
-      'SELECT COUNT(*) AS total FROM intentos_login
-        WHERE (usuario = ? OR ip = ?) AND created_at > NOW() - INTERVAL ? MINUTE',
-      [$usuario, $ip, $minutos]
-    )['total'];
-  }
-
-  public function limpiarIntentos(string $usuario): void
-  {
-    $this->execute('DELETE FROM intentos_login WHERE usuario = ? OR created_at < NOW() - INTERVAL 1 DAY', [$usuario]);
-  }
 }

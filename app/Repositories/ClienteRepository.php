@@ -33,6 +33,12 @@ final class ClienteRepository extends Repository
   }
 
   /** @return array<string, mixed>|null */
+  public function porDni(string $dni): ?array
+  {
+    return $this->fetchOne(self::SELECT . ' WHERE p.dni = ?', [$dni]);
+  }
+
+  /** @return array<string, mixed>|null */
   public function find(int $id): ?array
   {
     return $this->fetchOne(self::SELECT . ' WHERE c.id = ?', [$id]);

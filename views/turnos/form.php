@@ -4,6 +4,7 @@
  * @var list<array<string, mixed>> $clientes
  * @var list<array<string, mixed>> $vehiculos  vehículos del cliente seleccionado
  * @var list<\App\Enums\EstadoTurno> $estados
+ * @var \App\Support\HorarioAtencion $horario
  */
 $clienteId = (int) old('cliente_id', $turno['cliente_id'] ?? $clienteSugerido);
 $vehiculoId = (int) old('vehiculo_id', $turno['vehiculo_id'] ?? 0);
@@ -75,6 +76,7 @@ $view->script('turnos.js');
         </div>
       </div>
 
+      <p class="small text-muted">Horario de atención: <?= e($horario->resumen()) ?></p>
       <button type="submit" class="btn btn-warning"><?= $turno ? 'Guardar cambios' : 'Confirmar turno' ?></button>
       <a href="<?= url('turnos') ?>" class="btn btn-secondary ms-2">Cancelar</a>
     </form>

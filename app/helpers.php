@@ -79,15 +79,39 @@ function qty(mixed $value): string
 }
 
 /**
- * Link de WhatsApp (wa.me) para un teléfono argentino de 10 dígitos.
- * Los celulares argentinos se marcan internacionalmente como 54 9 + área + número.
+ * Teléfono en formato internacional sin "+". Para Argentina (54) un número de
+ * 10 dígitos (área + número) se marca como celular: 54 9 + área + número.
  */
-function whatsapp_url(string $telefono, string $mensaje = ''): string
+function telefono_internacional(string $telefono, string $codigoPais = '54'): string
 {
   $digitos = preg_replace('/\D/', '', $telefono);
-  if (strlen($digitos) === 10) {
-    $digitos = '549' . $digitos;
+
+  if (strlen($digitos) <= 10) {
+    return $codigoPais . ($codigoPais === '54' && strlen($digitos) === 10 ? '9' : '') . $digitos;
   }
 
-  return 'https://wa.me/' . $digitos . ($mensaje !== '' ? '?text=' . rawurlencode($mensaje) : '');
+  return $digitos;
+}
+
+/** Link de WhatsApp (wa.me) con un mensaje opcional ya escrito. */
+function whatsapp_url(string $telefono, string $mensaje = '', string $codigoPais = '54'): string
+{
+  return 'https://wa.me/' . telefono_internacional($telefono, $codigoPais)
+    . ($mensaje !== '' ? '?text=' . rawurlencode($mensaje) : '');
+}
+
+/**
+ * URL absoluta (para links en emails). Usa APP_URL; si no está definida y hay
+ * una petición web en curso, la arma con el host actual.
+ */
+function absolute_url(string $path = '/'): string
+{
+  $base = \App\Core\Env::get('APP_URL');
+
+  if ($base === null) {
+    $esquema = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
+    $base = isset($_SERVER['HTTP_HOST']) ? $esquema . '://' . $_SERVER['HTTP_HOST'] . App::instance()->basePath : 'http://localhost';
+  }
+
+  return rtrim($base, '/') . '/' . ltrim($path, '/');
 }

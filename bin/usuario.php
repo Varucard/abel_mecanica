@@ -67,7 +67,7 @@ try {
       'nombre' => $actual['nombre'], 'usuario' => $actual['usuario'], 'rol' => $actual['rol'], 'activo' => 1,
       'clave' => $clave, 'clave_confirmacion' => $confirmacion,
     ], 0);
-    $repo->limpiarIntentos($actual['usuario']);
+    $service->desbloquear($actual['usuario']);
     echo "Contraseña de '{$usuario}' actualizada.\n";
   }
 } catch (ValidationException $e) {

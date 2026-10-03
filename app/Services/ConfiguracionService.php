@@ -5,17 +5,28 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Core\App;
+use App\Exceptions\ValidationException;
+use App\Support\HorarioAtencion;
 use App\Support\Validator;
 use RuntimeException;
 
 /**
- * Configuración del taller (datos de contacto y condiciones de trabajo).
+ * Configuración del sistema, organizada por secciones (ver config/taller.php).
  *
  * Se guarda como JSON en storage/ en lugar de generar código PHP, de modo que
  * lo cargado por el usuario nunca se ejecuta.
  */
 final class ConfiguracionService
 {
+  public const SECCIONES = ['taller', 'trabajo', 'turnos', 'notificaciones', 'mensajes', 'stock', 'portal'];
+
+  /** Variables que se pueden usar en las plantillas de mensajes. */
+  public const VARIABLES_MENSAJES = [
+    'cliente', 'fecha', 'hora', 'vehiculo', 'patente', 'taller', 'direccion', 'telefono', 'link_turno', 'link_seguimiento',
+  ];
+
+  private const FERIADOS_API = 'https://api.argentinadatos.com/v1/feriados/%d';
+
   private readonly string $defaultsFile;
   private readonly string $storageFile;
   private ?array $cache = null;
@@ -27,7 +38,7 @@ final class ConfiguracionService
     $this->storageFile = $rootPath . '/storage/config/taller.json';
   }
 
-  /** @return array{taller: array<string, string>, trabajo: array<string, mixed>} */
+  /** @return array<string, array<string, mixed>> */
   public function obtener(): array
   {
     if ($this->cache !== null) {
@@ -36,46 +47,88 @@ final class ConfiguracionService
 
     $config = require $this->defaultsFile;
 
-    if (is_file($this->storageFile)) {
-      $guardada = json_decode((string) file_get_contents($this->storageFile), true);
-      if (is_array($guardada)) {
-        $config['taller'] = array_merge($config['taller'], $guardada['taller'] ?? []);
-        $config['trabajo'] = array_merge($config['trabajo'], $guardada['trabajo'] ?? []);
+    foreach ($this->guardada() as $seccion => $valores) {
+      if (isset($config[$seccion]) && is_array($valores)) {
+        $config[$seccion] = array_replace($config[$seccion], $valores);
       }
     }
 
     return $this->cache = $config;
   }
 
-  /** @param array<string, mixed> $input */
-  public function guardar(array $input): void
+  /** Descarta los valores en memoria para volver a leer el archivo. */
+  public function recargar(): void
   {
-    $texto = fn(string $key) => trim((string) ($input[$key] ?? ''));
-    $lineas = fn(string $key) => array_values(array_filter(array_map('trim', preg_split('/\R/', $texto($key)))));
-    $dias = fn(string $key) => (int) ($input[$key] ?? 0);
+    $this->cache = null;
+  }
 
-    $config = [
-      'taller' => [
-        'nombre' => $texto('nombre'),
-        'cuit' => $texto('cuit'),
-        'direccion' => $texto('direccion'),
-        'telefono' => $texto('telefono'),
-        'whatsapp' => $texto('whatsapp'),
-        'email' => $texto('email'),
-      ],
-      'trabajo' => [
-        'validez' => $dias('validez'),
-        'garantia' => $dias('garantia'),
-        'tiempo_estimado' => $dias('tiempo_estimado'),
-        'forma_pago' => $lineas('forma_pago'),
-        'observaciones' => $lineas('observaciones'),
-        'mensaje_legal' => $texto('mensaje_legal'),
-      ],
+  /** @return array<string, mixed> */
+  public function seccion(string $seccion): array
+  {
+    return $this->obtener()[$seccion] ?? [];
+  }
+
+  public function horario(): HorarioAtencion
+  {
+    return HorarioAtencion::desdeConfig($this->seccion('turnos'));
+  }
+
+  /** @param array<string, mixed> $input */
+  public function guardar(string $seccion, array $input): void
+  {
+    $valores = match ($seccion) {
+      'taller' => $this->validarTaller($input),
+      'trabajo' => $this->validarTrabajo($input),
+      'turnos' => $this->validarTurnos($input),
+      'notificaciones' => $this->validarNotificaciones($input),
+      'mensajes' => $this->validarMensajes($input),
+      'stock' => ['permitir_negativo' => !empty($input['permitir_negativo'])],
+      'portal' => $this->validarPortal($input),
+      default => throw new ValidationException(['Sección de configuración inválida.']),
+    };
+
+    $guardada = $this->guardada();
+    $guardada[$seccion] = $valores;
+    $this->escribir($guardada);
+    $this->cache = null;
+  }
+
+  /**
+   * Agrega a la lista de feriados los nacionales del año (fuente: ArgentinaDatos).
+   * Devuelve cuántos feriados nuevos se agregaron.
+   */
+  public function importarFeriados(int $anio): int
+  {
+    $contexto = stream_context_create(['http' => ['timeout' => 10, 'header' => "Accept: application/json\r\n"]]);
+    $json = @file_get_contents(sprintf(self::FERIADOS_API, $anio), false, $contexto);
+    $datos = $json !== false ? json_decode($json, true) : null;
+
+    if (!is_array($datos)) {
+      throw new ValidationException(['No se pudieron obtener los feriados. Revisá la conexión a internet o cargalos a mano.']);
+    }
+
+    $fechas = array_values(array_filter(array_column($datos, 'fecha'), fn($f) => is_string($f) && Validator::fecha($f)));
+    $actuales = $this->seccion('turnos')['feriados'];
+    $todas = array_values(array_unique([...$actuales, ...$fechas]));
+    sort($todas);
+
+    $guardada = $this->guardada();
+    $guardada['turnos'] = array_replace($this->seccion('turnos'), ['feriados' => $todas]);
+    $this->escribir($guardada);
+    $this->cache = null;
+
+    return count($todas) - count($actuales);
+  }
+
+  // ---------- Validaciones por sección ----------
+
+  private function validarTaller(array $input): array
+  {
+    $t = fn(string $k) => trim((string) ($input[$k] ?? ''));
+    $taller = [
+      'nombre' => $t('nombre'), 'cuit' => $t('cuit'), 'direccion' => $t('direccion'),
+      'telefono' => $t('telefono'), 'whatsapp' => $t('whatsapp'), 'email' => $t('email'),
     ];
-
-    $taller = $config['taller'];
-    $trabajo = $config['trabajo'];
-    $rangoDias = fn(int $n) => $n >= 1 && $n <= 365;
 
     (new Validator())
       ->check($taller['nombre'] !== '', 'El nombre del taller es obligatorio.')
@@ -84,14 +137,148 @@ final class ConfiguracionService
       ->check($taller['telefono'] !== '', 'El teléfono es obligatorio.')
       ->check((bool) preg_match('/^\+?\d{10,15}$/', $taller['whatsapp']), 'El WhatsApp debe contener solo números (con + opcional).')
       ->check(filter_var($taller['email'], FILTER_VALIDATE_EMAIL) !== false, 'El email no es válido.')
-      ->check($rangoDias($trabajo['validez']), 'La validez debe estar entre 1 y 365 días.')
-      ->check($rangoDias($trabajo['garantia']), 'La garantía debe estar entre 1 y 365 días.')
-      ->check($rangoDias($trabajo['tiempo_estimado']), 'El tiempo estimado debe estar entre 1 y 365 días.')
+      ->validate();
+
+    return $taller;
+  }
+
+  private function validarTrabajo(array $input): array
+  {
+    $dias = fn(string $k) => (int) ($input[$k] ?? 0);
+    $rango = fn(int $n) => $n >= 1 && $n <= 365;
+    $trabajo = [
+      'validez' => $dias('validez'),
+      'garantia' => $dias('garantia'),
+      'tiempo_estimado' => $dias('tiempo_estimado'),
+      'forma_pago' => self::lineas($input['forma_pago'] ?? ''),
+      'observaciones' => self::lineas($input['observaciones'] ?? ''),
+      'mensaje_legal' => trim((string) ($input['mensaje_legal'] ?? '')),
+    ];
+
+    (new Validator())
+      ->check($rango($trabajo['validez']), 'La validez debe estar entre 1 y 365 días.')
+      ->check($rango($trabajo['garantia']), 'La garantía debe estar entre 1 y 365 días.')
+      ->check($rango($trabajo['tiempo_estimado']), 'El tiempo estimado debe estar entre 1 y 365 días.')
       ->check($trabajo['forma_pago'] !== [], 'Ingresá al menos una forma de pago.')
       ->validate();
 
-    $this->escribir($config);
-    $this->cache = null;
+    return $trabajo;
+  }
+
+  private function validarTurnos(array $input): array
+  {
+    $v = new Validator();
+    $horario = [];
+
+    foreach (array_keys(HorarioAtencion::DIAS) as $dia) {
+      $datos = $input['horario'][$dia] ?? [];
+      if (empty($datos['abierto'])) {
+        $horario[(string) $dia] = null;
+        continue;
+      }
+
+      $desde = substr(trim((string) ($datos['desde'] ?? '')), 0, 5);
+      $hasta = substr(trim((string) ($datos['hasta'] ?? '')), 0, 5);
+      $v->check(Validator::hora($desde) && Validator::hora($hasta) && $desde < $hasta, 'Revisá el horario del ' . mb_strtolower(HorarioAtencion::DIAS[$dia]) . ': la apertura debe ser anterior al cierre.');
+      $horario[(string) $dia] = ['desde' => $desde, 'hasta' => $hasta];
+    }
+
+    $feriados = self::lineas($input['feriados'] ?? '');
+    $invalidos = array_filter($feriados, fn($f) => !Validator::fecha($f));
+    $cupos = (int) ($input['cupos_por_horario'] ?? 0);
+    $horaRecordatorio = substr(trim((string) ($input['recordatorio_hora'] ?? '')), 0, 5);
+
+    $v->check(array_filter($horario) !== [], 'Tiene que haber al menos un día de atención.')
+      ->check($invalidos === [], 'Fechas de feriados inválidas (usar AAAA-MM-DD): ' . implode(', ', $invalidos))
+      ->check($cupos >= 1 && $cupos <= 20, 'Los turnos simultáneos deben estar entre 1 y 20.')
+      ->check(Validator::hora($horaRecordatorio), 'La hora de envío de recordatorios no es válida.')
+      ->validate();
+
+    sort($feriados);
+
+    return [
+      'horario' => $horario,
+      'validar_horario' => !empty($input['validar_horario']),
+      'cupos_por_horario' => $cupos,
+      'feriados' => array_values(array_unique($feriados)),
+      'enviar_confirmacion' => !empty($input['enviar_confirmacion']),
+      'recordatorio_automatico' => !empty($input['recordatorio_automatico']),
+      'recordatorio_hora' => $horaRecordatorio,
+    ];
+  }
+
+  private function validarNotificaciones(array $input): array
+  {
+    $canales = array_values(array_intersect(NotificacionService::CANALES, (array) ($input['canales'] ?? [])));
+    $codigo = preg_replace('/\D/', '', (string) ($input['codigo_pais'] ?? ''));
+
+    (new Validator())
+      ->check((bool) preg_match('/^\d{1,3}$/', $codigo), 'El código de país debe tener entre 1 y 3 dígitos.')
+      ->validate();
+
+    return [
+      'canales' => $canales,
+      'boton_whatsapp_manual' => !empty($input['boton_whatsapp_manual']),
+      'codigo_pais' => $codigo,
+    ];
+  }
+
+  private function validarMensajes(array $input): array
+  {
+    $campos = array_keys((require $this->defaultsFile)['mensajes']);
+    $mensajes = [];
+    $v = new Validator();
+
+    foreach ($campos as $campo) {
+      $texto = trim(str_replace("\r\n", "\n", (string) ($input[$campo] ?? '')));
+      $mensajes[$campo] = $texto;
+
+      preg_match_all('/\{(\w+)\}/', $texto, $usadas);
+      $desconocidas = array_diff($usadas[1], self::VARIABLES_MENSAJES);
+
+      $v->check($texto !== '', 'Ningún mensaje puede quedar vacío.')
+        ->check($desconocidas === [], 'Variables desconocidas: {' . implode('}, {', $desconocidas) . '}.');
+    }
+
+    $v->check(
+      str_contains($mensajes['email_confirmacion'], '{link_turno}'),
+      'El email de confirmación debe incluir {link_turno} para que el cliente pueda confirmar.'
+    )->validate();
+
+    return $mensajes;
+  }
+
+  private function validarPortal(array $input): array
+  {
+    $cantidad = (int) ($input['cantidad_ordenes'] ?? 0);
+    (new Validator())->check($cantidad >= 1 && $cantidad <= 50, 'La cantidad de órdenes a mostrar debe estar entre 1 y 50.')->validate();
+
+    return [
+      'habilitado' => !empty($input['habilitado']),
+      'requiere_patente' => !empty($input['requiere_patente']),
+      'mostrar_montos' => !empty($input['mostrar_montos']),
+      'cantidad_ordenes' => $cantidad,
+    ];
+  }
+
+  // ---------- Persistencia ----------
+
+  /** @return list<string> */
+  private static function lineas(mixed $texto): array
+  {
+    return array_values(array_filter(array_map('trim', preg_split('/\R/', (string) $texto))));
+  }
+
+  /** @return array<string, mixed> */
+  private function guardada(): array
+  {
+    if (!is_file($this->storageFile)) {
+      return [];
+    }
+
+    $datos = json_decode((string) file_get_contents($this->storageFile), true);
+
+    return is_array($datos) ? $datos : [];
   }
 
   private function escribir(array $config): void
@@ -106,7 +293,7 @@ final class ConfiguracionService
     $json = json_encode($config, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
 
     if (file_put_contents($tmp, $json, LOCK_EX) === false || !rename($tmp, $this->storageFile)) {
-      throw new RuntimeException('No se pudo guardar la configuración del taller.');
+      throw new RuntimeException('No se pudo guardar la configuración.');
     }
   }
 }

@@ -7,6 +7,7 @@ namespace App\Services;
 use App\Enums\Rol;
 use App\Exceptions\NotFoundException;
 use App\Exceptions\ValidationException;
+use App\Repositories\IntentoRepository;
 use App\Repositories\Repository;
 use App\Repositories\UsuarioRepository;
 use App\Support\Validator;
@@ -18,8 +19,12 @@ final class UsuarioService
   public const MINUTOS_BLOQUEO = 15;
   public const LARGO_MINIMO_CLAVE = 8;
 
-  public function __construct(private readonly UsuarioRepository $usuarios)
-  {
+  private const AMBITO = 'login';
+
+  public function __construct(
+    private readonly UsuarioRepository $usuarios,
+    private readonly IntentoRepository $intentos,
+  ) {
   }
 
   /** @return array<string, mixed> */
@@ -42,7 +47,7 @@ final class UsuarioService
   {
     $usuario = mb_strtolower(trim($usuario));
 
-    if ($this->usuarios->intentosRecientes($usuario, $ip, self::MINUTOS_BLOQUEO) >= self::MAX_INTENTOS) {
+    if ($this->intentos->recientes(self::AMBITO, $usuario, $ip, self::MINUTOS_BLOQUEO) >= self::MAX_INTENTOS) {
       throw new ValidationException([
         sprintf('Demasiados intentos fallidos. Esperá %d minutos e intentá de nuevo.', self::MINUTOS_BLOQUEO),
       ]);
@@ -57,7 +62,7 @@ final class UsuarioService
     $valida = password_verify($clave, $hash);
 
     if ($fila === null || !$valida || !$fila['activo']) {
-      $this->usuarios->registrarIntentoFallido($usuario, $ip);
+      $this->intentos->registrar(self::AMBITO, $usuario, $ip);
       throw new ValidationException(['Usuario o contraseña incorrectos.']);
     }
 
@@ -65,7 +70,7 @@ final class UsuarioService
       $this->usuarios->setPassword((int) $fila['id'], password_hash($clave, PASSWORD_DEFAULT));
     }
 
-    $this->usuarios->limpiarIntentos($usuario);
+    $this->intentos->limpiar(self::AMBITO, $usuario);
     $this->usuarios->registrarAcceso((int) $fila['id']);
     unset($fila['password_hash']);
 
@@ -122,6 +127,12 @@ final class UsuarioService
     $this->validarClave($nueva, $confirmacion);
 
     $this->usuarios->setPassword($id, password_hash($nueva, PASSWORD_DEFAULT));
+  }
+
+  /** Desbloquea el usuario (lo usa bin/usuario.php al reiniciar la clave). */
+  public function desbloquear(string $usuario): void
+  {
+    $this->intentos->limpiar(self::AMBITO, mb_strtolower($usuario));
   }
 
   /** @return array{0: string, 1: string, 2: Rol} */

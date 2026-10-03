@@ -1,6 +1,7 @@
 <?php
 /**
  * @var list<array<string, mixed>> $turnos
+ * @var array{canal: bool, whatsapp: bool} $avisos
  * @var list<\App\Enums\EstadoTurno> $estados
  */
 $view->script('turnos.js');
@@ -43,7 +44,7 @@ $view->script('turnos.js');
               </td>
               <td class="col-acciones text-nowrap">
                 <?php if (in_array($t['estado'], ['pendiente', 'confirmado'], true) && $t['fecha'] >= date('Y-m-d')): ?>
-                  <?= $view->partial('turnos/_recordatorio', ['turno' => $t, 'emailHabilitado' => $emailHabilitado, 'volver' => '']) ?>
+                  <?= $view->partial('turnos/_recordatorio', ['turno' => $t, 'avisos' => $avisos, 'volver' => '']) ?>
                 <?php endif; ?>
                 <a href="<?= url("turnos/{$t['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
                 <?= $view->partial('partials/delete_button', [
