@@ -79,7 +79,7 @@ final class ConfiguracionServiceTest extends TestCase
   {
     $service = new ConfiguracionService($this->root);
     $service->guardar('taller', $this->datosValidos());
-    $service->guardar('stock', []);
+    $service->guardar('stock', ['margen_sugerido' => '40']);
 
     $config = (new ConfiguracionService($this->root))->obtener();
     $this->assertSame('Taller <Prueba>', $config['taller']['nombre']);

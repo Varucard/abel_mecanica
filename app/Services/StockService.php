@@ -30,18 +30,46 @@ final class StockService
   ) {
   }
 
-  public function ingresar(int $repuestoId, string $cantidad, ?int $proveedorId, ?string $motivo, ?int $usuarioId): float
-  {
-    $this->repuesto($repuestoId);
+  /**
+   * Registra una compra/ingreso. Si se indica el costo unitario, queda como
+   * último costo del repuesto y, opcionalmente, se recalcula el precio de
+   * venta con el margen sugerido.
+   */
+  public function ingresar(
+    int $repuestoId,
+    string $cantidad,
+    ?int $proveedorId,
+    ?string $motivo,
+    ?int $usuarioId,
+    string $costoUnitario = '',
+    bool $actualizarPrecio = false,
+  ): float {
+    $repuesto = $this->repuesto($repuestoId);
     $valor = Validator::importe($cantidad);
+    $costo = trim($costoUnitario) === '' ? null : Validator::importe($costoUnitario);
 
     (new Validator())
       ->check($valor !== null && $valor > 0, 'La cantidad a ingresar debe ser mayor a 0.')
+      ->check(trim($costoUnitario) === '' || $costo !== null, 'El costo unitario no es válido.')
+      ->check(!$actualizarPrecio || $costo !== null, 'Para actualizar el precio de venta hay que indicar el costo.')
       ->check($proveedorId === null || $this->proveedores->find($proveedorId) !== null, 'El proveedor seleccionado no existe.')
       ->validate();
 
-    $resultante = $this->stock->registrar($repuestoId, 'ingreso', $valor, null, $proveedorId, $usuarioId, Validator::nullable((string) $motivo));
-    $this->auditor->registrar('ingreso_stock', 'repuesto', $repuestoId, "Ingreso de stock: +" . qty($valor) . ' (queda ' . qty($resultante) . ')', ['cantidad' => $valor, 'proveedor_id' => $proveedorId]);
+    $resultante = $this->repuestos->transaction(function () use ($repuestoId, $valor, $proveedorId, $usuarioId, $motivo, $costo, $actualizarPrecio, $repuesto) {
+      $resultante = $this->stock->registrar($repuestoId, 'ingreso', $valor, null, $proveedorId, $usuarioId, Validator::nullable((string) $motivo), $costo);
+
+      if ($costo !== null) {
+        $this->repuestos->setCosto($repuestoId, $costo);
+      }
+      if ($actualizarPrecio) {
+        $nuevo = PrecioService::conMargen($costo, (float) $this->configuracion->seccion('stock')['margen_sugerido']);
+        $this->repuestos->setPrecio($repuestoId, $nuevo);
+        $this->auditor->registrar('cambiar_precio', 'repuesto', $repuestoId, "Precio de \"{$repuesto['nombre']}\" actualizado por costo: $ " . money($repuesto['precio']) . ' → $ ' . money($nuevo), ['antes' => (float) $repuesto['precio'], 'despues' => $nuevo, 'costo' => $costo]);
+      }
+
+      return $resultante;
+    });
+    $this->auditor->registrar('ingreso_stock', 'repuesto', $repuestoId, "Ingreso de stock: +" . qty($valor) . ' (queda ' . qty($resultante) . ')', ['cantidad' => $valor, 'proveedor_id' => $proveedorId, 'costo_unitario' => $costo]);
 
     return $resultante;
   }

@@ -41,6 +41,7 @@ final class OrdenController extends Controller
     private readonly \App\Repositories\AuditoriaRepository $auditoria,
     private readonly \App\Repositories\TurnoRepository $turnos,
     private readonly \App\Services\NotificacionService $notificaciones,
+    private readonly \App\Repositories\ComboRepository $combos,
   ) {
     parent::__construct($view, $session);
   }
@@ -266,6 +267,7 @@ final class OrdenController extends Controller
       'vehiculoSugerido' => $vehiculoSugerido,
       'mecanicos' => $this->empleados->activos(),
       'precarga' => $precarga,
+      'combos' => $this->combos->all(true),
       'kmVehiculo' => $vehiculoSugerido ? ($this->vehiculos->find($vehiculoSugerido)['kilometraje'] ?? null) : null,
       'service' => $this->configuracion->seccion('service'),
     ]);

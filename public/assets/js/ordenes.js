@@ -1,10 +1,12 @@
 /**
- * Órdenes: detalle con cantidades y precios, total estimado y cambio de estado en el listado.
+ * Órdenes y combos: detalle con cantidades (y precios en las órdenes), total,
+ * combos, próximo service sugerido y cambio de estado en el listado.
  */
 $(function () {
   const $form = $('#form_orden');
 
   if ($form.length) {
+    const conPrecio = $form.data('sin-precio') !== 1;
     const moneda = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     const $tbody = $('#detalle_orden tbody');
     // Valores ya cargados (edición o vuelta con errores): { servicio: {id: {cantidad, precio}}, repuesto: {...} }
@@ -33,11 +35,13 @@ $(function () {
         $(this).find('option:selected').each(function () {
           const id = $(this).val();
           const previo = cargados[tipo][id] || {};
-          const $tr = $('<tr>', { 'data-tipo': tipo, 'data-id': id });
+          const $tr = $('<tr>', { 'data-tipo': tipo, 'data-id': id, 'data-precio-catalogo': $(this).data('precio') });
 
           $tr.append($('<td>').text((tipo === 'repuesto' ? 'Repuesto: ' : '') + $(this).text().replace(/\s*\(\$.*$/s, '').trim()));
           $tr.append($('<td>').append(input(`cantidad_${tipo}[${id}]`, previo.cantidad ?? 1, { class: 'form-control form-control-sm js-cantidad', min: '0.01' })));
-          $tr.append($('<td>').append(input(`precio_${tipo}[${id}]`, previo.precio ?? $(this).data('precio'), { class: 'form-control form-control-sm js-precio' })));
+          if (conPrecio) {
+            $tr.append($('<td>').append(input(`precio_${tipo}[${id}]`, previo.precio ?? $(this).data('precio'), { class: 'form-control form-control-sm js-precio' })));
+          }
           $tr.append($('<td>', { class: 'text-end js-subtotal' }));
           $tbody.append($tr);
         });
@@ -50,12 +54,34 @@ $(function () {
     function calcularTotal() {
       let total = 0;
       $tbody.find('tr[data-tipo]').each(function () {
-        const subtotal = numero($(this).find('.js-cantidad').val()) * numero($(this).find('.js-precio').val());
+        const precio = conPrecio ? numero($(this).find('.js-precio').val()) : numero($(this).data('precio-catalogo'));
+        const subtotal = numero($(this).find('.js-cantidad').val()) * precio;
         $(this).find('.js-subtotal').text('$ ' + moneda.format(subtotal));
         total += subtotal;
       });
       $('#total').val(moneda.format(total));
+      $('#total_combo').text(moneda.format(total));
     }
+
+    // Combo: suma sus ítems a la orden (sin quitar los ya elegidos) con sus cantidades.
+    $('#agregar_combo').on('change', function () {
+      const combo = $(this).find('option:selected').data('items');
+      if (!combo) {
+        return;
+      }
+      filas(); // guarda lo escrito hasta ahora
+      combo.forEach((item) => {
+        const $select = $(`.js-item-precio[data-tipo="${item.tipo}"]`);
+        const actuales = $select.val() || [];
+        if (!actuales.includes(String(item.id))) {
+          $select.val([...actuales, String(item.id)]);
+        }
+        cargados[item.tipo][item.id] = { ...(cargados[item.tipo][item.id] || {}), cantidad: item.cantidad };
+      });
+      $('.js-item-precio').trigger('change.select2');
+      filas();
+      $(this).val('');
+    });
 
     // Próximo service sugerido: km de ingreso + intervalo y hoy + N meses.
     $('#sugerir_service').on('click', function () {
@@ -73,5 +99,7 @@ $(function () {
     filas();
   }
 
-  window.estadoInline('.estado-orden-select', 'de la orden');
+  if (window.estadoInline) {
+    window.estadoInline('.estado-orden-select', 'de la orden');
+  }
 });

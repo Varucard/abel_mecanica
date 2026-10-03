@@ -9,7 +9,7 @@ use App\Models\Repuesto;
 final class RepuestoRepository extends Repository
 {
   private const SELECT = '
-    SELECT r.id, r.codigo, r.nombre, r.descripcion, r.precio, r.stock_actual, r.stock_minimo,
+    SELECT r.id, r.codigo, r.nombre, r.descripcion, r.precio, r.precio_costo, r.stock_actual, r.stock_minimo,
            r.proveedor_id, p.nombre AS proveedor
       FROM repuestos r
       LEFT JOIN proveedores p ON p.id = r.proveedor_id';
@@ -49,21 +49,31 @@ final class RepuestoRepository extends Repository
 
   public function save(Repuesto $r): int
   {
-    $params = [$r->codigo, $r->nombre, $r->descripcion, $r->precio, $r->stockMinimo, $r->proveedorId];
+    $params = [$r->codigo, $r->nombre, $r->descripcion, $r->precio, $r->precioCosto, $r->stockMinimo, $r->proveedorId];
 
     if ($r->id === null) {
       return $this->insert(
-        'INSERT INTO repuestos (codigo, nombre, descripcion, precio, stock_minimo, proveedor_id) VALUES (?, ?, ?, ?, ?, ?)',
+        'INSERT INTO repuestos (codigo, nombre, descripcion, precio, precio_costo, stock_minimo, proveedor_id) VALUES (?, ?, ?, ?, ?, ?, ?)',
         $params
       );
     }
 
     $this->execute(
-      'UPDATE repuestos SET codigo = ?, nombre = ?, descripcion = ?, precio = ?, stock_minimo = ?, proveedor_id = ? WHERE id = ?',
+      'UPDATE repuestos SET codigo = ?, nombre = ?, descripcion = ?, precio = ?, precio_costo = ?, stock_minimo = ?, proveedor_id = ? WHERE id = ?',
       [...$params, $r->id]
     );
 
     return $r->id;
+  }
+
+  public function setPrecio(int $id, float $precio): void
+  {
+    $this->execute('UPDATE repuestos SET precio = ? WHERE id = ?', [$precio, $id]);
+  }
+
+  public function setCosto(int $id, float $costo): void
+  {
+    $this->execute('UPDATE repuestos SET precio_costo = ? WHERE id = ?', [$costo, $id]);
   }
 
   public function delete(int $id): void

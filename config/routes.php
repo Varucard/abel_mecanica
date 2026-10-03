@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Controllers\AuthController;
 use App\Controllers\BusquedaController;
 use App\Controllers\ClienteController;
+use App\Controllers\ComboController;
 use App\Controllers\ConfiguracionController;
 use App\Controllers\EmpleadoController;
 use App\Controllers\HomeController;
@@ -12,6 +13,7 @@ use App\Controllers\MarcaController;
 use App\Controllers\ModeloController;
 use App\Controllers\OrdenController;
 use App\Controllers\PagoController;
+use App\Controllers\PrecioController;
 use App\Controllers\ProveedorController;
 use App\Controllers\PublicoController;
 use App\Controllers\RegistroController;
@@ -82,6 +84,12 @@ return function (Router $r): void {
     $r->post("/{$path}/{id}/eliminar", [$controller, 'destroy']);
   }
   $r->get('/marcas/{marcaId}/modelos', [VehiculoController::class, 'modelosPorMarca']);
+  $r->get('/combos', [ComboController::class, 'index']);
+  $r->get('/combos/crear', [ComboController::class, 'create']);
+  $r->post('/combos', [ComboController::class, 'store']);
+  $r->get('/combos/{id}/editar', [ComboController::class, 'edit']);
+  $r->post('/combos/{id}', [ComboController::class, 'update']);
+  $r->post('/combos/{id}/eliminar', [ComboController::class, 'destroy']);
 
   // Stock y proveedores
   $r->get('/repuestos/{id}/stock', [RepuestoController::class, 'stock']);
@@ -124,6 +132,9 @@ return function (Router $r): void {
 
   // Solo administradores
   $admin = Router::ACCESO_ADMIN;
+  $r->get('/precios', [PrecioController::class, 'index'], $admin);
+  $r->post('/precios/vista-previa', [PrecioController::class, 'vistaPrevia'], $admin);
+  $r->post('/precios/aplicar', [PrecioController::class, 'aplicar'], $admin);
   $r->get('/auditoria', [RegistroController::class, 'auditoria'], $admin);
   $r->get('/auditoria/datos', [RegistroController::class, 'auditoriaDatos'], $admin);
   $r->get('/logs', [RegistroController::class, 'logs'], $admin);

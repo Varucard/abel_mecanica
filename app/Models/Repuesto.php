@@ -14,6 +14,7 @@ final class Repuesto
     public readonly float $stockMinimo = 0,
     public readonly ?int $proveedorId = null,
     public readonly ?int $id = null,
+    public readonly ?float $precioCosto = null,
   ) {
   }
 }

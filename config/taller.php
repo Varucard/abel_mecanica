@@ -113,6 +113,8 @@ return [
   'stock' => [
     // Permitir finalizar órdenes aunque el stock de un repuesto quede negativo.
     'permitir_negativo' => true,
+    // Margen sobre el costo para sugerir el precio de venta de los repuestos (%).
+    'margen_sugerido' => 40,
   ],
 
   'portal' => [

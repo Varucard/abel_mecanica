@@ -84,7 +84,7 @@ final class ConfiguracionService
       'notificaciones' => $this->validarNotificaciones($input),
       'mensajes' => $this->validarMensajes($input),
       'service' => $this->validarService($input),
-      'stock' => ['permitir_negativo' => !empty($input['permitir_negativo'])],
+      'stock' => $this->validarStock($input),
       'portal' => $this->validarPortal($input),
       default => throw new ValidationException(['Sección de configuración inválida.']),
     };
@@ -226,6 +226,14 @@ final class ConfiguracionService
       ->validate();
 
     return $service;
+  }
+
+  private function validarStock(array $input): array
+  {
+    $margen = Validator::importe((string) ($input['margen_sugerido'] ?? ''));
+    (new Validator())->check($margen !== null && $margen <= 1000, 'El margen sugerido debe estar entre 0 y 1000 %.')->validate();
+
+    return ['permitir_negativo' => !empty($input['permitir_negativo']), 'margen_sugerido' => $margen];
   }
 
   private function validarNotificaciones(array $input): array

@@ -8,6 +8,7 @@
  * @var array<string, mixed> $precarga  datos sugeridos al crear (p. ej. desde un turno)
  * @var int|null $kmVehiculo
  * @var array<string, mixed> $service  configuración de intervalos
+ * @var list<array<string, mixed>> $combos
  */
 $valor = fn(string $campo) => old($campo, $orden[$campo] ?? $precarga[$campo] ?? '');
 $vehiculoId = (int) old('vehiculo_id', $orden['vehiculo_id'] ?? $vehiculoSugerido);
@@ -95,6 +96,22 @@ $view->script('ordenes.js');
             placeholder="Lo que reporta el cliente y lo que se detectó"><?= e($valor('diagnostico')) ?></textarea>
         </div>
       </div>
+
+      <?php if ($combos !== []): ?>
+        <div class="mb-3" style="max-width: 420px;">
+          <label for="agregar_combo" class="form-label">Agregar combo</label>
+          <select class="form-select" id="agregar_combo">
+            <option value="">Elegí un combo para sumar sus ítems…</option>
+            <?php foreach ($combos as $c): ?>
+              <option value="<?= (int) $c['id'] ?>" data-items="<?= e(json_encode(array_map(fn($i) => [
+                'tipo' => $i['repuesto_id'] !== null ? 'repuesto' : 'servicio',
+                'id' => (int) ($i['repuesto_id'] ?? $i['servicio_id']),
+                'cantidad' => (float) $i['cantidad'],
+              ], $c['items']))) ?>"><?= e($c['nombre']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      <?php endif; ?>
 
       <div class="table-responsive mb-3">
         <table class="table table-sm align-middle" id="detalle_orden">
