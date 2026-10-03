@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+# El servicio "tareas" comparte el código con "public": la preparación la hace solo "public".
+if [ "${SKIP_SETUP:-0}" = "1" ]; then
+  exec docker-php-entrypoint "$@"
+fi
+
 # Instala dependencias de Composer si todavía no están (el código se monta como volumen).
 if [ ! -f vendor/autoload.php ]; then
   composer install --no-interaction --prefer-dist

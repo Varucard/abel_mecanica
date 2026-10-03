@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\EstadoOrden;
+use App\Enums\EstadoTurno;
 use App\Exceptions\NotFoundException;
 use App\Models\Orden;
 use App\Models\OrdenItem;
 use App\Repositories\EmpleadoRepository;
+use App\Repositories\TurnoRepository;
 use App\Repositories\OrdenRepository;
 use App\Repositories\PagoRepository;
 use App\Repositories\RepuestoRepository;
@@ -26,6 +28,9 @@ final class OrdenService
     private readonly StockService $stock,
     private readonly PagoRepository $pagos,
     private readonly EmpleadoRepository $empleados,
+    private readonly TurnoRepository $turnos,
+    private readonly ConfiguracionService $configuracion,
+    private readonly Auditor $auditor,
   ) {
   }
 
@@ -51,7 +56,11 @@ final class OrdenService
    * @param array<int, mixed> $servicios
    * @param array<int, mixed> $repuestos
    */
-  public function guardar(int $vehiculoId, array $servicios, array $repuestos, ?int $id = null, ?int $mecanicoId = null): int
+  /**
+   * @param array<string, mixed> $detalle km_ingreso, diagnostico, trabajo_realizado, notas_internas,
+   *                                      proximo_service_km, proximo_service_fecha, turno_id (solo al crear)
+   */
+  public function guardar(int $vehiculoId, array $servicios, array $repuestos, ?int $id = null, ?int $mecanicoId = null, array $detalle = []): int
   {
     $servicios = self::normalizarItems($servicios);
     $repuestos = self::normalizarItems($repuestos);
@@ -98,13 +107,79 @@ final class OrdenService
       $items[] = OrdenItem::repuesto($rid, $precio, $r['cantidad']);
     }
 
-    $orden = new Orden($vehiculoId, $items, id: $id, mecanicoId: $mecanicoId);
+    $datos = $this->validarDetalle($detalle, $vehiculoId, $id);
+    $orden = new Orden(
+      $vehiculoId, $items, id: $id, mecanicoId: $mecanicoId,
+      kmIngreso: $datos['km_ingreso'], diagnostico: $datos['diagnostico'], trabajoRealizado: $datos['trabajo_realizado'],
+      notasInternas: $datos['notas_internas'], proximoServiceKm: $datos['proximo_service_km'],
+      proximoServiceFecha: $datos['proximo_service_fecha'], turnoId: $datos['turno_id'],
+    );
     $pagado = $id !== null ? $this->pagos->totalPagado($id) : 0.0;
     (new Validator())
       ->check($orden->total() >= $pagado, sprintf('El total no puede quedar por debajo de lo ya pagado ($ %s).', money($pagado)))
       ->validate();
 
-    return $this->ordenes->save($orden);
+    $guardada = $this->ordenes->transaction(function () use ($orden, $vehiculoId) {
+      $guardada = $this->ordenes->save($orden);
+
+      if ($orden->kmIngreso !== null) {
+        $this->vehiculos->actualizarKilometraje($vehiculoId, $orden->kmIngreso);
+      }
+      // La orden nace de un turno: el turno queda como realizado.
+      if ($orden->turnoId !== null) {
+        $this->turnos->setEstado($orden->turnoId, EstadoTurno::Realizado);
+      }
+
+      return $guardada;
+    });
+    $this->auditor->registrar(
+      $id === null ? 'crear' : 'editar',
+      'orden',
+      $guardada,
+      ($id === null ? 'Orden creada' : 'Orden editada') . " #{$guardada} por $ " . money($orden->total()),
+      $id !== null && isset($actual) && (float) $actual['total'] !== $orden->total() ? ['total_antes' => (float) $actual['total'], 'total_despues' => $orden->total()] : [],
+    );
+
+    return $guardada;
+  }
+
+  /**
+   * @param array<string, mixed> $detalle
+   * @return array{km_ingreso: ?int, diagnostico: ?string, trabajo_realizado: ?string, notas_internas: ?string,
+   *               proximo_service_km: ?int, proximo_service_fecha: ?string, turno_id: ?int}
+   */
+  private function validarDetalle(array $detalle, int $vehiculoId, ?int $id): array
+  {
+    $entero = function (string $clave) use ($detalle): int|false|null {
+      $valor = trim((string) ($detalle[$clave] ?? ''));
+
+      return $valor === '' ? null : filter_var(str_replace('.', '', $valor), FILTER_VALIDATE_INT);
+    };
+    $texto = fn(string $clave) => Validator::nullable((string) ($detalle[$clave] ?? ''));
+
+    $km = $entero('km_ingreso');
+    $proximoKm = $entero('proximo_service_km');
+    $proximaFecha = $texto('proximo_service_fecha');
+    $turnoId = $id === null ? ((int) ($detalle['turno_id'] ?? 0) ?: null) : null;
+    $turno = $turnoId !== null ? $this->turnos->find($turnoId) : null;
+
+    (new Validator())
+      ->check($km === null || ($km !== false && $km >= 0 && $km <= 9_999_999), 'El kilometraje de ingreso no es válido.')
+      ->check($proximoKm === null || ($proximoKm !== false && $proximoKm > 0 && $proximoKm <= 9_999_999), 'El km del próximo service no es válido.')
+      ->check($proximoKm === null || !is_int($km) || !is_int($proximoKm) || $proximoKm > $km, 'El próximo service debe ser a más km que el de ingreso.')
+      ->check($proximaFecha === null || (Validator::fecha($proximaFecha) && $proximaFecha > date('Y-m-d')), 'La fecha del próximo service debe ser futura.')
+      ->check($turnoId === null || ($turno !== null && (int) $turno['vehiculo_id'] === $vehiculoId), 'El turno no corresponde al vehículo de la orden.')
+      ->validate();
+
+    return [
+      'km_ingreso' => is_int($km) ? $km : null,
+      'diagnostico' => $texto('diagnostico'),
+      'trabajo_realizado' => $texto('trabajo_realizado'),
+      'notas_internas' => $texto('notas_internas'),
+      'proximo_service_km' => is_int($proximoKm) ? $proximoKm : null,
+      'proximo_service_fecha' => $proximaFecha,
+      'turno_id' => $turnoId,
+    ];
   }
 
   /** Sin mecánico, uno activo, o el que la orden ya tenía asignado (aunque hoy esté inactivo). */
@@ -143,6 +218,52 @@ final class OrdenService
     return $normalizados;
   }
 
+  /** ¿El presupuesto sigue vigente? (fecha de la orden + días de validez configurados) */
+  public function presupuestoVigente(array $orden): bool
+  {
+    $validez = (int) $this->configuracion->seccion('trabajo')['validez'];
+
+    return date('Y-m-d', strtotime(substr((string) $orden['created_at'], 0, 10) . " +{$validez} days")) >= date('Y-m-d');
+  }
+
+  /** ¿El cliente puede responder el presupuesto desde el link? */
+  public function admiteRespuestaPresupuesto(array $orden): bool
+  {
+    return $orden['estado'] === EstadoOrden::Pendiente->value
+      && $orden['presupuesto_respuesta'] !== 'aceptado'
+      && $this->presupuestoVigente($orden);
+  }
+
+  /**
+   * Respuesta del cliente desde el link del presupuesto.
+   *
+   * @return array<string, mixed> la orden actualizada
+   */
+  public function responderPresupuesto(string $token, string $accion): array
+  {
+    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido o la orden ya no existe.');
+    $orden = $this->obtener($id);
+
+    (new Validator())
+      ->check(in_array($accion, ['aceptar', 'rechazar'], true), 'Acción inválida.')
+      ->check($this->admiteRespuestaPresupuesto($orden), match (true) {
+        $orden['presupuesto_respuesta'] === 'aceptado' => 'Este presupuesto ya fue aceptado.',
+        $orden['estado'] !== EstadoOrden::Pendiente->value => 'El trabajo ya está en curso o finalizado; comunicate con el taller.',
+        default => 'El presupuesto venció; comunicate con el taller para actualizarlo.',
+      })
+      ->validate();
+
+    $respuesta = $accion === 'aceptar' ? 'aceptado' : 'rechazado';
+    $this->ordenes->registrarRespuestaPresupuesto($id, $respuesta);
+    $this->auditor->registrar("presupuesto_{$respuesta}", 'orden', $id, "El cliente {$respuesta} el presupuesto de la orden #{$id}", actor: 'Cliente (link)');
+
+    if ($respuesta === 'aceptado' && $this->configuracion->seccion('trabajo')['aceptar_inicia_trabajo']) {
+      $this->cambiarEstado($id, EstadoOrden::EnProceso->value);
+    }
+
+    return $this->obtener($id);
+  }
+
   /** Cambia el estado y mueve el stock de repuestos al entrar o salir de "finalizado". */
   public function cambiarEstado(int $id, string $estado, ?int $usuarioId = null): EstadoOrden
   {
@@ -162,6 +283,10 @@ final class OrdenService
 
       $this->ordenes->setEstado($id, $nuevo);
     });
+
+    if ($orden['estado'] !== $nuevo->value) {
+      $this->auditor->registrar('cambiar_estado', 'orden', $id, "Orden #{$id}: " . EstadoOrden::from($orden['estado'])->label() . " → {$nuevo->label()}");
+    }
 
     return $nuevo;
   }

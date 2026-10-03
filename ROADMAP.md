@@ -29,11 +29,39 @@ Estado: ✅ hecho · 🚧 en curso · ⏳ pendiente · 💭 a futuro (requiere d
 | 16 | **Backups** de la base con un comando. | ✅ |
 | 17 | **Puertos configurables** en Docker y nombres de contenedor sin colisiones. | ✅ |
 
-## A futuro (requieren definiciones del negocio)
+## Segunda etapa (definida con el negocio)
 
-| Ítem | Qué hay que definir |
+| # | Ítem | Estado |
+| --- | --- | --- |
+| 18 | **Todo configurable** desde Configuración: plantillas de mensajes, horario de atención, feriados, turnos simultáneos, stock negativo, portal, canales de aviso. | ✅ |
+| 19 | **Confirmación de turnos por email**: link para que el cliente confirme o cancele; se vuelve a pedir si se reprograma. | ✅ |
+| 20 | **Recordatorios automáticos** el día hábil anterior, solo en horario laboral argentino y sin feriados (importables desde ArgentinaDatos). | ✅ |
+| 21 | **Portal "Seguí tu vehículo"**: consulta pública con DNI (+ patente, configurable) y mini historial de trabajos y turnos. | ✅ |
+| 22 | **Canales de aviso intercambiables**: email activo; WhatsApp Business preparado (interfaz y plantillas listas). | ✅ |
+
+## Tercera etapa (mejoras con las herramientas existentes)
+
+| # | Ítem | Estado |
+| --- | --- | --- |
+| 23 | **Sistema de logs**: archivos diarios JSON con nivel, usuario, IP, ruta e id de petición; visor para administradores. | ✅ |
+| 24 | **Auditoría**: quién hizo qué y cuándo (órdenes, pagos, stock, precios, usuarios, configuración). | ✅ |
+| 25 | **Aumento masivo de precios** con porcentaje, redondeo, vista previa y selección. | ✅ |
+| 26 | **Presupuesto por email** con PDF adjunto y **aceptación online** del cliente. | ✅ |
+| 27 | **Km de ingreso, diagnóstico, trabajo realizado y notas internas** en cada orden. | ✅ |
+| 28 | **Próximo service** en la orden y **aviso automático** al cliente. | ✅ |
+| 29 | **De turno a orden** en un clic. | ✅ |
+| 30 | **Combos** de servicios y repuestos. | ✅ |
+| 31 | **Búsqueda rápida** por patente, DNI, apellido u orden. | ✅ |
+| 32 | **Agenda semanal** con cupos libres. | ✅ |
+| 33 | **Reportes** con exportación a Excel (CSV). | ✅ |
+| 34 | **Precio de costo y margen** en repuestos. | ✅ |
+| 35 | **Menú usable en celulares** y tablets. | ✅ |
+| 36 | **Listados paginados desde el servidor**. | ✅ |
+| 37 | **Backup automático diario**. | ✅ |
+
+## A futuro
+
+| Ítem | Qué falta |
 | --- | --- |
-| 💭 Portal del cliente para seguir el estado de su vehículo | Cómo se registra/identifica el cliente y qué información ve. |
-| 💭 Confirmación del turno por parte del cliente | Canal (link por email/WhatsApp) y qué pasa si no confirma. |
-| 💭 Envío automático de recordatorios | Servidor SMTP o API de WhatsApp Business y horario del envío. |
-| 💭 Facturación electrónica (AFIP/ARCA) | Condición fiscal del taller, certificado y punto de venta. |
+| 💭 Activar WhatsApp Business (API de Meta) | Cuenta verificada, número dedicado, plantillas aprobadas e implementar `WhatsAppCanal::enviar()`. |
+| 💭 Facturación electrónica (AFIP/ARCA) | Fuera de alcance por ahora. |

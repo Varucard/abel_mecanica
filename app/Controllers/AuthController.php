@@ -21,6 +21,7 @@ final class AuthController extends Controller
     Session $session,
     private readonly Auth $auth,
     private readonly UsuarioService $usuarios,
+    private readonly \App\Services\Auditor $auditor,
   ) {
     parent::__construct($view, $session);
   }
@@ -54,6 +55,7 @@ final class AuthController extends Controller
     }
 
     $this->auth->login($usuario);
+    $this->auditor->registrar('login', 'usuario', (int) $usuario['id'], "{$usuario['usuario']} inició sesión");
     $this->redirect($this->session->pullIntended('/'));
   }
 

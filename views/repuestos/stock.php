@@ -3,6 +3,7 @@
  * @var array<string, mixed> $repuesto
  * @var list<array<string, mixed>> $movimientos
  * @var list<array<string, mixed>> $proveedores
+ * @var float $margen
  */
 $tipos = ['ingreso' => ['Ingreso', 'success'], 'egreso' => ['Egreso', 'warning'], 'ajuste' => ['Ajuste', 'secondary']];
 ?>
@@ -32,6 +33,21 @@ $tipos = ['ingreso' => ['Ingreso', 'success'], 'egreso' => ['Egreso', 'warning']
                   <option value="<?= (int) $p['id'] ?>" <?= selected((int) $p['id'] === (int) $repuesto['proveedor_id']) ?>><?= e($p['nombre']) ?></option>
                 <?php endforeach; ?>
               </select>
+            </div>
+          </div>
+          <div class="row">
+            <div class="col-sm-4 mb-2">
+              <label for="costo_unitario" class="form-label">Costo unitario</label>
+              <input type="number" class="form-control" id="costo_unitario" name="costo_unitario" step="0.01" min="0"
+                placeholder="<?= $repuesto['precio_costo'] !== null ? money($repuesto['precio_costo']) : '' ?>">
+            </div>
+            <div class="col-sm-8 mb-2 d-flex align-items-end">
+              <div class="form-check">
+                <input class="form-check-input" type="checkbox" id="actualizar_precio" name="actualizar_precio" value="1">
+                <label class="form-check-label small" for="actualizar_precio">
+                  Actualizar el precio de venta con <?= qty($margen) ?>% de margen (hoy $ <?= money($repuesto['precio']) ?>)
+                </label>
+              </div>
             </div>
           </div>
           <div class="mb-2">
@@ -68,6 +84,7 @@ $tipos = ['ingreso' => ['Ingreso', 'success'], 'egreso' => ['Egreso', 'warning']
             <th>Fecha</th>
             <th>Tipo</th>
             <th>Cantidad</th>
+            <th>Costo unit.</th>
             <th>Stock resultante</th>
             <th>Detalle</th>
             <th>Usuario</th>
@@ -80,6 +97,7 @@ $tipos = ['ingreso' => ['Ingreso', 'success'], 'egreso' => ['Egreso', 'warning']
               <td data-order="<?= (int) $m['id'] ?>"><?= format_date($m['created_at'], 'd/m/Y H:i') ?></td>
               <td><span class="badge bg-<?= $color ?>"><?= $etiqueta ?></span></td>
               <td class="<?= (float) $m['cantidad'] < 0 ? 'text-danger' : 'text-success' ?>"><?= ((float) $m['cantidad'] > 0 ? '+' : '') . qty($m['cantidad']) ?></td>
+              <td><?= $m['costo_unitario'] !== null ? '$ ' . money($m['costo_unitario']) : '' ?></td>
               <td><?= qty($m['stock_resultante']) ?></td>
               <td>
                 <?= e($m['motivo'] ?? '') ?>

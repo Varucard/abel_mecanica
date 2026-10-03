@@ -16,8 +16,10 @@ use PDOException;
 
 final class ClienteService
 {
-  public function __construct(private readonly ClienteRepository $clientes)
-  {
+  public function __construct(
+    private readonly ClienteRepository $clientes,
+    private readonly Auditor $auditor,
+  ) {
   }
 
   /** @return array<string, mixed> */
@@ -32,7 +34,10 @@ final class ClienteService
     $cliente = $this->construir($input);
 
     try {
-      return $this->clientes->create($cliente);
+      $id = $this->clientes->create($cliente);
+      $this->auditor->registrar('crear', 'cliente', $id, "Cliente creado: {$cliente->nombreCompleto()} (DNI {$cliente->dni})");
+
+      return $id;
     } catch (PDOException $e) {
       throw Repository::isDuplicate($e)
         ? new ValidationException(['Ya existe un cliente con ese DNI.'])
@@ -47,7 +52,9 @@ final class ClienteService
 
     // El DNI es la identidad de la persona: no se modifica al editar.
     $input['dni'] = $actual['dni'];
-    $this->clientes->update($this->construir($input, $id));
+    $cliente = $this->construir($input, $id);
+    $this->clientes->update($cliente);
+    $this->auditor->registrar('editar', 'cliente', $id, "Cliente editado: {$cliente->nombreCompleto()}");
   }
 
   /** @param array<string, mixed> $archivo elemento de $_FILES */
@@ -79,6 +86,7 @@ final class ClienteService
   {
     $nuevo = Estado::from($this->obtener($id)['estado'])->alternar();
     $this->clientes->setEstado($id, $nuevo);
+    $this->auditor->registrar('cambiar_estado', 'cliente', $id, "Cliente #{$id} pasó a {$nuevo->value}");
 
     return $nuevo;
   }
@@ -93,7 +101,9 @@ final class ClienteService
       ]);
     }
 
+    $cliente = $this->obtener($id);
     $this->clientes->delete($id);
+    $this->auditor->registrar('eliminar', 'cliente', $id, "Cliente eliminado: {$cliente['apellido']}, {$cliente['nombre']} (DNI {$cliente['dni']})");
   }
 
   /** @param array<string, mixed> $input */

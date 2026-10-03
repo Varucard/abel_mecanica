@@ -27,6 +27,7 @@ final class RepuestoController extends Controller
     private readonly StockRepository $movimientos,
     private readonly StockService $stock,
     private readonly Auth $auth,
+    private readonly \App\Services\ConfiguracionService $configuracion,
   ) {
     parent::__construct($view, $session);
   }
@@ -87,6 +88,7 @@ final class RepuestoController extends Controller
       'repuesto' => $repuesto,
       'repuestos' => $this->repuestos->all(),
       'proveedores' => $this->proveedores->activos(),
+      'margen' => (float) $this->configuracion->seccion('stock')['margen_sugerido'],
     ]);
   }
 
@@ -97,6 +99,7 @@ final class RepuestoController extends Controller
       'repuesto' => $this->service->obtener($id),
       'movimientos' => $this->movimientos->historial($id),
       'proveedores' => $this->proveedores->activos(),
+      'margen' => (float) $this->configuracion->seccion('stock')['margen_sugerido'],
     ]);
   }
 
@@ -105,7 +108,10 @@ final class RepuestoController extends Controller
     $this->verifyCsrf($request);
 
     try {
-      $stock = $this->stock->ingresar($id, $request->string('cantidad'), $request->int('proveedor_id') ?: null, $request->string('motivo'), $this->auth->id());
+      $stock = $this->stock->ingresar(
+        $id, $request->string('cantidad'), $request->int('proveedor_id') ?: null, $request->string('motivo'), $this->auth->id(),
+        $request->string('costo_unitario'), (bool) $request->input('actualizar_precio'),
+      );
       $this->success('Ingreso registrado. Stock actual: ' . qty($stock) . '.');
     } catch (ValidationException $e) {
       $this->error($e->getMessage());

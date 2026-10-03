@@ -7,6 +7,8 @@
  * @var float $saldo
  * @var list<string> $formasPago
  * @var \App\Enums\EstadoOrden $estado
+ * @var list<array<string, mixed>> $historial
+ * @var bool $puedeEnviar
  */
 use App\Services\OrdenService;
 
@@ -19,6 +21,13 @@ $pagado = (float) $orden['total'] - $saldo;
   <?php endif; ?>
   <a href="<?= url("ordenes/{$orden['id']}/presupuesto") ?>" class="btn btn-info">Presupuesto</a>
   <a href="<?= url("ordenes/{$orden['id']}/presupuesto/pdf") ?>" class="btn btn-outline-secondary">Presupuesto PDF</a>
+  <?php if ($puedeEnviar && $estado->value !== 'cancelado'): ?>
+    <form action="<?= url("ordenes/{$orden['id']}/enviar-presupuesto") ?>" method="POST" class="d-inline"
+      data-confirm="¿Enviar el presupuesto por email a <?= e($cliente['email'] ?: 'el cliente') ?>?">
+      <?= csrf_field() ?>
+      <button type="submit" class="btn btn-outline-primary" <?= $cliente['email'] ? '' : 'disabled title="El cliente no tiene email"' ?>>✉ Enviar presupuesto</button>
+    </form>
+  <?php endif; ?>
   <?php if ($estado->value === 'finalizado'): ?>
     <a href="<?= url("ordenes/{$orden['id']}/entrega") ?>" class="btn btn-success">Comprobante de entrega</a>
     <a href="<?= url("ordenes/{$orden['id']}/entrega/pdf") ?>" class="btn btn-outline-success">Entrega PDF</a>
@@ -34,6 +43,15 @@ $pagado = (float) $orden['total'] - $saldo;
         <p class="mb-1">Estado: <span class="badge bg-<?= $colores[$estado->value] ?>"><?= e($estado->label()) ?></span></p>
         <p class="mb-1">Fecha: <?= format_date($orden['created_at']) ?></p>
         <p class="mb-1">Mecánico: <?= e($orden['mecanico'] ?? 'sin asignar') ?></p>
+        <?php if ($orden['presupuesto_respuesta'] === 'aceptado'): ?>
+          <p class="mb-1 text-success">✔ Presupuesto aceptado por el cliente (<?= format_date($orden['presupuesto_respuesta_en'], 'd/m H:i') ?>)</p>
+        <?php elseif ($orden['presupuesto_respuesta'] === 'rechazado'): ?>
+          <p class="mb-1 text-danger">✖ Presupuesto rechazado por el cliente (<?= format_date($orden['presupuesto_respuesta_en'], 'd/m H:i') ?>)</p>
+        <?php elseif ($orden['presupuesto_enviado']): ?>
+          <p class="mb-1 text-muted">Presupuesto enviado el <?= format_date($orden['presupuesto_enviado'], 'd/m H:i') ?>, sin respuesta</p>
+        <?php endif; ?>
+        <?php if ($orden['km_ingreso'] !== null): ?><p class="mb-1">Km al ingresar: <?= number_format((float) $orden['km_ingreso'], 0, ',', '.') ?></p><?php endif; ?>
+        <?php if ($orden['turno_id']): ?><p class="mb-1">Desde el turno <a href="<?= url("turnos/{$orden['turno_id']}/editar") ?>">#<?= (int) $orden['turno_id'] ?></a></p><?php endif; ?>
         <?php if ($orden['fecha_realizado']): ?><p class="mb-1">Finalizada: <?= format_date($orden['fecha_realizado']) ?></p><?php endif; ?>
       </div>
     </div>
@@ -59,6 +77,35 @@ $pagado = (float) $orden['total'] - $saldo;
     </div>
   </div>
 </div>
+
+<?php if ($orden['diagnostico'] || $orden['trabajo_realizado'] || $orden['notas_internas'] || $orden['proximo_service_km'] || $orden['proximo_service_fecha']): ?>
+  <div class="card mt-3">
+    <div class="card-body">
+      <div class="row g-3">
+        <?php if ($orden['diagnostico']): ?>
+          <div class="col-md-6"><strong>Motivo / diagnóstico</strong><div><?= nl2br(e($orden['diagnostico'])) ?></div></div>
+        <?php endif; ?>
+        <?php if ($orden['trabajo_realizado']): ?>
+          <div class="col-md-6"><strong>Trabajo realizado</strong><div><?= nl2br(e($orden['trabajo_realizado'])) ?></div></div>
+        <?php endif; ?>
+        <?php if ($orden['proximo_service_km'] || $orden['proximo_service_fecha']): ?>
+          <div class="col-md-6">
+            <strong>Próximo service</strong>
+            <div>
+              <?= $orden['proximo_service_km'] ? number_format((float) $orden['proximo_service_km'], 0, ',', '.') . ' km' : '' ?>
+              <?= $orden['proximo_service_km'] && $orden['proximo_service_fecha'] ? ' o el ' : '' ?>
+              <?= $orden['proximo_service_fecha'] ? format_date($orden['proximo_service_fecha']) : '' ?>
+              <?php if ($orden['proximo_service_avisado']): ?><span class="small text-muted">(avisado el <?= format_date($orden['proximo_service_avisado']) ?>)</span><?php endif; ?>
+            </div>
+          </div>
+        <?php endif; ?>
+        <?php if ($orden['notas_internas']): ?>
+          <div class="col-md-6"><strong>Notas internas</strong><div class="text-muted"><?= nl2br(e($orden['notas_internas'])) ?></div></div>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
 
 <div class="card mt-3">
   <div class="card-header bg-light"><strong>Detalle</strong></div>
@@ -156,6 +203,24 @@ $pagado = (float) $orden['total'] - $saldo;
           <button type="submit" class="btn btn-success">Registrar pago</button>
         </div>
       </form>
+    <?php endif; ?>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header bg-light"><strong>Historial</strong></div>
+  <div class="card-body">
+    <?php if ($historial === []): ?>
+      <p class="text-muted mb-0">Sin movimientos registrados.</p>
+    <?php else: ?>
+      <ul class="list-unstyled mb-0 small">
+        <?php foreach ($historial as $h): ?>
+          <li class="mb-1">
+            <span class="text-muted"><?= format_date($h['created_at'], 'd/m/Y H:i') ?></span> ·
+            <strong><?= e($h['usuario_nombre'] ?? '—') ?></strong> · <?= e($h['descripcion']) ?>
+          </li>
+        <?php endforeach; ?>
+      </ul>
     <?php endif; ?>
   </div>
 </div>

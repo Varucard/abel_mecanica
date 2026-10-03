@@ -44,6 +44,42 @@ final class RouterTest extends TestCase
   }
 }
 
+final class RouterTextoTest extends TestCase
+{
+  public function testParametrosDeTexto(): void
+  {
+    $container = new Container();
+    $router = new Router($container);
+    $router->get('/config/{seccion:slug}', [FakeTextoController::class, 'show']);
+    $router->get('/turno/{token:token}', [FakeTextoController::class, 'token']);
+
+    $router->dispatch(new Request('GET', '/config/turnos', [], []));
+    $this->assertSame('turnos', $container->get(FakeTextoController::class)->recibido);
+
+    $token = str_repeat('ab', 32);
+    $router->dispatch(new Request('GET', "/turno/{$token}", [], []));
+    $this->assertSame($token, $container->get(FakeTextoController::class)->recibido);
+
+    $this->expectException(NotFoundException::class);
+    $router->dispatch(new Request('GET', '/turno/corto', [], []));
+  }
+}
+
+final class FakeTextoController
+{
+  public ?string $recibido = null;
+
+  public function show(Request $request, string $seccion): void
+  {
+    $this->recibido = $seccion;
+  }
+
+  public function token(Request $request, string $token): void
+  {
+    $this->recibido = $token;
+  }
+}
+
 final class FakeDependency
 {
 }

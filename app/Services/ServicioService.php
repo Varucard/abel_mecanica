@@ -14,8 +14,10 @@ use PDOException;
 
 final class ServicioService
 {
-  public function __construct(private readonly ServicioRepository $servicios)
-  {
+  public function __construct(
+    private readonly ServicioRepository $servicios,
+    private readonly Auditor $auditor,
+  ) {
   }
 
   /** @return array<string, mixed> */
@@ -27,9 +29,7 @@ final class ServicioService
   /** @param array<string, mixed> $input */
   public function guardar(array $input, ?int $id = null): int
   {
-    if ($id !== null) {
-      $this->obtener($id);
-    }
+    $anterior = $id !== null ? $this->obtener($id) : null;
 
     $nombre = trim((string) ($input['nombre'] ?? ''));
     $precio = Validator::importe((string) ($input['precio_base'] ?? ''));
@@ -41,10 +41,18 @@ final class ServicioService
       ->validate();
 
     try {
-      return $this->servicios->save(new Servicio($nombre, $precio, $descripcion, $id));
+      $guardado = $this->servicios->save(new Servicio($nombre, $precio, $descripcion, $id));
     } catch (PDOException $e) {
       throw Repository::isDuplicate($e) ? new ValidationException(['Ya existe un servicio con ese nombre.']) : $e;
     }
+
+    if ($anterior === null) {
+      $this->auditor->registrar('crear', 'servicio', $guardado, "Servicio creado: {$nombre} ($ " . money($precio) . ')');
+    } elseif ((float) $anterior['precio_base'] !== $precio) {
+      $this->auditor->registrar('cambiar_precio', 'servicio', $guardado, "Precio de \"{$nombre}\": $ " . money($anterior['precio_base']) . ' → $ ' . money($precio), ['antes' => (float) $anterior['precio_base'], 'despues' => $precio]);
+    }
+
+    return $guardado;
   }
 
   public function eliminar(int $id): void
@@ -52,7 +60,9 @@ final class ServicioService
     $this->obtener($id);
 
     try {
+      $servicio = $this->obtener($id);
       $this->servicios->delete($id);
+      $this->auditor->registrar('eliminar', 'servicio', $id, "Servicio eliminado: {$servicio['nombre']}");
     } catch (PDOException $e) {
       throw Repository::isReferenced($e)
         ? new ValidationException(['El servicio figura en órdenes existentes y no se puede eliminar.'])

@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use App\Controllers\AuthController;
+use App\Controllers\BusquedaController;
 use App\Controllers\ClienteController;
+use App\Controllers\ComboController;
 use App\Controllers\ConfiguracionController;
 use App\Controllers\EmpleadoController;
 use App\Controllers\HomeController;
@@ -11,7 +13,11 @@ use App\Controllers\MarcaController;
 use App\Controllers\ModeloController;
 use App\Controllers\OrdenController;
 use App\Controllers\PagoController;
+use App\Controllers\PrecioController;
 use App\Controllers\ProveedorController;
+use App\Controllers\PublicoController;
+use App\Controllers\RegistroController;
+use App\Controllers\ReporteController;
 use App\Controllers\RepuestoController;
 use App\Controllers\ServicioController;
 use App\Controllers\TurnoController;
@@ -26,13 +32,26 @@ return function (Router $r): void {
   $r->post('/logout', [AuthController::class, 'logout']);
   $r->get('/instalacion', [AuthController::class, 'setupForm'], Router::ACCESO_PUBLICO);
   $r->post('/instalacion', [AuthController::class, 'setup'], Router::ACCESO_PUBLICO);
+  // Páginas públicas para clientes
+  $publico = Router::ACCESO_PUBLICO;
+  $r->get('/turno/{token:token}', [PublicoController::class, 'turno'], $publico);
+  $r->post('/turno/{token:token}/confirmar', [PublicoController::class, 'confirmarTurno'], $publico);
+  $r->post('/turno/{token:token}/cancelar', [PublicoController::class, 'cancelarTurno'], $publico);
+  $r->get('/presupuesto/{token:token}', [PublicoController::class, 'presupuesto'], $publico);
+  $r->get('/presupuesto/{token:token}/pdf', [PublicoController::class, 'presupuestoPdf'], $publico);
+  $r->post('/presupuesto/{token:token}', [PublicoController::class, 'responderPresupuesto'], $publico);
+  $r->get('/seguimiento', [PublicoController::class, 'seguimiento'], $publico);
+  $r->post('/seguimiento', [PublicoController::class, 'consultar'], $publico);
+
   $r->get('/perfil/clave', [UsuarioController::class, 'claveForm']);
   $r->post('/perfil/clave', [UsuarioController::class, 'cambiarClave']);
 
   $r->get('/', [HomeController::class, 'index']);
+  $r->get('/buscar', [BusquedaController::class, 'index']);
 
   // Clientes
   $r->get('/clientes', [ClienteController::class, 'index']);
+  $r->get('/clientes/datos', [ClienteController::class, 'datos']);
   $r->get('/clientes/crear', [ClienteController::class, 'create']);
   $r->post('/clientes', [ClienteController::class, 'store']);
   $r->get('/clientes/{id}', [ClienteController::class, 'show']);
@@ -47,6 +66,7 @@ return function (Router $r): void {
 
   // Vehículos
   $r->get('/vehiculos', [VehiculoController::class, 'index']);
+  $r->get('/vehiculos/datos', [VehiculoController::class, 'datos']);
   $r->get('/vehiculos/crear', [VehiculoController::class, 'create']);
   $r->post('/vehiculos', [VehiculoController::class, 'store']);
   $r->get('/vehiculos/{id}', [VehiculoController::class, 'show']);
@@ -67,6 +87,12 @@ return function (Router $r): void {
     $r->post("/{$path}/{id}/eliminar", [$controller, 'destroy']);
   }
   $r->get('/marcas/{marcaId}/modelos', [VehiculoController::class, 'modelosPorMarca']);
+  $r->get('/combos', [ComboController::class, 'index']);
+  $r->get('/combos/crear', [ComboController::class, 'create']);
+  $r->post('/combos', [ComboController::class, 'store']);
+  $r->get('/combos/{id}/editar', [ComboController::class, 'edit']);
+  $r->post('/combos/{id}', [ComboController::class, 'update']);
+  $r->post('/combos/{id}/eliminar', [ComboController::class, 'destroy']);
 
   // Stock y proveedores
   $r->get('/repuestos/{id}/stock', [RepuestoController::class, 'stock']);
@@ -81,11 +107,13 @@ return function (Router $r): void {
 
   // Órdenes y presupuestos
   $r->get('/ordenes', [OrdenController::class, 'index']);
+  $r->get('/ordenes/datos', [OrdenController::class, 'datos']);
   $r->get('/ordenes/crear', [OrdenController::class, 'create']);
   $r->post('/ordenes', [OrdenController::class, 'store']);
   $r->get('/ordenes/{id}', [OrdenController::class, 'show']);
   $r->get('/ordenes/{id}/editar', [OrdenController::class, 'edit']);
   $r->post('/ordenes/{id}/pagos', [PagoController::class, 'store']);
+  $r->post('/ordenes/{id}/enviar-presupuesto', [OrdenController::class, 'enviarPresupuesto']);
   $r->get('/deudores', [PagoController::class, 'deudores']);
   $r->post('/ordenes/{id}', [OrdenController::class, 'update']);
   $r->post('/ordenes/{id}/estado', [OrdenController::class, 'cambiarEstado']);
@@ -96,19 +124,34 @@ return function (Router $r): void {
 
   // Turnos
   $r->get('/turnos', [TurnoController::class, 'index']);
+  $r->get('/turnos/datos', [TurnoController::class, 'datos']);
   $r->get('/turnos/crear', [TurnoController::class, 'create']);
+  $r->get('/turnos/semana', [TurnoController::class, 'semana']);
   $r->post('/turnos', [TurnoController::class, 'store']);
   $r->get('/turnos/{id}/editar', [TurnoController::class, 'edit']);
   $r->post('/turnos/{id}', [TurnoController::class, 'update']);
   $r->post('/turnos/{id}/estado', [TurnoController::class, 'cambiarEstado']);
   $r->post('/turnos/{id}/eliminar', [TurnoController::class, 'destroy']);
   $r->post('/turnos/{id}/whatsapp', [TurnoController::class, 'whatsapp']);
-  $r->post('/turnos/{id}/email', [TurnoController::class, 'email']);
+  $r->post('/turnos/{id}/recordar', [TurnoController::class, 'recordar']);
+  $r->post('/turnos/{id}/confirmacion', [TurnoController::class, 'pedirConfirmacion']);
 
   // Solo administradores
   $admin = Router::ACCESO_ADMIN;
-  $r->get('/configuracion', [ConfiguracionController::class, 'edit'], $admin);
-  $r->post('/configuracion', [ConfiguracionController::class, 'update'], $admin);
+  $r->get('/precios', [PrecioController::class, 'index'], $admin);
+  $r->post('/precios/vista-previa', [PrecioController::class, 'vistaPrevia'], $admin);
+  $r->post('/precios/aplicar', [PrecioController::class, 'aplicar'], $admin);
+  $r->get('/reportes', [ReporteController::class, 'index'], $admin);
+  $r->get('/reportes/{reporte:slug}/csv', [ReporteController::class, 'csv'], $admin);
+  $r->get('/auditoria', [RegistroController::class, 'auditoria'], $admin);
+  $r->get('/auditoria/datos', [RegistroController::class, 'auditoriaDatos'], $admin);
+  $r->get('/logs', [RegistroController::class, 'logs'], $admin);
+  $r->get('/configuracion', [ConfiguracionController::class, 'index'], $admin);
+  $r->post('/configuracion/feriados/importar', [ConfiguracionController::class, 'importarFeriados'], $admin);
+  $r->post('/configuracion/backups/generar', [ConfiguracionController::class, 'generarBackup'], $admin);
+  $r->get('/configuracion/backups/descargar', [ConfiguracionController::class, 'descargarBackup'], $admin);
+  $r->get('/configuracion/{seccion:slug}', [ConfiguracionController::class, 'edit'], $admin);
+  $r->post('/configuracion/{seccion:slug}', [ConfiguracionController::class, 'update'], $admin);
   $r->get('/usuarios', [UsuarioController::class, 'index'], $admin);
   $r->get('/usuarios/crear', [UsuarioController::class, 'create'], $admin);
   $r->post('/usuarios', [UsuarioController::class, 'store'], $admin);

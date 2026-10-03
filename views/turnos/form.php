@@ -4,6 +4,7 @@
  * @var list<array<string, mixed>> $clientes
  * @var list<array<string, mixed>> $vehiculos  vehículos del cliente seleccionado
  * @var list<\App\Enums\EstadoTurno> $estados
+ * @var \App\Support\HorarioAtencion $horario
  */
 $clienteId = (int) old('cliente_id', $turno['cliente_id'] ?? $clienteSugerido);
 $vehiculoId = (int) old('vehiculo_id', $turno['vehiculo_id'] ?? 0);
@@ -50,13 +51,13 @@ $view->script('turnos.js');
           <label for="fecha" class="form-label">Fecha *</label>
           <input type="date" id="fecha" name="fecha" class="form-control" required
             <?= $turno ? '' : 'min="' . date('Y-m-d') . '"' ?>
-            value="<?= e(old('fecha', $turno['fecha'] ?? date('Y-m-d'))) ?>">
+            value="<?= e(old('fecha', $turno['fecha'] ?? $sugerido['fecha'] ?? date('Y-m-d'))) ?>">
         </div>
 
         <div class="col-md-4 mb-3">
           <label for="hora" class="form-label">Hora *</label>
           <input type="time" id="hora" name="hora" class="form-control" required
-            value="<?= e(substr((string) old('hora', $turno['hora'] ?? ''), 0, 5)) ?>">
+            value="<?= e(substr((string) old('hora', $turno['hora'] ?? $sugerido['hora'] ?? ''), 0, 5)) ?>">
         </div>
 
         <div class="col-md-4 mb-3">
@@ -75,6 +76,7 @@ $view->script('turnos.js');
         </div>
       </div>
 
+      <p class="small text-muted">Horario de atención: <?= e($horario->resumen()) ?></p>
       <button type="submit" class="btn btn-warning"><?= $turno ? 'Guardar cambios' : 'Confirmar turno' ?></button>
       <a href="<?= url('turnos') ?>" class="btn btn-secondary ms-2">Cancelar</a>
     </form>

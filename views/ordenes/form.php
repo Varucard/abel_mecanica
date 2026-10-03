@@ -5,7 +5,12 @@
  * @var list<array<string, mixed>> $servicios
  * @var list<array<string, mixed>> $repuestos
  * @var array{servicio: array<int, array<string, mixed>>, repuesto: array<int, array<string, mixed>>} $detalle
+ * @var array<string, mixed> $precarga  datos sugeridos al crear (p. ej. desde un turno)
+ * @var int|null $kmVehiculo
+ * @var array<string, mixed> $service  configuración de intervalos
+ * @var list<array<string, mixed>> $combos
  */
+$valor = fn(string $campo) => old($campo, $orden[$campo] ?? $precarga[$campo] ?? '');
 $vehiculoId = (int) old('vehiculo_id', $orden['vehiculo_id'] ?? $vehiculoSugerido);
 $mecanicoId = (int) old('mecanico_id', $orden['mecanico_id'] ?? 0);
 // Al editar, el mecánico asignado debe figurar aunque hoy esté inactivo.
@@ -73,6 +78,41 @@ $view->script('ordenes.js');
         </div>
       </div>
 
+      <?php if (!empty($precarga['turno_id'])): ?>
+        <input type="hidden" name="turno_id" value="<?= (int) $precarga['turno_id'] ?>">
+        <div class="alert alert-info py-2">Esta orden se crea desde un turno: al guardarla, el turno queda como <strong>realizado</strong>.</div>
+      <?php endif; ?>
+
+      <div class="row mb-3">
+        <div class="col-md-3">
+          <label for="km_ingreso" class="form-label">Km al ingresar</label>
+          <input type="number" class="form-control" id="km_ingreso" name="km_ingreso" min="0" max="9999999"
+            placeholder="<?= $kmVehiculo !== null ? 'Último: ' . number_format((float) $kmVehiculo, 0, ',', '.') : 'Ej: 125000' ?>"
+            value="<?= e($valor('km_ingreso')) ?>">
+        </div>
+        <div class="col-md-9">
+          <label for="diagnostico" class="form-label">Motivo / diagnóstico</label>
+          <textarea class="form-control" id="diagnostico" name="diagnostico" rows="2"
+            placeholder="Lo que reporta el cliente y lo que se detectó"><?= e($valor('diagnostico')) ?></textarea>
+        </div>
+      </div>
+
+      <?php if ($combos !== []): ?>
+        <div class="mb-3" style="max-width: 420px;">
+          <label for="agregar_combo" class="form-label">Agregar combo</label>
+          <select class="form-select" id="agregar_combo">
+            <option value="">Elegí un combo para sumar sus ítems…</option>
+            <?php foreach ($combos as $c): ?>
+              <option value="<?= (int) $c['id'] ?>" data-items="<?= e(json_encode(array_map(fn($i) => [
+                'tipo' => $i['repuesto_id'] !== null ? 'repuesto' : 'servicio',
+                'id' => (int) ($i['repuesto_id'] ?? $i['servicio_id']),
+                'cantidad' => (float) $i['cantidad'],
+              ], $c['items']))) ?>"><?= e($c['nombre']) ?></option>
+            <?php endforeach; ?>
+          </select>
+        </div>
+      <?php endif; ?>
+
       <div class="table-responsive mb-3">
         <table class="table table-sm align-middle" id="detalle_orden">
           <thead>
@@ -98,6 +138,37 @@ $view->script('ordenes.js');
         <small class="form-text text-muted">
           El precio sugerido es el del catálogo; los ítems que ya estaban en la orden conservan el precio con que se cargaron.
         </small>
+      </div>
+
+      <div class="mb-3">
+        <label for="trabajo_realizado" class="form-label">Trabajo realizado</label>
+        <textarea class="form-control" id="trabajo_realizado" name="trabajo_realizado" rows="2"
+          placeholder="Se imprime en el comprobante de entrega"><?= e($valor('trabajo_realizado')) ?></textarea>
+      </div>
+
+      <div class="row mb-3 align-items-end">
+        <div class="col-md-3">
+          <label for="proximo_service_km" class="form-label">Próximo service (km)</label>
+          <input type="number" class="form-control" id="proximo_service_km" name="proximo_service_km" min="1" max="9999999"
+            value="<?= e($valor('proximo_service_km')) ?>">
+        </div>
+        <div class="col-md-3">
+          <label for="proximo_service_fecha" class="form-label">Próximo service (fecha)</label>
+          <input type="date" class="form-control" id="proximo_service_fecha" name="proximo_service_fecha" min="<?= date('Y-m-d', strtotime('+1 day')) ?>"
+            value="<?= e($valor('proximo_service_fecha')) ?>">
+        </div>
+        <div class="col-md-6">
+          <button type="button" class="btn btn-outline-secondary btn-sm" id="sugerir_service"
+            data-km="<?= (int) $service['intervalo_km'] ?>" data-meses="<?= (int) $service['intervalo_meses'] ?>">
+            Sugerir (+<?= number_format((float) $service['intervalo_km'], 0, ',', '.') ?> km / <?= (int) $service['intervalo_meses'] ?> meses)
+          </button>
+          <small class="form-text text-muted d-block">Se le avisa al cliente cuando se acerca la fecha.</small>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label for="notas_internas" class="form-label">Notas internas <small class="text-muted">(no se imprimen ni las ve el cliente)</small></label>
+        <textarea class="form-control" id="notas_internas" name="notas_internas" rows="2"><?= e($valor('notas_internas')) ?></textarea>
       </div>
 
       <button type="submit" class="btn btn-warning"><?= $orden ? 'Actualizar orden' : 'Crear orden' ?></button>

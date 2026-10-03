@@ -44,5 +44,22 @@ services:
       database:
         condition: service_healthy
 
+  # Tareas periódicas (recordatorios automáticos de turnos).
+  tareas:
+    build: ./
+    restart: unless-stopped
+    user: www-data
+    env_file: .env
+    environment:
+      SKIP_SETUP: "1"
+      XDEBUG_MODE: "off"
+    volumes:
+      - ./:/var/www/html
+    depends_on:
+      - public
+    command: >
+      sh -c 'until [ -f vendor/autoload.php ]; do sleep 5; done;
+             while true; do php bin/tareas.php; sleep 900; done'
+
 volumes:
   db_data:

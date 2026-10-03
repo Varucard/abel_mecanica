@@ -1,90 +1,85 @@
 <?php
-/** @var array{taller: array<string, string>, trabajo: array<string, mixed>} $config */
-$taller = $config['taller'];
-$trabajo = $config['trabajo'];
+/**
+ * @var string $seccion
+ * @var array<string, string> $pestanas
+ * @var array<string, array<string, mixed>> $config
+ * @var array<string, mixed> $extra
+ */
 ?>
-<form action="<?= url('configuracion') ?>" method="POST">
-  <?= csrf_field() ?>
+<ul class="nav nav-tabs mt-3">
+  <?php foreach ($pestanas as $clave => $etiqueta): ?>
+    <li class="nav-item">
+      <a class="nav-link <?= $clave === $seccion ? 'active' : '' ?>" href="<?= url("configuracion/{$clave}") ?>"><?= e($etiqueta) ?></a>
+    </li>
+  <?php endforeach; ?>
+</ul>
 
-  <div class="card mb-4 mt-3">
-    <div class="card-header bg-light">
-      <h4 class="mb-0">Datos del taller</h4>
+<div class="card border-top-0 rounded-top-0">
+  <div class="card-body">
+    <form action="<?= url("configuracion/{$seccion}") ?>" method="POST">
+      <?= csrf_field() ?>
+      <?= $view->partial("configuracion/_{$seccion}", ['valores' => $config[$seccion], 'config' => $config, ...$extra]) ?>
+      <div class="text-end mt-3">
+        <button type="submit" class="btn btn-success">💾 Guardar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<?php if ($seccion === 'turnos'): ?>
+  <div class="card mt-3">
+    <div class="card-body d-flex flex-wrap align-items-end gap-2">
+      <form action="<?= url('configuracion/feriados/importar') ?>" method="POST" class="d-flex align-items-end gap-2">
+        <?= csrf_field() ?>
+        <div>
+          <label for="anio" class="form-label">Importar feriados nacionales de Argentina</label>
+          <input type="number" class="form-control" id="anio" name="anio" min="2020" max="2100" value="<?= date('Y') ?>" style="width: 120px;">
+        </div>
+        <button type="submit" class="btn btn-outline-primary">Importar</button>
+      </form>
+      <small class="text-muted">Fuente: ArgentinaDatos. Se agregan a la lista de feriados sin borrar los que ya cargaste.</small>
     </div>
+  </div>
+<?php endif; ?>
+
+<?php if ($seccion === 'backups'): ?>
+  <div class="card mt-3">
     <div class="card-body">
-      <div class="row">
-        <div class="col-md-6 mb-3">
-          <label for="nombre" class="form-label">Nombre del taller *</label>
-          <input type="text" class="form-control" id="nombre" name="nombre" required
-            value="<?= e(old('nombre', $taller['nombre'])) ?>">
-        </div>
-        <div class="col-md-6 mb-3">
-          <label for="cuit" class="form-label">CUIT *</label>
-          <input type="text" class="form-control" id="cuit" name="cuit" required
-            pattern="[0-9]{2}-?[0-9]{8}-?[0-9]" title="Formato: 20-12345678-9"
-            value="<?= e(old('cuit', $taller['cuit'])) ?>">
-        </div>
-      </div>
-
-      <div class="mb-3">
-        <label for="direccion" class="form-label">Dirección *</label>
-        <input type="text" class="form-control" id="direccion" name="direccion" required
-          value="<?= e(old('direccion', $taller['direccion'])) ?>">
-      </div>
-
-      <div class="row">
-        <div class="col-md-4 mb-3">
-          <label for="telefono" class="form-label">Teléfono *</label>
-          <input type="text" class="form-control" id="telefono" name="telefono" required
-            value="<?= e(old('telefono', $taller['telefono'])) ?>">
-        </div>
-        <div class="col-md-4 mb-3">
-          <label for="whatsapp" class="form-label">WhatsApp *</label>
-          <input type="text" class="form-control" id="whatsapp" name="whatsapp" required
-            placeholder="+5491136359867" title="+549 + código de área + número, sin espacios"
-            value="<?= e(old('whatsapp', $taller['whatsapp'])) ?>">
-        </div>
-        <div class="col-md-4 mb-3">
-          <label for="email" class="form-label">Email *</label>
-          <input type="email" class="form-control" id="email" name="email" required
-            value="<?= e(old('email', $taller['email'])) ?>">
-        </div>
-      </div>
+      <form action="<?= url('configuracion/backups/generar') ?>" method="POST" class="d-inline">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn btn-outline-primary">Generar backup ahora</button>
+      </form>
     </div>
   </div>
+<?php endif; ?>
 
-  <div class="card mb-4">
-    <div class="card-header bg-light">
-      <h4 class="mb-0">Condiciones de trabajo</h4>
-    </div>
-    <div class="card-body">
-      <div class="row">
-        <?php foreach (['validez' => 'Validez del presupuesto', 'garantia' => 'Garantía', 'tiempo_estimado' => 'Tiempo estimado'] as $campo => $etiqueta): ?>
-          <div class="col-md-4 mb-3">
-            <label for="<?= $campo ?>" class="form-label"><?= $etiqueta ?> (días) *</label>
-            <input type="number" class="form-control" id="<?= $campo ?>" name="<?= $campo ?>" min="1" max="365" required
-              value="<?= e(old($campo, $trabajo[$campo])) ?>">
-          </div>
-        <?php endforeach; ?>
-      </div>
-
-      <div class="mb-3">
-        <label for="forma_pago" class="form-label">Formas de pago (una por línea) *</label>
-        <textarea class="form-control" id="forma_pago" name="forma_pago" rows="5" required><?= e(old('forma_pago', implode("\n", $trabajo['forma_pago']))) ?></textarea>
-      </div>
-
-      <div class="mb-3">
-        <label for="observaciones" class="form-label">Observaciones del presupuesto (una por línea)</label>
-        <textarea class="form-control" id="observaciones" name="observaciones" rows="4"><?= e(old('observaciones', implode("\n", $trabajo['observaciones']))) ?></textarea>
-      </div>
-
-      <div class="mb-3">
-        <label for="mensaje_legal" class="form-label">Mensaje legal</label>
-        <textarea class="form-control" id="mensaje_legal" name="mensaje_legal" rows="2"><?= e(old('mensaje_legal', $trabajo['mensaje_legal'])) ?></textarea>
-      </div>
+<?php if ($seccion === 'notificaciones'): ?>
+  <div class="card mt-3">
+    <div class="card-header bg-light"><strong>Últimos avisos enviados</strong></div>
+    <div class="card-body table-responsive">
+      <?php if ($extra['registro'] === []): ?>
+        <p class="text-muted mb-0">Todavía no se envió ningún aviso.</p>
+      <?php else: ?>
+        <table class="table table-sm align-middle">
+          <thead><tr><th>Fecha</th><th>Cliente</th><th>Turno</th><th>Tipo</th><th>Canal</th><th>Destino</th><th>Resultado</th></tr></thead>
+          <tbody>
+            <?php foreach ($extra['registro'] as $n): ?>
+              <tr>
+                <td><?= format_date($n['created_at'], 'd/m/Y H:i') ?></td>
+                <td><?= e($n['cliente'] ?? '—') ?></td>
+                <td><?= $n['turno_fecha'] ? format_date($n['turno_fecha']) . ' ' . e(substr($n['turno_hora'], 0, 5)) : '—' ?></td>
+                <td><?= e($n['tipo']) ?></td>
+                <td><?= e($n['canal']) ?></td>
+                <td><?= e($n['destino']) ?></td>
+                <td>
+                  <span class="badge bg-<?= $n['estado'] === 'enviado' ? 'success' : 'danger' ?>"><?= e($n['estado']) ?></span>
+                  <?php if ($n['detalle']): ?><div class="small text-muted"><?= e($n['detalle']) ?></div><?php endif; ?>
+                </td>
+              </tr>
+            <?php endforeach; ?>
+          </tbody>
+        </table>
+      <?php endif; ?>
     </div>
   </div>
-
-  <div class="text-end">
-    <button type="submit" class="btn btn-success btn-lg">💾 Guardar configuración</button>
-  </div>
-</form>
+<?php endif; ?>

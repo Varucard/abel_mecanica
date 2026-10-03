@@ -42,16 +42,17 @@ final class HomeController extends Controller
       'turnosHoy' => $this->turnos->delDia($hoy),
       'turnosManana' => $this->turnos->delDia(date('Y-m-d', strtotime('+1 day'))),
       'abiertas' => $this->panel->ordenesAbiertasPorEstado(),
-      'ordenesAbiertas' => array_slice(array_values(array_filter(
-        $this->ordenes->all(),
-        fn(array $o) => in_array($o['estado'], ['pendiente', 'en_proceso'], true)
-      )), 0, 8),
+      'ordenesAbiertas' => $this->ordenes->paginar(['estado' => 'abiertas', 'length' => 8, 'order' => [['column' => 0, 'dir' => 'desc']]])['filas'],
       'cobradoMes' => $this->panel->cobradoEntre($inicioMes, $hoy),
       'finalizadasMes' => $this->panel->ordenesFinalizadasEntre($inicioMes, $hoy),
       'deudores' => array_slice($deudores, 0, 5),
       'totalAdeudado' => array_sum(array_column($deudores, 'saldo')),
       'stockBajo' => $this->repuestos->bajoMinimo(),
-      'emailHabilitado' => $this->notificaciones->emailHabilitado(),
+      'services' => $this->ordenes->servicesProximos(30),
+      'avisos' => [
+        'canal' => $this->notificaciones->hayCanalDisponible(),
+        'whatsapp' => $this->notificaciones->botonWhatsappManual(),
+      ],
     ]);
   }
 }

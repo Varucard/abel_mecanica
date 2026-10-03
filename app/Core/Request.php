@@ -70,6 +70,12 @@ final class Request
     return isset($_SERVER[$key]) ? (string) $_SERVER[$key] : null;
   }
 
+  /** @return array<string, mixed> */
+  public function queryAll(): array
+  {
+    return $this->query;
+  }
+
   public function query(string $key, mixed $default = null): mixed
   {
     return $this->query[$key] ?? $default;

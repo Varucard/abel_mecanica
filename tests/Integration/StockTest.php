@@ -73,6 +73,28 @@ final class StockTest extends IntegrationTestCase
     $this->assertSame(['ingreso', 'egreso', 'ingreso'], array_column($this->make(StockRepository::class)->historial($aceite), 'tipo'));
   }
 
+  public function testSinStockNegativoNoSeFinaliza(): void
+  {
+    $this->configurar('stock', ['permitir_negativo' => false]);
+    $vehiculo = $this->crearVehiculo($this->crearCliente());
+    $filtro = $this->crearRepuesto('Filtro', 100);
+    $this->make(StockService::class)->ingresar($filtro, '1', null, null, null);
+    $ordenes = $this->make(OrdenService::class);
+    $id = $ordenes->guardar($vehiculo, [$this->crearServicio('Service', 500)], [$filtro => ['cantidad' => '2']]);
+
+    try {
+      $ordenes->cambiarEstado($id, 'finalizado');
+      $this->fail('Debía impedir finalizar sin stock');
+    } catch (ValidationException $e) {
+      $this->assertStringContainsString('Filtro (hay 1, se necesitan 2)', $e->getMessage());
+    }
+    $this->assertSame(1.0, $this->stock($filtro));
+
+    $this->make(StockService::class)->ingresar($filtro, '1', null, null, null);
+    $ordenes->cambiarEstado($id, 'finalizado');
+    $this->assertSame(0.0, $this->stock($filtro));
+  }
+
   public function testRechazaCantidadesYPreciosInvalidos(): void
   {
     $vehiculo = $this->crearVehiculo($this->crearCliente());

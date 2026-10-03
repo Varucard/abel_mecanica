@@ -42,6 +42,21 @@ final class View
     return $this->renderFile($layout, array_merge($data, ['content' => $content]));
   }
 
+  /**
+   * Celdas de una fila para tablas paginadas en el servidor. El template
+   * devuelve (return) un array con el HTML de cada celda.
+   *
+   * @param array<string, mixed> $data
+   * @return list<string>
+   */
+  public function fila(string $__template, array $__data): array
+  {
+    extract($__data, EXTR_SKIP);
+    $view = $this;
+
+    return array_values(require $this->viewsPath . '/' . $__template . '.php');
+  }
+
   /** @param array<string, mixed> $data */
   public function partial(string $template, array $data = []): string
   {

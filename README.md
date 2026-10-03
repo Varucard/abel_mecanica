@@ -6,13 +6,25 @@ Aplicación web en PHP para administrar un taller mecánico.
 
 - **Clientes** con ficha (foto, vehículos, historial de órdenes y turnos, deuda) y acceso directo a WhatsApp.
 - **Vehículos** con motor, combustible, color, VIN, observaciones, galería de imágenes e historial.
-- **Órdenes de servicio** con cantidades y precios por ítem, mecánico asignado, estados, presupuesto y
-  comprobante de entrega con conformidad (HTML imprimible y PDF).
+- **Órdenes de servicio** con cantidades y precios por ítem, combos, mecánico asignado, km de ingreso,
+  diagnóstico, trabajo realizado, notas internas y próximo service; presupuesto y comprobante de entrega
+  (HTML imprimible y PDF). El presupuesto se **envía por email** y el cliente lo **acepta online**.
 - **Pagos** parciales por orden, saldos y listado de **deudores**.
-- **Stock de repuestos**: ingresos por proveedor, ajustes por conteo, descuento automático al finalizar
-  órdenes, historial de movimientos y alerta de stock mínimo. **Proveedores**.
-- **Turnos** sin superposición, con recordatorios por WhatsApp y email.
-- **Panel de inicio** con la actividad del día.
+- **Stock de repuestos**: precio de costo y margen, ingresos por proveedor, ajustes por conteo, descuento
+  automático al finalizar órdenes, historial de movimientos y alerta de stock mínimo. **Proveedores**.
+- **Actualización masiva de precios** por porcentaje, con redondeo y vista previa.
+- **Turnos** según el horario de atención y los feriados, con cupos simultáneos configurables.
+  Al agendar, el cliente recibe un **email para confirmar o cancelar** y, el día hábil anterior,
+  un **recordatorio automático**.
+- **Portal "Seguí tu vehículo"** (`/seguimiento`): el cliente consulta con DNI y patente el estado
+  de sus trabajos y sus próximos turnos, sin necesidad de usuario.
+- **Todo configurable** desde *Configuración > Sistema*: datos del taller, presupuestos, horario,
+  feriados, textos de los mensajes, canales de aviso, stock y portal.
+- **Panel de inicio** con la actividad del día, **agenda semanal** con cupos libres y **búsqueda rápida**.
+- **Reportes** (cobranzas, más vendidos, por mecánico, stock valorizado) con exportación a Excel.
+- **Aviso automático de próximo service** al cliente.
+- **Auditoría** (quién hizo qué y cuándo) y **registro técnico** (logs) con visor.
+- **Backup automático diario** de la base y las imágenes.
 - **Usuarios** con roles (administrador / empleado) y **empleados** del taller.
 
 ## Stack
@@ -47,17 +59,37 @@ Si se olvida la contraseña del administrador:
 docker compose exec public php bin/usuario.php clave <usuario>
 ```
 
-### Recordatorios por email (opcional)
+### Emails a clientes (confirmación y recordatorio de turnos)
 
-Completar `MAIL_DSN` en `.env` con un servidor SMTP, por ejemplo con Gmail y una
+Completar en `.env` el servidor SMTP y la dirección pública del sistema (se usa en
+los links de los emails). Por ejemplo, con Gmail y una
 [contraseña de aplicación](https://myaccount.google.com/apppasswords):
 
 ```
+APP_URL=https://turnos.mitaller.com.ar
 MAIL_DSN=smtp://usuario%40gmail.com:CLAVE_DE_APLICACION@smtp.gmail.com:587
 MAIL_FROM=usuario@gmail.com
 ```
 
-Sin `MAIL_DSN` el botón de email no aparece; WhatsApp funciona siempre.
+Sin `MAIL_DSN` no se envían emails (el resto funciona igual). El estado de cada
+canal y el registro de avisos enviados están en *Configuración > Avisos*.
+
+### Tareas automáticas
+
+El servicio `tareas` de Docker ejecuta `bin/tareas.php` cada 15 minutos: envía los
+recordatorios de turnos del día hábil siguiente y los avisos de próximo service
+(solo en días hábiles, dentro del horario de atención y desde la hora configurada),
+genera el backup diario y limpia registros y logs viejos. Sin Docker, agregar
+al crontab: `*/15 * * * * cd /ruta/al/proyecto && php bin/tareas.php`.
+
+### WhatsApp Business (preparado, no activo)
+
+Los avisos pasan por canales intercambiables (`app/Notificaciones/`). Hoy está
+activo el email; `WhatsAppCanal` ya tiene la interfaz y sus plantillas de mensaje.
+Para activarlo hace falta una cuenta de WhatsApp Business verificada en Meta, un
+número dedicado, plantillas aprobadas, las variables `WHATSAPP_TOKEN` y
+`WHATSAPP_PHONE_ID`, e implementar el envío en `WhatsAppCanal::enviar()`.
+Mientras tanto, el botón manual "WhatsApp" abre la conversación con el mensaje armado.
 
 ### Sin Docker
 
@@ -77,19 +109,20 @@ Patrón MVC liviano, sin framework, con separación estricta de responsabilidade
 ```
 app/
 ├── Core/           Infraestructura: App, Router, Container (autowiring), Request,
-│                   View, Session (flash + CSRF), Database, Env
+│                   View, Session (flash + CSRF), Auth, Logger, Migrator, Database, Env
 ├── Controllers/    Reciben la petición, llaman al servicio y renderizan. Sin SQL ni reglas.
 ├── Services/       Lógica de negocio y validaciones (precios congelados, disponibilidad
 │                   de turnos, bajas protegidas, configuración, PDF).
 ├── Repositories/   Único lugar con SQL (PDO + sentencias preparadas).
 ├── Models/         Entidades del dominio (Persona → Cliente, Vehiculo, Orden, Turno…).
 ├── Enums/          Estados de órdenes, turnos y clientes/vehículos.
-├── Support/        Validator, ImageUpload.
+├── Notificaciones/ Canales de aviso (email activo, WhatsApp preparado).
+├── Support/        Validator, ImageUpload, HorarioAtencion, ConsultaPaginada (DataTables en el servidor).
 └── helpers.php     Funciones para vistas: e(), url(), asset(), money(), csrf_field()…
-bin/                migrate.php (migraciones) y usuario.php (recuperar acceso).
+bin/                migrate.php (migraciones), tareas.php (recordatorios) y usuario.php (recuperar acceso).
 config/
 ├── routes.php      Todas las rutas de la aplicación y su nivel de acceso.
-└── taller.php      Valores por defecto de la configuración del taller.
+└── taller.php      Valores por defecto de la configuración (y variables de los mensajes).
 views/              Templates PHP (layout, parciales y una carpeta por módulo).
 public/             Única carpeta expuesta por Apache: index.php + assets.
 database/
@@ -121,7 +154,9 @@ Para cambiar la base de datos se agrega un archivo nuevo en `database/migrations
 | Órdenes | `/ordenes/{id}` (ficha con pagos), `/ordenes/{id}/entrega`, `/ordenes/{id}/entrega/pdf` |
 | Stock | `/repuestos/{id}/stock`, `/proveedores` |
 | Acceso | `/login`, `/perfil/clave` |
-| Solo administradores | `/configuracion`, `/usuarios`, `/empleados` |
+| Públicas (clientes) | `/seguimiento`, `/turno/{token}` (confirmar o cancelar), `/presupuesto/{token}` (aceptar o rechazar) |
+| Búsqueda y agenda | `/buscar?q=`, `/turnos/semana` |
+| Solo administradores | `/configuracion/{seccion}`, `/usuarios`, `/empleados`, `/precios`, `/reportes`, `/auditoria`, `/logs` |
 
 Todas las acciones que modifican datos (alta, edición, baja, cambio de estado)
 son `POST` con token CSRF.
@@ -141,7 +176,13 @@ son `POST` con token CSRF.
   Un cliente es deudor si tiene órdenes finalizadas con saldo. Anular un pago es
   solo para administradores.
 - **Turnos**: el vehículo debe pertenecer al cliente; no se agenda en fechas
-  pasadas ni en un horario ya ocupado (los cancelados y ausentes liberan el horario).
+  pasadas, fuera del horario de atención, en feriados ni por encima de los cupos
+  simultáneos (los cancelados y ausentes liberan el lugar). Si se reprograma, se
+  vuelve a pedir la confirmación al cliente.
+- **Portal**: por defecto pide DNI y patente (con solo el DNI cualquiera podría ver
+  datos ajenos; se puede cambiar en Configuración). No muestra datos de contacto,
+  da el mismo error si el DNI no existe o la patente no coincide, y bloquea por
+  15 minutos tras 10 consultas fallidas.
 - **Catálogos**: no se puede borrar una marca, modelo, servicio, repuesto o
   proveedor en uso.
 - **Seguridad**: contraseñas con `password_hash`, bloqueo de 15 minutos tras 5
@@ -179,16 +220,28 @@ La migración también funciona directamente sobre MySQL 5.7.
 
 ## Backups
 
+El backup diario es automático (servicio `tareas`): a partir de la hora configurada
+en *Configuración > Backups* guarda en `storage/backups` la base de datos
+(`db_*.sql.gz`) y las imágenes y configuración (`archivos_*.tar.gz`), conservando los
+últimos N. Desde esa misma pantalla se puede generar uno a mano y descargarlo.
+**Conviene copiar periódicamente algún backup fuera del servidor.**
+
+También se puede hacer desde la consola del servidor:
+
 ```bash
-scripts/backup.sh                       # base + imágenes + configuración en backups/ (conserva 14)
-scripts/restore.sh backups/db_<fecha>.sql.gz backups/archivos_<fecha>.tar.gz
+scripts/backup.sh                       # en backups/ (usa mysqldump del contenedor de la base)
+scripts/restore.sh storage/backups/db_<fecha>.sql.gz storage/backups/archivos_<fecha>.tar.gz
 ```
 
-Para un backup diario automático, agregar al crontab del servidor:
+## Logs y auditoría
 
-```
-0 22 * * * cd /ruta/al/proyecto && scripts/backup.sh >> backups/backup.log 2>&1
-```
+- **Auditoría** (*Configuración > Auditoría*): acciones del negocio con usuario, IP y detalle
+  (cambios de estado, pagos, stock, precios, configuración, ingresos al sistema). También se ve
+  en la ficha de cada orden.
+- **Registro del sistema** (*Configuración > Registro del sistema*): archivos diarios
+  `storage/logs/app-AAAA-MM-DD.log` (una línea JSON por evento) con errores, avisos de PHP y
+  eventos. Cada petición tiene un id (`X-Request-Id`) que aparece en la página de error, para
+  encontrarla en el registro. Nivel y días a conservar: `LOG_LEVEL` y `LOG_DIAS` en `.env`.
 
 ## Desarrollo
 

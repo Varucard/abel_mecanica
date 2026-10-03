@@ -18,17 +18,18 @@ final class StockRepository extends Repository
     ?int $proveedorId = null,
     ?int $usuarioId = null,
     ?string $motivo = null,
+    ?float $costoUnitario = null,
   ): float {
-    return $this->transaction(function () use ($repuestoId, $tipo, $cantidad, $ordenId, $proveedorId, $usuarioId, $motivo) {
+    return $this->transaction(function () use ($repuestoId, $tipo, $cantidad, $ordenId, $proveedorId, $usuarioId, $motivo, $costoUnitario) {
       // Bloquea la fila para que dos movimientos simultáneos no pisen el saldo.
       $actual = $this->fetchOne('SELECT stock_actual FROM repuestos WHERE id = ? FOR UPDATE', [$repuestoId]);
       $resultante = round((float) $actual['stock_actual'] + $cantidad, 2);
 
       $this->execute('UPDATE repuestos SET stock_actual = ? WHERE id = ?', [$resultante, $repuestoId]);
       $this->insert(
-        'INSERT INTO movimientos_stock (repuesto_id, tipo, cantidad, stock_resultante, orden_id, proveedor_id, usuario_id, motivo)
-         VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        [$repuestoId, $tipo, $cantidad, $resultante, $ordenId, $proveedorId, $usuarioId, $motivo]
+        'INSERT INTO movimientos_stock (repuesto_id, tipo, cantidad, costo_unitario, stock_resultante, orden_id, proveedor_id, usuario_id, motivo)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+        [$repuestoId, $tipo, $cantidad, $costoUnitario, $resultante, $ordenId, $proveedorId, $usuarioId, $motivo]
       );
 
       return $resultante;
@@ -39,7 +40,7 @@ final class StockRepository extends Repository
   public function historial(int $repuestoId): array
   {
     return $this->fetchAll(
-      'SELECT m.id, m.tipo, m.cantidad, m.stock_resultante, m.orden_id, m.motivo, m.created_at,
+      'SELECT m.id, m.tipo, m.cantidad, m.costo_unitario, m.stock_resultante, m.orden_id, m.motivo, m.created_at,
               p.nombre AS proveedor, u.nombre AS usuario
          FROM movimientos_stock m
          LEFT JOIN proveedores p ON p.id = m.proveedor_id

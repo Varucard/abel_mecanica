@@ -25,6 +25,7 @@ abstract class IntegrationTestCase extends TestCase
 
   protected PDO $db;
   protected Container $container;
+  protected string $configRoot;
 
   protected function setUp(): void
   {
@@ -33,10 +34,17 @@ abstract class IntegrationTestCase extends TestCase
 
     $this->container = new Container();
     $this->container->set(PDO::class, fn() => $this->db);
+    // Configuración en un directorio temporal: los tests no tocan storage/ y
+    // no dependen del día en que corren (sin validación de horario por defecto).
+    $this->configRoot = sys_get_temp_dir() . '/taller_it_' . bin2hex(random_bytes(4));
+    mkdir($this->configRoot . '/config', 0777, true);
+    copy(dirname(__DIR__, 2) . '/config/taller.php', $this->configRoot . '/config/taller.php');
+    $this->configurar('turnos', ['validar_horario' => false]);
     $this->container->set(
       \App\Services\ConfiguracionService::class,
-      fn() => new \App\Services\ConfiguracionService(dirname(__DIR__, 2))
+      fn() => new \App\Services\ConfiguracionService($this->configRoot)
     );
+    $this->container->set(\App\Core\Logger::class, fn() => new \App\Core\Logger($this->configRoot . '/logs', 'debug'));
     $this->container->set(\App\Core\View::class, fn() => new \App\Core\View(dirname(__DIR__, 2) . '/views'));
   }
 
@@ -44,6 +52,36 @@ abstract class IntegrationTestCase extends TestCase
   {
     if ($this->db->inTransaction()) {
       $this->db->rollBack();
+    }
+
+    array_map('unlink', glob($this->configRoot . '/logs/*') ?: []);
+    @rmdir($this->configRoot . '/logs');
+    @unlink($this->configRoot . '/storage/config/taller.json');
+    @unlink($this->configRoot . '/config/taller.php');
+    @rmdir($this->configRoot . '/storage/config');
+    @rmdir($this->configRoot . '/storage');
+    @rmdir($this->configRoot . '/config');
+    @rmdir($this->configRoot);
+  }
+
+  /**
+   * Sobrescribe valores de una sección de la configuración (sin validar).
+   *
+   * @param array<string, mixed> $valores
+   */
+  protected function configurar(string $seccion, array $valores): void
+  {
+    $archivo = $this->configRoot . '/storage/config/taller.json';
+    @mkdir(dirname($archivo), 0777, true);
+    $actual = is_file($archivo) ? json_decode((string) file_get_contents($archivo), true) : [];
+    $actual[$seccion] = array_replace($actual[$seccion] ?? [], $valores);
+    file_put_contents($archivo, json_encode($actual));
+
+    if (isset($this->container)) {
+      try {
+        $this->make(\App\Services\ConfiguracionService::class)->recargar();
+      } catch (\Throwable) {
+      }
     }
   }
 

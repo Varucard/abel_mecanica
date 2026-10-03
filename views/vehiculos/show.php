@@ -4,6 +4,7 @@
  * @var list<array<string, mixed>> $imagenes
  * @var list<array<string, mixed>> $ordenes
  * @var list<array<string, mixed>> $turnos
+ * @var array<string, mixed>|null $proximoService
  */
 use App\Enums\Combustible;
 
@@ -27,6 +28,15 @@ $dato = fn(?string $v) => $v !== null && $v !== '' ? e($v) : '—';
       <dt class="col-sm-2">Combustible</dt><dd class="col-sm-4"><?= $vehiculo['combustible'] ? e(Combustible::from($vehiculo['combustible'])->label()) : '—' ?></dd>
       <dt class="col-sm-2">Color</dt><dd class="col-sm-4"><?= $dato($vehiculo['color']) ?></dd>
       <dt class="col-sm-2">N° de chasis</dt><dd class="col-sm-4"><?= $dato($vehiculo['numero_chasis']) ?></dd>
+      <dt class="col-sm-2">Próximo service</dt>
+      <dd class="col-sm-4">
+        <?php if ($proximoService): ?>
+          <?= $proximoService['proximo_service_km'] ? number_format((float) $proximoService['proximo_service_km'], 0, ',', '.') . ' km' : '' ?>
+          <?= $proximoService['proximo_service_km'] && $proximoService['proximo_service_fecha'] ? ' · ' : '' ?>
+          <?= $proximoService['proximo_service_fecha'] ? format_date($proximoService['proximo_service_fecha']) : '' ?>
+          <a class="small" href="<?= url("ordenes/{$proximoService['orden_id']}") ?>">(orden #<?= (int) $proximoService['orden_id'] ?>)</a>
+        <?php else: ?>—<?php endif; ?>
+      </dd>
       <dt class="col-sm-2">Observaciones</dt><dd class="col-sm-10"><?= nl2br($dato($vehiculo['detalle'])) ?></dd>
     </dl>
   </div>

@@ -8,7 +8,9 @@ use App\Exceptions\NotFoundException;
 
 /**
  * Router sencillo basado en patrones del tipo `/clientes/{id}/editar`.
- * Los parámetros `{id}` solo aceptan dígitos.
+ *
+ * Parámetros: `{id}` solo dígitos (se pasa como int), `{x:slug}` letras
+ * minúsculas y guion bajo, `{x:token}` 64 caracteres hexadecimales (se pasan como string).
  *
  * Cada ruta tiene un nivel de acceso (ACCESO_*) que se valida con el guard
  * antes de ejecutar el controlador.
@@ -19,7 +21,12 @@ final class Router
   public const ACCESO_USUARIO = 'usuario';
   public const ACCESO_ADMIN = 'administrador';
 
-  /** @var list<array{method: string, regex: string, handler: array{0: class-string, 1: string}, acceso: string}> */
+  private const TIPOS = [
+    'slug' => '[a-z_]+',
+    'token' => '[a-f0-9]{64}',
+  ];
+
+  /** @var list<array{method: string, regex: string, handler: array{0: class-string, 1: string}, acceso: string, texto: list<string>}> */
   private array $routes = [];
 
   /** @var (callable(string, Request): void)|null */
@@ -50,13 +57,23 @@ final class Router
   /** @param array{0: class-string, 1: string} $handler */
   private function add(string $method, string $pattern, array $handler, string $acceso): void
   {
-    $regex = preg_replace('#\{(\w+)\}#', '(?P<$1>\d+)', rtrim($pattern, '/') ?: '/');
+    $texto = [];
+    $regex = preg_replace_callback('#\{(\w+)(?::(\w+))?\}#', function (array $m) use (&$texto) {
+      if (isset($m[2])) {
+        $texto[] = $m[1];
+
+        return '(?P<' . $m[1] . '>' . self::TIPOS[$m[2]] . ')';
+      }
+
+      return '(?P<' . $m[1] . '>\d+)';
+    }, rtrim($pattern, '/') ?: '/');
 
     $this->routes[] = [
       'method' => $method,
       'regex' => '#^' . $regex . '$#',
       'handler' => $handler,
       'acceso' => $acceso,
+      'texto' => $texto,
     ];
   }
 
@@ -71,7 +88,10 @@ final class Router
         ($this->guard)($route['acceso'], $request);
       }
 
-      $params = array_map('intval', array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY));
+      $params = [];
+      foreach (array_filter($matches, 'is_string', ARRAY_FILTER_USE_KEY) as $nombre => $valor) {
+        $params[$nombre] = in_array($nombre, $route['texto'], true) ? $valor : (int) $valor;
+      }
       [$class, $action] = $route['handler'];
 
       $controller = $this->container->get($class);

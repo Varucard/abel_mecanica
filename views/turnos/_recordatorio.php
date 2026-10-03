@@ -1,23 +1,43 @@
 <?php
 /**
- * Botones de recordatorio de un turno.
+ * Estado de confirmación del cliente y botones de aviso de un turno.
  *
- * @var array<string, mixed> $turno
- * @var bool $emailHabilitado
+ * @var array<string, mixed> $turno  fila de TurnoRepository (listado/detalle)
+ * @var array{canal: bool, whatsapp: bool} $avisos
  * @var string $volver  "inicio" o "" (agenda)
  */
+$canales = ['email' => 'email', 'whatsapp' => 'WhatsApp', 'sin_contacto' => 'sin contacto', 'error' => 'error', 'enviando' => 'enviando…'];
 ?>
-<form action="<?= url("turnos/{$turno['id']}/whatsapp") ?>" method="POST" target="_blank" class="d-inline">
-  <?= csrf_field() ?>
-  <button type="submit" class="btn btn-sm btn-success" title="Enviar recordatorio por WhatsApp">WhatsApp</button>
-</form>
-<?php if ($emailHabilitado && !empty($turno['cliente_email'])): ?>
-  <form action="<?= url("turnos/{$turno['id']}/email") ?>" method="POST" class="d-inline" data-confirm="¿Enviar el recordatorio por email a <?= e($turno['cliente_email']) ?>?">
-    <?= csrf_field() ?>
-    <input type="hidden" name="volver" value="<?= e($volver ?? '') ?>">
-    <button type="submit" class="btn btn-sm btn-outline-success">Email</button>
-  </form>
+<?php if ($turno['respuesta_cliente'] === 'confirmado'): ?>
+  <div class="small text-success">✔ Confirmado por el cliente <?= format_date($turno['respuesta_en'], 'd/m H:i') ?></div>
+<?php elseif ($turno['respuesta_cliente'] === 'cancelado'): ?>
+  <div class="small text-danger">✖ Cancelado por el cliente <?= format_date($turno['respuesta_en'], 'd/m H:i') ?></div>
+<?php elseif ($turno['confirmacion_enviada']): ?>
+  <div class="small text-muted">Esperando confirmación (enviada <?= format_date($turno['confirmacion_enviada'], 'd/m H:i') ?>)</div>
 <?php endif; ?>
+
+<div class="d-inline-flex flex-wrap gap-1 my-1">
+  <?php if ($avisos['canal']): ?>
+    <form action="<?= url("turnos/{$turno['id']}/recordar") ?>" method="POST" class="d-inline" data-confirm="¿Enviar ahora el recordatorio al cliente?">
+      <?= csrf_field() ?>
+      <input type="hidden" name="volver" value="<?= e($volver ?? '') ?>">
+      <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar recordatorio por email">Recordar</button>
+    </form>
+    <?php if (!$turno['respuesta_cliente'] && ($volver ?? '') === ''): ?>
+      <form action="<?= url("turnos/{$turno['id']}/confirmacion") ?>" method="POST" class="d-inline">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Reenviar el pedido de confirmación">Pedir confirmación</button>
+      </form>
+    <?php endif; ?>
+  <?php endif; ?>
+  <?php if ($avisos['whatsapp']): ?>
+    <form action="<?= url("turnos/{$turno['id']}/whatsapp") ?>" method="POST" target="_blank" class="d-inline">
+      <?= csrf_field() ?>
+      <button type="submit" class="btn btn-sm btn-success" title="Abrir WhatsApp con el recordatorio armado">WhatsApp</button>
+    </form>
+  <?php endif; ?>
+</div>
+
 <?php if ($turno['recordatorio_enviado']): ?>
-  <div class="small text-muted">Avisado por <?= e($turno['recordatorio_canal']) ?> el <?= format_date($turno['recordatorio_enviado'], 'd/m H:i') ?></div>
+  <div class="small text-muted">Recordatorio: <?= e($canales[$turno['recordatorio_canal']] ?? (string) $turno['recordatorio_canal']) ?> · <?= format_date($turno['recordatorio_enviado'], 'd/m H:i') ?></div>
 <?php endif; ?>

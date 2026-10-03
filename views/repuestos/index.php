@@ -3,6 +3,7 @@
  * @var array<string, mixed>|null $repuesto  repuesto en edición
  * @var list<array<string, mixed>> $repuestos
  * @var list<array<string, mixed>> $proveedores
+ * @var float $margen  margen sugerido (%)
  */
 $proveedorId = (int) old('proveedor_id', $repuesto['proveedor_id'] ?? 0);
 ?>
@@ -24,13 +25,25 @@ $proveedorId = (int) old('proveedor_id', $repuesto['proveedor_id'] ?? 0);
           <input type="text" class="form-control" id="nombre" name="nombre" minlength="2" maxlength="150" required
             value="<?= e(old('nombre', $repuesto['nombre'] ?? '')) ?>">
         </div>
-        <div class="col-md-4 mb-3">
+        <div class="col-md-2 mb-3">
+          <label for="precio_costo" class="form-label">Costo</label>
+          <div class="input-group">
+            <span class="input-group-text">$</span>
+            <input type="number" class="form-control" id="precio_costo" name="precio_costo" step="0.01" min="0"
+              value="<?= e(old('precio_costo', $repuesto['precio_costo'] ?? '')) ?>">
+          </div>
+        </div>
+        <div class="col-md-2 mb-3">
           <label for="precio" class="form-label">Precio de venta *</label>
           <div class="input-group">
             <span class="input-group-text">$</span>
             <input type="number" class="form-control" id="precio" name="precio" step="0.01" min="0" required
               value="<?= e(old('precio', $repuesto['precio'] ?? '')) ?>">
           </div>
+          <button type="button" class="btn btn-link btn-sm p-0" id="sugerir_precio" data-margen="<?= e((string) $margen) ?>">
+            Sugerir con <?= qty($margen) ?>% de margen
+          </button>
+          <div class="small text-muted" id="margen_actual"></div>
         </div>
         <div class="col-md-5 mb-3">
           <label for="proveedor_id" class="form-label">Proveedor habitual</label>
@@ -81,7 +94,9 @@ $proveedorId = (int) old('proveedor_id', $repuesto['proveedor_id'] ?? 0);
             <th>Código</th>
             <th>Nombre</th>
             <th>Proveedor</th>
+            <th>Costo</th>
             <th>Precio</th>
+            <th>Margen</th>
             <th>Stock</th>
             <th data-orderable="false">Acciones</th>
           </tr>
@@ -96,7 +111,10 @@ $proveedorId = (int) old('proveedor_id', $repuesto['proveedor_id'] ?? 0);
                 <?php if ($row['descripcion']): ?><div class="small text-muted"><?= e($row['descripcion']) ?></div><?php endif; ?>
               </td>
               <td><?= e($row['proveedor'] ?? '—') ?></td>
+              <?php $margenFila = (float) $row['precio_costo'] > 0 ? ((float) $row['precio'] / (float) $row['precio_costo'] - 1) * 100 : null; ?>
+              <td data-order="<?= (float) $row['precio_costo'] ?>"><?= $row['precio_costo'] !== null ? '$ ' . money($row['precio_costo']) : '—' ?></td>
               <td data-order="<?= (float) $row['precio'] ?>">$ <?= money($row['precio']) ?></td>
+              <td data-order="<?= $margenFila ?? -999 ?>" class="<?= $margenFila !== null && $margenFila < 0 ? 'text-danger' : '' ?>"><?= $margenFila !== null ? qty(round($margenFila, 1)) . ' %' : '—' ?></td>
               <td data-order="<?= (float) $row['stock_actual'] ?>">
                 <span class="badge bg-<?= (float) $row['stock_actual'] < 0 || $bajo ? 'danger' : 'success' ?>"><?= qty($row['stock_actual']) ?></span>
                 <?php if ($bajo): ?><small class="text-danger d-block">mín. <?= qty($row['stock_minimo']) ?></small><?php endif; ?>
@@ -117,3 +135,28 @@ $proveedorId = (int) old('proveedor_id', $repuesto['proveedor_id'] ?? 0);
     </div>
   </div>
 </div>
+
+<script>
+  // Precio sugerido = costo + margen, y margen actual mientras se escribe.
+  document.addEventListener('DOMContentLoaded', () => {
+    const costo = document.getElementById('precio_costo');
+    const precio = document.getElementById('precio');
+    const margen = document.getElementById('margen_actual');
+    const mostrar = () => {
+      const c = parseFloat(costo.value), p = parseFloat(precio.value);
+      margen.textContent = c > 0 && p > 0 ? `Margen actual: ${((p / c - 1) * 100).toFixed(1).replace('.', ',')} %` : '';
+    };
+    document.getElementById('sugerir_precio').addEventListener('click', (e) => {
+      const c = parseFloat(costo.value);
+      if (c > 0) {
+        precio.value = (c * (1 + parseFloat(e.target.dataset.margen) / 100)).toFixed(2);
+        mostrar();
+      } else {
+        costo.focus();
+      }
+    });
+    costo.addEventListener('input', mostrar);
+    precio.addEventListener('input', mostrar);
+    mostrar();
+  });
+</script>

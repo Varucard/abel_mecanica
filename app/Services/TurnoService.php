@@ -18,6 +18,8 @@ final class TurnoService
     private readonly TurnoRepository $turnos,
     private readonly ClienteRepository $clientes,
     private readonly VehiculoRepository $vehiculos,
+    private readonly ConfiguracionService $configuracion,
+    private readonly Auditor $auditor,
   ) {
   }
 
@@ -50,11 +52,12 @@ final class TurnoService
       ->check($id !== null || !Validator::fecha($fecha) || $fecha >= date('Y-m-d'), 'No se pueden agendar turnos en fechas pasadas.');
     $v->validate();
 
-    if (!$estado->liberaHorario()) {
-      $v->check(!$this->turnos->horarioOcupado($fecha, $hora, $id), 'Ya hay un turno agendado para esa fecha y hora.')->validate();
-    }
+    $this->validarHorario($fecha, $hora, $estado, $id);
 
-    return $this->turnos->save(new Turno($clienteId, $vehiculoId, $fecha, $hora, $descripcion, $estado, $id));
+    $guardado = $this->turnos->save(new Turno($clienteId, $vehiculoId, $fecha, $hora, $descripcion, $estado, $id));
+    $this->auditor->registrar($id === null ? 'crear' : 'editar', 'turno', $guardado, ($id === null ? 'Turno agendado' : 'Turno editado') . ' para el ' . format_date($fecha) . " {$hora}");
+
+    return $guardado;
   }
 
   public function cambiarEstado(int $id, string $estado): EstadoTurno
@@ -65,21 +68,85 @@ final class TurnoService
     $v = (new Validator())->check($nuevo !== null, 'Estado de turno inválido.');
     $v->validate();
 
-    if (!$nuevo->liberaHorario()) {
-      $v->check(
-        !$this->turnos->horarioOcupado($turno['fecha'], substr($turno['hora'], 0, 5), $id),
-        'No se puede reactivar: ya hay otro turno en ese horario.'
-      )->validate();
+    if (!$nuevo->liberaHorario() && EstadoTurno::from($turno['estado'])->liberaHorario()) {
+      $v->check($this->hayCupo($turno['fecha'], substr($turno['hora'], 0, 5), $id), 'No se puede reactivar: el horario ya está completo.')->validate();
     }
 
     $this->turnos->setEstado($id, $nuevo);
+    $this->auditor->registrar('cambiar_estado', 'turno', $id, "Turno #{$id}: " . EstadoTurno::from($turno['estado'])->label() . " → {$nuevo->label()}");
 
     return $nuevo;
+  }
+
+  /**
+   * Respuesta del cliente desde el link del email (confirmar o cancelar).
+   *
+   * @return array<string, mixed> el turno actualizado
+   */
+  public function responderCliente(string $token, string $accion): array
+  {
+    $turno = $this->turnos->porToken($token) ?? throw new NotFoundException('El link no es válido o el turno ya no existe.');
+    $estado = EstadoTurno::from($turno['estado']);
+
+    (new Validator())
+      ->check(in_array($accion, ['confirmar', 'cancelar'], true), 'Acción inválida.')
+      ->check(self::admiteRespuesta($turno), match (true) {
+        $estado === EstadoTurno::Cancelado => 'Este turno ya fue cancelado.',
+        $estado === EstadoTurno::Realizado, $estado === EstadoTurno::NoAsistio => 'Este turno ya pasó.',
+        default => 'El horario del turno ya pasó; comunicate con el taller.',
+      })
+      ->validate();
+
+    $this->turnos->registrarRespuesta((int) $turno['id'], $accion === 'confirmar' ? EstadoTurno::Confirmado : EstadoTurno::Cancelado);
+    $this->auditor->registrar($accion === 'confirmar' ? 'confirmar' : 'cancelar', 'turno', (int) $turno['id'], 'El cliente ' . ($accion === 'confirmar' ? 'confirmó' : 'canceló') . ' el turno del ' . format_date($turno['fecha']), actor: 'Cliente (link)');
+
+    return $this->turnos->porToken($token);
+  }
+
+  /** ¿El cliente todavía puede confirmar o cancelar? (turno activo y futuro) */
+  public static function admiteRespuesta(array $turno): bool
+  {
+    return in_array($turno['estado'], [EstadoTurno::Pendiente->value, EstadoTurno::Confirmado->value], true)
+      && "{$turno['fecha']} " . substr($turno['hora'], 0, 5) > date('Y-m-d H:i');
+  }
+
+  /** Horario de atención, feriados y turnos simultáneos según la configuración. */
+  private function validarHorario(string $fecha, string $hora, EstadoTurno $estado, ?int $id): void
+  {
+    if ($estado->liberaHorario()) {
+      return;
+    }
+
+    $config = $this->configuracion->seccion('turnos');
+    $horario = $this->configuracion->horario();
+    $v = new Validator();
+
+    if ($config['validar_horario']) {
+      $franja = $horario->franja($fecha);
+      $v->check(!$horario->esFeriado($fecha), 'Esa fecha es feriado.')
+        ->check($horario->esFeriado($fecha) || $franja !== null, 'El taller no atiende ese día.')
+        ->check($franja === null || $horario->dentroDeHorario($fecha, $hora), sprintf(
+          'La hora está fuera del horario de atención%s.',
+          $franja ? " ({$franja['desde']} a {$franja['hasta']})" : ''
+        ));
+    }
+
+    $v->check($this->hayCupo($fecha, $hora, $id), $config['cupos_por_horario'] > 1
+      ? 'Ese horario ya tiene todos los cupos ocupados.'
+      : 'Ya hay un turno agendado para esa fecha y hora.')
+      ->validate();
+  }
+
+  private function hayCupo(string $fecha, string $hora, ?int $exceptoId): bool
+  {
+    return $this->turnos->ocupados($fecha, $hora, $exceptoId) < $this->configuracion->seccion('turnos')['cupos_por_horario'];
   }
 
   public function eliminar(int $id): void
   {
     $this->obtener($id);
+    $turno = $this->obtener($id);
     $this->turnos->delete($id);
+    $this->auditor->registrar('eliminar', 'turno', $id, 'Turno eliminado (era el ' . format_date($turno['fecha']) . ')');
   }
 }

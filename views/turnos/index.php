@@ -1,18 +1,34 @@
 <?php
-/**
- * @var list<array<string, mixed>> $turnos
- * @var list<\App\Enums\EstadoTurno> $estados
- */
+/** @var list<\App\Enums\EstadoTurno> $estados */
 $view->script('turnos.js');
+$porEstado = ['' => 'Todos los estados'];
+foreach ($estados as $e) {
+  $porEstado[$e->value] = $e->label();
+}
 ?>
 <div class="card mt-3">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h4 class="mb-0">Turnos registrados</h4>
-    <a href="<?= url('turnos/crear') ?>" class="btn btn-warning">+ Nuevo turno</a>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <form id="filtro_turnos" class="d-flex gap-2">
+        <select name="periodo" class="form-select form-select-sm" aria-label="Período">
+          <option value="proximos">Próximos</option>
+          <option value="pasados">Pasados</option>
+          <option value="">Todos</option>
+        </select>
+        <select name="estado" class="form-select form-select-sm" aria-label="Estado">
+          <?php foreach ($porEstado as $valor => $texto): ?>
+            <option value="<?= e($valor) ?>"><?= e($texto) ?></option>
+          <?php endforeach; ?>
+        </select>
+      </form>
+      <a href="<?= url('turnos/semana') ?>" class="btn btn-outline-secondary">Agenda semanal</a>
+      <a href="<?= url('turnos/crear') ?>" class="btn btn-warning">+ Nuevo turno</a>
+    </div>
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-striped table-bordered js-datatable" data-order='[[0, "desc"]]' data-page-length="25">
+      <table class="table table-striped table-bordered" data-server="<?= e(url('turnos/datos')) ?>" data-filtros="#filtro_turnos" data-order='[[0, "asc"]]'>
         <thead>
           <tr>
             <th>Fecha / Hora</th>
@@ -23,38 +39,7 @@ $view->script('turnos.js');
             <th data-orderable="false">Acciones</th>
           </tr>
         </thead>
-        <tbody>
-          <?php foreach ($turnos as $t): ?>
-            <tr>
-              <td data-order="<?= e($t['fecha'] . ' ' . $t['hora']) ?>">
-                <strong><?= format_date($t['fecha']) ?></strong><br>
-                <small class="text-muted"><?= e(substr($t['hora'], 0, 5)) ?> hs</small>
-              </td>
-              <td class="col-achicada"><?= e($t['cliente']) ?></td>
-              <td class="col-achicada"><?= e($t['vehiculo']) ?></td>
-              <td><small><?= e($t['descripcion'] ?? '') ?></small></td>
-              <td data-order="<?= e($t['estado']) ?>">
-                <select class="form-select form-select-sm estado-turno-select estado-<?= e($t['estado']) ?>"
-                  data-url="<?= e(url("turnos/{$t['id']}/estado")) ?>" aria-label="Estado del turno <?= (int) $t['id'] ?>">
-                  <?php foreach ($estados as $opcion): ?>
-                    <option value="<?= e($opcion->value) ?>" <?= selected($opcion->value === $t['estado']) ?>><?= e($opcion->label()) ?></option>
-                  <?php endforeach; ?>
-                </select>
-              </td>
-              <td class="col-acciones text-nowrap">
-                <?php if (in_array($t['estado'], ['pendiente', 'confirmado'], true) && $t['fecha'] >= date('Y-m-d')): ?>
-                  <?= $view->partial('turnos/_recordatorio', ['turno' => $t, 'emailHabilitado' => $emailHabilitado, 'volver' => '']) ?>
-                <?php endif; ?>
-                <a href="<?= url("turnos/{$t['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
-                <?= $view->partial('partials/delete_button', [
-                  'action' => "turnos/{$t['id']}/eliminar",
-                  'label' => 'Eliminar',
-                  'confirm' => '¿Eliminar el turno del ' . format_date($t['fecha']) . ' a las ' . substr($t['hora'], 0, 5) . '?',
-                ]) ?>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
+        <tbody></tbody>
       </table>
     </div>
   </div>

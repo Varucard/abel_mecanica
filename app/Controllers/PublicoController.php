@@ -1,0 +1,159 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Controllers;
+
+use App\Core\Controller;
+use App\Core\Request;
+use App\Core\Session;
+use App\Core\View;
+use App\Exceptions\NotFoundException;
+use App\Exceptions\ValidationException;
+use App\Repositories\TurnoRepository;
+use App\Services\ConfiguracionService;
+use App\Services\PortalService;
+use App\Services\TurnoService;
+
+/**
+ * Páginas públicas (sin login): confirmación de turnos por link y portal
+ * "Seguí tu vehículo".
+ */
+final class PublicoController extends Controller
+{
+  public function __construct(
+    View $view,
+    Session $session,
+    private readonly TurnoRepository $turnos,
+    private readonly TurnoService $turnoService,
+    private readonly PortalService $portal,
+    private readonly ConfiguracionService $configuracion,
+    private readonly \App\Repositories\OrdenRepository $ordenes,
+    private readonly \App\Services\OrdenService $ordenService,
+    private readonly \App\Services\DocumentoService $documentos,
+    private readonly \App\Services\NotificacionService $notificaciones,
+  ) {
+    parent::__construct($view, $session);
+  }
+
+  /** Página del link enviado por email. Solo muestra: confirmar/cancelar se hace por POST. */
+  public function turno(Request $request, string $token): void
+  {
+    $turno = $this->turnos->porToken($token) ?? throw new NotFoundException('El link no es válido o el turno ya no existe.');
+
+    $this->publico('publico/turno', [
+      'title' => 'Tu turno',
+      'turno' => $turno,
+      'token' => $token,
+      'admiteRespuesta' => TurnoService::admiteRespuesta($turno),
+    ]);
+  }
+
+  public function confirmarTurno(Request $request, string $token): void
+  {
+    $this->responder($request, $token, 'confirmar', '¡Gracias! Tu turno quedó confirmado.');
+  }
+
+  public function cancelarTurno(Request $request, string $token): void
+  {
+    $this->responder($request, $token, 'cancelar', 'Tu turno fue cancelado. Si querés reprogramarlo, comunicate con el taller.');
+  }
+
+  /** Presupuesto enviado por email: el cliente lo ve y lo acepta o rechaza. */
+  public function presupuesto(Request $request, string $token): void
+  {
+    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido o la orden ya no existe.');
+    $datos = $this->documentos->datos($id);
+
+    $this->publico('publico/presupuesto', [
+      ...$datos,
+      'title' => "Presupuesto N° {$datos['numero']}",
+      'token' => $token,
+      'admiteRespuesta' => $this->ordenService->admiteRespuestaPresupuesto($datos['orden']),
+      'vigente' => $this->ordenService->presupuestoVigente($datos['orden']),
+    ]);
+  }
+
+  public function presupuestoPdf(Request $request, string $token): void
+  {
+    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido o la orden ya no existe.');
+    $pdf = $this->documentos->pdf($id);
+
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: inline; filename="' . $pdf['nombre'] . '"');
+    echo $pdf['contenido'];
+  }
+
+  public function responderPresupuesto(Request $request, string $token): void
+  {
+    $this->verifyCsrf($request);
+    $accion = $request->string('accion');
+
+    try {
+      $orden = $this->ordenService->responderPresupuesto($token, $accion);
+      $this->success($accion === 'aceptar'
+        ? '¡Gracias! Aceptaste el presupuesto. Te avisamos cuando el vehículo esté listo.'
+        : 'Registramos que no aceptás el presupuesto. Si querés revisarlo, comunicate con el taller.');
+
+      $numero = str_pad((string) $orden['id'], 4, '0', STR_PAD_LEFT);
+      $this->notificaciones->avisarTaller(
+        "Presupuesto N° {$numero} " . ($accion === 'aceptar' ? 'ACEPTADO' : 'rechazado') . " por el cliente",
+        "El cliente " . ($accion === 'aceptar' ? 'aceptó' : 'rechazó') . " el presupuesto N° {$numero} ({$orden['marca']} {$orden['modelo']}, {$orden['patente']}).
+
+"
+          . 'Ver la orden: ' . absolute_url("ordenes/{$orden['id']}"),
+      );
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+    }
+
+    $this->redirect("/presupuesto/{$token}");
+  }
+
+  public function seguimiento(Request $request): void
+  {
+    $opciones = $this->portal->opciones();
+    if (!$opciones['habilitado']) {
+      throw new NotFoundException('La consulta en línea no está disponible.');
+    }
+
+    $this->publico('publico/seguimiento', ['title' => 'Seguí tu vehículo', 'opciones' => $opciones, 'resultado' => null]);
+  }
+
+  public function consultar(Request $request): void
+  {
+    $this->verifyCsrf($request);
+
+    try {
+      $resultado = $this->portal->consultar($request->string('dni'), $request->string('patente'), $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+    } catch (ValidationException $e) {
+      $this->session->keepInput(['dni' => $request->string('dni'), 'patente' => $request->string('patente')]);
+      $this->error($e->getMessage());
+      $this->redirect('/seguimiento');
+    }
+
+    // El resultado se muestra en la respuesta del POST: los datos no quedan en la URL ni en el historial.
+    header('Cache-Control: no-store');
+    $this->publico('publico/seguimiento', ['title' => 'Seguí tu vehículo', 'opciones' => $this->portal->opciones(), 'resultado' => $resultado]);
+  }
+
+  private function responder(Request $request, string $token, string $accion, string $exito): void
+  {
+    $this->verifyCsrf($request);
+
+    try {
+      $this->turnoService->responderCliente($token, $accion);
+      $this->success($exito);
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+    }
+
+    $this->redirect("/turno/{$token}");
+  }
+
+  /** @param array<string, mixed> $datos */
+  private function publico(string $vista, array $datos): void
+  {
+    echo $this->view->render($vista, [...$datos, 'taller' => $this->configuracion->seccion('taller')], 'layouts/publico');
+  }
+}

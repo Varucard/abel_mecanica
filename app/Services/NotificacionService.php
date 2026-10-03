@@ -4,90 +4,405 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Core\Env;
+use App\Core\Logger;
 use App\Exceptions\NotFoundException;
+use App\Notificaciones\CanalNotificacion;
+use App\Notificaciones\Destinatario;
+use App\Notificaciones\EmailCanal;
+use App\Notificaciones\Mensaje;
+use App\Notificaciones\WhatsAppCanal;
+use App\Repositories\NotificacionRepository;
+use App\Repositories\OrdenRepository;
 use App\Repositories\TurnoRepository;
-use App\Support\Validator;
-use Symfony\Component\Mailer\Exception\TransportExceptionInterface;
-use Symfony\Component\Mailer\Mailer;
-use Symfony\Component\Mailer\Transport;
-use Symfony\Component\Mime\Address;
-use Symfony\Component\Mime\Email;
+use DateTimeImmutable;
+use RuntimeException;
+use Throwable;
 
 /**
- * Recordatorios de turnos por WhatsApp (link wa.me con el mensaje armado)
- * y por email (si hay un servidor SMTP configurado en MAIL_DSN).
+ * Avisos a clientes: confirmación y recordatorio de turnos, envío del
+ * presupuesto y aviso de próximo service.
+ *
+ * El canal se elige según "notificaciones.canales" de la configuración: se usa
+ * el primero que esté disponible y para el que el cliente tenga datos de
+ * contacto. Los textos salen de las plantillas de "mensajes"
+ * ({canal}_{tipo}_asunto y {canal}_{tipo}).
  */
 final class NotificacionService
 {
+  public const CANALES = ['email', 'whatsapp'];
+  public const CONFIRMACION = 'confirmacion';
+  public const RECORDATORIO = 'recordatorio';
+  public const PRESUPUESTO = 'presupuesto';
+  public const SERVICE = 'service';
+
+  /** Reintentos de los avisos automáticos si el envío falla. */
+  private const MAX_ERRORES = 3;
+
+  /** @var array<string, CanalNotificacion> canales reemplazados (tests, integraciones) */
+  private array $canalesPropios = [];
+
   public function __construct(
     private readonly TurnoRepository $turnos,
+    private readonly OrdenRepository $ordenes,
+    private readonly NotificacionRepository $registro,
     private readonly ConfiguracionService $configuracion,
+    private readonly DocumentoService $documentos,
+    private readonly Logger $logger,
   ) {
   }
 
-  public function emailHabilitado(): bool
+  // ---------- Canales ----------
+
+  /** Reemplaza la implementación de un canal (p. ej. un canal de prueba en los tests). */
+  public function usarCanal(CanalNotificacion $canal): void
   {
-    return Env::get('MAIL_DSN') !== null;
+    $this->canalesPropios[$canal->nombre()] = $canal;
   }
 
-  /** @param array<string, mixed> $turno fila de TurnoRepository::detalle() */
-  public function mensajeTurno(array $turno): string
+  public function canal(string $nombre): CanalNotificacion
   {
-    $taller = $this->configuracion->obtener()['taller'];
-    $nombre = mb_convert_case(mb_strtolower((string) $turno['cliente_nombre']), MB_CASE_TITLE);
+    return $this->canalesPropios[$nombre] ?? match ($nombre) {
+      'email' => new EmailCanal($this->configuracion->seccion('taller')),
+      'whatsapp' => new WhatsAppCanal($this->configuracion->seccion('notificaciones')['codigo_pais']),
+      default => throw new RuntimeException("Canal de notificación desconocido: {$nombre}"),
+    };
+  }
 
-    return sprintf(
-      'Hola %s, te recordamos tu turno en %s el %s a las %s hs para tu %s. Dirección: %s. Si no podés asistir, avisanos al %s. ¡Gracias!',
-      $nombre,
-      $taller['nombre'],
-      format_date($turno['fecha']),
-      substr((string) $turno['hora'], 0, 5),
-      $turno['vehiculo'],
-      $taller['direccion'],
-      $taller['telefono'],
+  /** @return list<CanalNotificacion> canales activos en la configuración y listos para enviar */
+  public function canalesDisponibles(): array
+  {
+    $canales = array_map(fn(string $c) => $this->canal($c), $this->configuracion->seccion('notificaciones')['canales']);
+
+    return array_values(array_filter($canales, fn(CanalNotificacion $c) => $c->disponible()));
+  }
+
+  public function hayCanalDisponible(): bool
+  {
+    return $this->canalesDisponibles() !== [];
+  }
+
+  public function botonWhatsappManual(): bool
+  {
+    return (bool) $this->configuracion->seccion('notificaciones')['boton_whatsapp_manual'];
+  }
+
+  // ---------- Turnos ----------
+
+  /**
+   * @return string|null canal usado, o null si el cliente no tiene contacto para ningún canal
+   * @throws RuntimeException si el envío falla
+   */
+  public function enviarConfirmacion(int $turnoId): ?string
+  {
+    $canal = $this->enviarTurno(self::CONFIRMACION, $turnoId);
+    if ($canal !== null) {
+      $this->turnos->registrarConfirmacionEnviada($turnoId);
+    }
+
+    return $canal;
+  }
+
+  /** Recordatorio inmediato (botón manual). */
+  public function enviarRecordatorio(int $turnoId): ?string
+  {
+    $canal = $this->enviarTurno(self::RECORDATORIO, $turnoId);
+    if ($canal !== null) {
+      $this->turnos->registrarRecordatorio($turnoId, $canal);
+    }
+
+    return $canal;
+  }
+
+  /**
+   * Recordatorios automáticos: en días hábiles, dentro del horario de atención
+   * y desde la hora configurada, para los turnos hasta el próximo día hábil.
+   *
+   * @return array{enviados: int, sin_contacto: int, errores: int, omitido: ?string}
+   */
+  public function enviarRecordatoriosPendientes(DateTimeImmutable $ahora): array
+  {
+    $config = $this->configuracion->seccion('turnos');
+    $omitido = $this->motivoParaNoEnviar($ahora, (bool) $config['recordatorio_automatico'], 'Recordatorio automático desactivado.');
+    if ($omitido !== null) {
+      return ['enviados' => 0, 'sin_contacto' => 0, 'errores' => 0, 'omitido' => $omitido];
+    }
+
+    $hoy = $ahora->format('Y-m-d');
+    $hasta = $this->configuracion->horario()->siguienteDiaHabil($hoy) ?? $hoy;
+    $manana = $ahora->modify('+1 day')->format('Y-m-d');
+
+    return $this->procesarLote(
+      $this->turnos->pendientesDeRecordatorio($manana, $hasta),
+      reservar: fn(int $id) => $this->turnos->reservarRecordatorio($id),
+      enviar: fn(int $id) => $this->enviarTurno(self::RECORDATORIO, $id),
+      registrar: fn(int $id, ?string $canal) => $this->turnos->registrarRecordatorio($id, $canal ?? 'sin_contacto'),
+      liberar: fn(int $id) => $this->registro->erroresRecientes($id, self::RECORDATORIO) < self::MAX_ERRORES
+        ? $this->turnos->liberarRecordatorio($id)
+        : $this->turnos->registrarRecordatorio($id, 'error'),
     );
   }
 
-  /** Registra el aviso y devuelve el link de WhatsApp con el mensaje. */
-  public function whatsappTurno(int $turnoId): string
+  /** Link wa.me con el recordatorio armado (botón manual, sin API). Registra el aviso. */
+  public function whatsappManual(int $turnoId): string
   {
     $turno = $this->turno($turnoId);
+    $texto = $this->renderizar($this->plantilla('whatsapp_recordatorio'), $this->variablesTurno($turno));
     $this->turnos->registrarRecordatorio($turnoId, 'whatsapp');
+    $this->registro->registrar($turnoId, self::RECORDATORIO, 'whatsapp_manual', (string) $turno['cliente_telefono'], 'enviado');
 
-    return whatsapp_url((string) $turno['cliente_telefono'], $this->mensajeTurno($turno));
+    return whatsapp_url((string) $turno['cliente_telefono'], $texto, $this->configuracion->seccion('notificaciones')['codigo_pais']);
   }
 
-  public function emailTurno(int $turnoId): void
+  // ---------- Órdenes ----------
+
+  /**
+   * Envía el presupuesto con el PDF adjunto y el link para aceptarlo o rechazarlo.
+   *
+   * @return string|null canal usado, o null si el cliente no tiene contacto
+   */
+  public function enviarPresupuesto(int $ordenId): ?string
+  {
+    $orden = $this->orden($ordenId);
+    $pdf = $this->documentos->pdf($ordenId);
+
+    $canal = $this->enviarMensaje(
+      self::PRESUPUESTO,
+      $this->destinatario($orden),
+      $this->variablesOrden($orden),
+      ordenId: $ordenId,
+      adjuntos: [['nombre' => $pdf['nombre'], 'contenido' => $pdf['contenido'], 'tipo' => 'application/pdf']],
+    );
+
+    if ($canal !== null) {
+      $this->ordenes->registrarPresupuestoEnviado($ordenId);
+    }
+
+    return $canal;
+  }
+
+  /**
+   * Avisos automáticos de próximo service: mismas condiciones de horario que
+   * los recordatorios, para los services que vencen dentro de los días de
+   * anticipación configurados.
+   *
+   * @return array{enviados: int, sin_contacto: int, errores: int, omitido: ?string}
+   */
+  public function enviarAvisosService(DateTimeImmutable $ahora): array
+  {
+    $config = $this->configuracion->seccion('service');
+    $omitido = $this->motivoParaNoEnviar($ahora, (bool) $config['aviso_automatico'], 'Aviso de service desactivado.');
+    if ($omitido !== null) {
+      return ['enviados' => 0, 'sin_contacto' => 0, 'errores' => 0, 'omitido' => $omitido];
+    }
+
+    $desde = $ahora->format('Y-m-d');
+    $hasta = $ahora->modify("+{$config['aviso_dias_antes']} days")->format('Y-m-d');
+
+    return $this->procesarLote(
+      $this->ordenes->servicesParaAvisar($desde, $hasta),
+      reservar: fn(int $id) => $this->ordenes->reservarAvisoService($id),
+      enviar: function (int $id) {
+        $orden = $this->orden($id);
+
+        return $this->enviarMensaje(self::SERVICE, $this->destinatario($orden), $this->variablesOrden($orden), ordenId: $id);
+      },
+      registrar: fn() => null,
+      liberar: fn(int $id) => $this->registro->erroresRecientesDeOrden($id, self::SERVICE) < self::MAX_ERRORES
+        ? $this->ordenes->liberarAvisoService($id)
+        : null,
+    );
+  }
+
+  /** Aviso interno al email del taller (p. ej. respuesta de un presupuesto). No interrumpe si falla. */
+  public function avisarTaller(string $asunto, string $texto): void
+  {
+    $taller = $this->configuracion->seccion('taller');
+    if (!$this->configuracion->seccion('notificaciones')['avisar_taller']) {
+      return;
+    }
+
+    $email = $this->canal('email');
+    $destinatario = new Destinatario($taller['nombre'], $taller['email']);
+    if (!$email->disponible() || !$email->puedeEnviarA($destinatario)) {
+      return;
+    }
+
+    try {
+      $email->enviar($destinatario, new Mensaje($asunto, $texto));
+    } catch (Throwable $e) {
+      $this->logger->warning('No se pudo avisar al taller por email', ['exception' => $e]);
+    }
+  }
+
+  // ---------- Plantillas ----------
+
+  /** Reemplaza {variable} por su valor; las desconocidas quedan como están. */
+  public function renderizar(string $plantilla, array $variables): string
+  {
+    $reemplazos = [];
+    foreach ($variables as $clave => $valor) {
+      $reemplazos['{' . $clave . '}'] = (string) $valor;
+    }
+
+    return strtr($plantilla, $reemplazos);
+  }
+
+  /** @return array<string, string> */
+  public function variablesTurno(array $turno): array
+  {
+    return [
+      ...$this->variablesGenerales($turno),
+      'fecha' => format_date($turno['fecha']),
+      'hora' => substr((string) $turno['hora'], 0, 5),
+      'link_turno' => absolute_url('turno/' . $this->turnos->token((int) $turno['id'])),
+    ];
+  }
+
+  /** @return array<string, string> */
+  public function variablesOrden(array $orden): array
+  {
+    return [
+      ...$this->variablesGenerales($orden),
+      'numero' => str_pad((string) $orden['id'], 4, '0', STR_PAD_LEFT),
+      'total' => money($orden['total']),
+      'link_presupuesto' => absolute_url('presupuesto/' . $this->ordenes->token((int) $orden['id'])),
+      'km_proximo' => $orden['proximo_service_km'] ? number_format((float) $orden['proximo_service_km'], 0, ',', '.') : '—',
+      'fecha_proximo' => $orden['proximo_service_fecha'] ? format_date($orden['proximo_service_fecha']) : '—',
+    ];
+  }
+
+  // ---------- Internos ----------
+
+  /** @return array<string, string> variables comunes a todos los avisos */
+  private function variablesGenerales(array $fila): array
+  {
+    $taller = $this->configuracion->seccion('taller');
+
+    return [
+      'cliente' => mb_convert_case(mb_strtolower((string) $fila['cliente_nombre']), MB_CASE_TITLE),
+      'vehiculo' => (string) $fila['vehiculo'],
+      'patente' => (string) $fila['patente'],
+      'taller' => $taller['nombre'],
+      'direccion' => $taller['direccion'],
+      'telefono' => $taller['telefono'],
+      'link_seguimiento' => absolute_url('seguimiento'),
+    ];
+  }
+
+  private function enviarTurno(string $tipo, int $turnoId): ?string
   {
     $turno = $this->turno($turnoId);
 
-    (new Validator())
-      ->check($this->emailHabilitado(), 'El envío de emails no está configurado (falta MAIL_DSN).')
-      ->check(!empty($turno['cliente_email']), 'El cliente no tiene email cargado.')
-      ->validate();
+    return $this->enviarMensaje($tipo, $this->destinatario($turno), $this->variablesTurno($turno), turnoId: $turnoId);
+  }
 
-    $taller = $this->configuracion->obtener()['taller'];
-    $email = (new Email())
-      ->from(new Address(Env::get('MAIL_FROM', $taller['email']), $taller['nombre']))
-      ->replyTo($taller['email'])
-      ->to((string) $turno['cliente_email'])
-      ->subject("Recordatorio de turno - {$taller['nombre']}")
-      ->text($this->mensajeTurno($turno));
+  /**
+   * Envía por el primer canal disponible para el destinatario y registra el resultado.
+   *
+   * @param list<array{nombre: string, contenido: string, tipo: string}> $adjuntos
+   * @return string|null canal usado o null si no hay canal posible para el destinatario
+   * @throws RuntimeException si el envío falla (queda registrado)
+   */
+  private function enviarMensaje(string $tipo, Destinatario $destinatario, array $variables, ?int $turnoId = null, ?int $ordenId = null, array $adjuntos = []): ?string
+  {
+    foreach ($this->canalesDisponibles() as $canal) {
+      if (!$canal->puedeEnviarA($destinatario)) {
+        continue;
+      }
 
-    try {
-      (new Mailer(Transport::fromDsn((string) Env::get('MAIL_DSN'))))->send($email);
-    } catch (TransportExceptionInterface $e) {
-      error_log('Error enviando email: ' . $e->getMessage());
-      (new Validator())->check(false, 'No se pudo enviar el email. Revisá la configuración del servidor de correo.')->validate();
+      $mensaje = new Mensaje(
+        $this->renderizar($this->plantilla("{$canal->nombre()}_{$tipo}_asunto", ''), $variables),
+        $this->renderizar($this->plantilla("{$canal->nombre()}_{$tipo}"), $variables),
+        $adjuntos,
+      );
+
+      try {
+        $canal->enviar($destinatario, $mensaje);
+      } catch (Throwable $e) {
+        $this->logger->error('Falló el envío de {tipo} por {canal}', [
+          'tipo' => $tipo, 'canal' => $canal->nombre(), 'turno' => $turnoId, 'orden' => $ordenId, 'exception' => $e,
+        ]);
+        $this->registro->registrar($turnoId, $tipo, $canal->nombre(), $canal->destino($destinatario), 'error', $e->getMessage(), $ordenId);
+        throw new RuntimeException("No se pudo enviar el aviso por {$canal->nombre()}. Revisá la configuración del servidor de correo.", 0, $e);
+      }
+
+      $this->registro->registrar($turnoId, $tipo, $canal->nombre(), $canal->destino($destinatario), 'enviado', null, $ordenId);
+      $this->logger->info('Aviso de {tipo} enviado por {canal}', ['tipo' => $tipo, 'canal' => $canal->nombre(), 'turno' => $turnoId, 'orden' => $ordenId]);
+
+      return $canal->nombre();
     }
 
-    $this->turnos->registrarRecordatorio($turnoId, 'email');
+    $this->registro->registrar($turnoId, $tipo, '-', '-', 'error', 'El cliente no tiene datos de contacto para los canales activos.', $ordenId);
+
+    return null;
+  }
+
+  /**
+   * Procesa avisos automáticos de a uno, reservando cada uno antes de enviarlo
+   * para no duplicar si dos ejecuciones se superponen.
+   *
+   * @param list<int> $ids
+   * @return array{enviados: int, sin_contacto: int, errores: int, omitido: null}
+   */
+  private function procesarLote(array $ids, callable $reservar, callable $enviar, callable $registrar, callable $liberar): array
+  {
+    $resultado = ['enviados' => 0, 'sin_contacto' => 0, 'errores' => 0, 'omitido' => null];
+
+    foreach ($ids as $id) {
+      if (!$reservar($id)) {
+        continue;
+      }
+
+      try {
+        $canal = $enviar($id);
+        $registrar($id, $canal);
+        $canal !== null ? $resultado['enviados']++ : $resultado['sin_contacto']++;
+      } catch (Throwable) {
+        $resultado['errores']++;
+        $liberar($id);
+      }
+    }
+
+    return $resultado;
+  }
+
+  /** null si se puede enviar ahora; si no, el motivo. */
+  private function motivoParaNoEnviar(DateTimeImmutable $ahora, bool $activado, string $desactivado): ?string
+  {
+    return match (true) {
+      !$activado => $desactivado,
+      !$this->hayCanalDisponible() => 'No hay canales de notificación disponibles.',
+      !$this->configuracion->horario()->abiertoAhora($ahora) => 'Fuera del horario de atención.',
+      $ahora->format('H:i') < $this->configuracion->seccion('turnos')['recordatorio_hora'] => 'Todavía no es la hora de envío.',
+      default => null,
+    };
+  }
+
+  private function destinatario(array $fila): Destinatario
+  {
+    return new Destinatario(
+      (string) $fila['cliente_nombre'],
+      $fila['cliente_email'] ?: null,
+      $fila['cliente_telefono'] ?: null,
+    );
+  }
+
+  private function plantilla(string $clave, ?string $porDefecto = null): string
+  {
+    return $this->configuracion->seccion('mensajes')[$clave]
+      ?? $porDefecto
+      ?? throw new RuntimeException("Falta la plantilla de mensaje '{$clave}'.");
   }
 
   /** @return array<string, mixed> */
   private function turno(int $id): array
   {
     return $this->turnos->detalle($id) ?? throw new NotFoundException('Turno no encontrado.');
+  }
+
+  /** @return array<string, mixed> */
+  private function orden(int $id): array
+  {
+    return $this->ordenes->contacto($id) ?? throw new NotFoundException('Orden no encontrada.');
   }
 }

@@ -25,20 +25,53 @@ final class StockService
     private readonly RepuestoRepository $repuestos,
     private readonly ProveedorRepository $proveedores,
     private readonly OrdenRepository $ordenes,
+    private readonly ConfiguracionService $configuracion,
+    private readonly Auditor $auditor,
   ) {
   }
 
-  public function ingresar(int $repuestoId, string $cantidad, ?int $proveedorId, ?string $motivo, ?int $usuarioId): float
-  {
-    $this->repuesto($repuestoId);
+  /**
+   * Registra una compra/ingreso. Si se indica el costo unitario, queda como
+   * último costo del repuesto y, opcionalmente, se recalcula el precio de
+   * venta con el margen sugerido.
+   */
+  public function ingresar(
+    int $repuestoId,
+    string $cantidad,
+    ?int $proveedorId,
+    ?string $motivo,
+    ?int $usuarioId,
+    string $costoUnitario = '',
+    bool $actualizarPrecio = false,
+  ): float {
+    $repuesto = $this->repuesto($repuestoId);
     $valor = Validator::importe($cantidad);
+    $costo = trim($costoUnitario) === '' ? null : Validator::importe($costoUnitario);
 
     (new Validator())
       ->check($valor !== null && $valor > 0, 'La cantidad a ingresar debe ser mayor a 0.')
+      ->check(trim($costoUnitario) === '' || $costo !== null, 'El costo unitario no es válido.')
+      ->check(!$actualizarPrecio || $costo !== null, 'Para actualizar el precio de venta hay que indicar el costo.')
       ->check($proveedorId === null || $this->proveedores->find($proveedorId) !== null, 'El proveedor seleccionado no existe.')
       ->validate();
 
-    return $this->stock->registrar($repuestoId, 'ingreso', $valor, null, $proveedorId, $usuarioId, Validator::nullable((string) $motivo));
+    $resultante = $this->repuestos->transaction(function () use ($repuestoId, $valor, $proveedorId, $usuarioId, $motivo, $costo, $actualizarPrecio, $repuesto) {
+      $resultante = $this->stock->registrar($repuestoId, 'ingreso', $valor, null, $proveedorId, $usuarioId, Validator::nullable((string) $motivo), $costo);
+
+      if ($costo !== null) {
+        $this->repuestos->setCosto($repuestoId, $costo);
+      }
+      if ($actualizarPrecio) {
+        $nuevo = PrecioService::conMargen($costo, (float) $this->configuracion->seccion('stock')['margen_sugerido']);
+        $this->repuestos->setPrecio($repuestoId, $nuevo);
+        $this->auditor->registrar('cambiar_precio', 'repuesto', $repuestoId, "Precio de \"{$repuesto['nombre']}\" actualizado por costo: $ " . money($repuesto['precio']) . ' → $ ' . money($nuevo), ['antes' => (float) $repuesto['precio'], 'despues' => $nuevo, 'costo' => $costo]);
+      }
+
+      return $resultante;
+    });
+    $this->auditor->registrar('ingreso_stock', 'repuesto', $repuestoId, "Ingreso de stock: +" . qty($valor) . ' (queda ' . qty($resultante) . ')', ['cantidad' => $valor, 'proveedor_id' => $proveedorId, 'costo_unitario' => $costo]);
+
+    return $resultante;
   }
 
   /** Corrige el stock al valor contado físicamente; registra la diferencia. */
@@ -58,11 +91,28 @@ final class StockService
       return $valor;
     }
 
-    return $this->stock->registrar($repuestoId, 'ajuste', $diferencia, null, null, $usuarioId, $motivo);
+    $resultante = $this->stock->registrar($repuestoId, 'ajuste', $diferencia, null, null, $usuarioId, $motivo);
+    $this->auditor->registrar('ajuste_stock', 'repuesto', $repuestoId, "Ajuste de stock de \"{$repuesto['nombre']}\": " . qty($repuesto['stock_actual']) . ' → ' . qty($resultante) . " ({$motivo})", ['antes' => (float) $repuesto['stock_actual'], 'despues' => $resultante]);
+
+    return $resultante;
   }
 
   public function descontarOrden(int $ordenId, ?int $usuarioId): void
   {
+    if (!$this->configuracion->seccion('stock')['permitir_negativo']) {
+      $faltantes = [];
+      foreach ($this->ordenes->items($ordenId) as $item) {
+        if ($item['repuesto_id'] === null) {
+          continue;
+        }
+        $repuesto = $this->repuesto((int) $item['repuesto_id']);
+        if ((float) $repuesto['stock_actual'] < (float) $item['cantidad']) {
+          $faltantes[] = sprintf('%s (hay %s, se necesitan %s)', $repuesto['nombre'], qty($repuesto['stock_actual']), qty($item['cantidad']));
+        }
+      }
+      (new Validator())->check($faltantes === [], 'No hay stock suficiente para finalizar la orden: ' . implode('; ', $faltantes) . '.')->validate();
+    }
+
     $this->moverOrden($ordenId, -1, $usuarioId, "Orden #{$ordenId} finalizada");
   }
 

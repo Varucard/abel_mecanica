@@ -48,6 +48,11 @@ final class ServicioRepository extends Repository
     return $servicio->id;
   }
 
+  public function setPrecio(int $id, float $precio): void
+  {
+    $this->execute('UPDATE servicios SET precio_base = ? WHERE id = ?', [$precio, $id]);
+  }
+
   public function delete(int $id): void
   {
     $this->execute('DELETE FROM servicios WHERE id = ?', [$id]);

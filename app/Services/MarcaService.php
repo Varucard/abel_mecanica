@@ -14,8 +14,10 @@ use PDOException;
 
 final class MarcaService
 {
-  public function __construct(private readonly MarcaRepository $marcas)
-  {
+  public function __construct(
+    private readonly MarcaRepository $marcas,
+    private readonly Auditor $auditor,
+  ) {
   }
 
   /** @return array<string, mixed> */
@@ -47,7 +49,9 @@ final class MarcaService
     $this->obtener($id);
 
     try {
+      $marca = $this->obtener($id);
       $this->marcas->delete($id);
+      $this->auditor->registrar('eliminar', 'marca', $id, "Marca eliminada: {$marca['nombre']}");
     } catch (PDOException $e) {
       throw Repository::isReferenced($e)
         ? new ValidationException(['La marca tiene modelos o vehículos asociados y no se puede eliminar.'])

@@ -18,6 +18,7 @@ final class ModeloService
   public function __construct(
     private readonly ModeloRepository $modelos,
     private readonly MarcaRepository $marcas,
+    private readonly Auditor $auditor,
   ) {
   }
 
@@ -51,7 +52,9 @@ final class ModeloService
     $this->obtener($id);
 
     try {
+      $modelo = $this->obtener($id);
       $this->modelos->delete($id);
+      $this->auditor->registrar('eliminar', 'modelo', $id, "Modelo eliminado: {$modelo['nombre']}");
     } catch (PDOException $e) {
       throw Repository::isReferenced($e)
         ? new ValidationException(['El modelo tiene vehículos asociados y no se puede eliminar.'])

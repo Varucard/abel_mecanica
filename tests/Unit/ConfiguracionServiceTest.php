@@ -33,6 +33,12 @@ final class ConfiguracionServiceTest extends TestCase
     return [
       'nombre' => 'Taller <Prueba>', 'cuit' => '20-12345678-9', 'direccion' => 'Calle 1',
       'telefono' => '1234', 'whatsapp' => '+5491112345678', 'email' => 'a@b.com',
+    ];
+  }
+
+  private function trabajoValido(): array
+  {
+    return [
       'validez' => '15', 'garantia' => '30', 'tiempo_estimado' => '2',
       'forma_pago' => "Contado\r\n\r\n Transferencia ", 'observaciones' => '', 'mensaje_legal' => "'; system('id'); //",
     ];
@@ -48,7 +54,8 @@ final class ConfiguracionServiceTest extends TestCase
 
   public function testGuardaComoJsonYLoRelee(): void
   {
-    (new ConfiguracionService($this->root))->guardar($this->datosValidos());
+    (new ConfiguracionService($this->root))->guardar('taller', $this->datosValidos());
+    (new ConfiguracionService($this->root))->guardar('trabajo', $this->trabajoValido());
 
     $this->assertFileExists($this->root . '/storage/config/taller.json');
     $config = (new ConfiguracionService($this->root))->obtener();
@@ -65,6 +72,53 @@ final class ConfiguracionServiceTest extends TestCase
   {
     $this->expectException(ValidationException::class);
 
-    (new ConfiguracionService($this->root))->guardar(['cuit' => '123', 'validez' => 0] + $this->datosValidos());
+    (new ConfiguracionService($this->root))->guardar('taller', ['cuit' => '123'] + $this->datosValidos());
+  }
+
+  public function testGuardarUnaSeccionNoPisaLasDemas(): void
+  {
+    $service = new ConfiguracionService($this->root);
+    $service->guardar('taller', $this->datosValidos());
+    $service->guardar('stock', ['margen_sugerido' => '40']);
+
+    $config = (new ConfiguracionService($this->root))->obtener();
+    $this->assertSame('Taller <Prueba>', $config['taller']['nombre']);
+    $this->assertFalse($config['stock']['permitir_negativo']);
+    $this->assertTrue($config['portal']['habilitado'], 'Las secciones no guardadas mantienen sus valores por defecto');
+  }
+
+  public function testHorarioYFeriados(): void
+  {
+    $service = new ConfiguracionService($this->root);
+    $service->guardar('turnos', [
+      'horario' => [1 => ['abierto' => '1', 'desde' => '09:00', 'hasta' => '17:00']],
+      'cupos_por_horario' => '2', 'recordatorio_hora' => '11:00', 'feriados' => "2026-12-25\n2026-01-01\n2026-12-25",
+      'validar_horario' => '1',
+    ]);
+
+    $turnos = (new ConfiguracionService($this->root))->seccion('turnos');
+    $this->assertSame(['desde' => '09:00', 'hasta' => '17:00'], $turnos['horario'][1]);
+    $this->assertNull($turnos['horario'][2]);
+    $this->assertSame(['2026-01-01', '2026-12-25'], $turnos['feriados']);
+    $this->assertFalse($turnos['enviar_confirmacion']);
+
+    $this->expectExceptionMessage('la apertura debe ser anterior al cierre');
+    $service->guardar('turnos', ['horario' => [1 => ['abierto' => '1', 'desde' => '18:00', 'hasta' => '09:00']], 'cupos_por_horario' => '1', 'recordatorio_hora' => '10:00']);
+  }
+
+  public function testLosMensajesSoloAceptanVariablesConocidas(): void
+  {
+    $mensajes = (require $this->root . '/config/taller.php')['mensajes'];
+    $service = new ConfiguracionService($this->root);
+
+    try {
+      $service->guardar('mensajes', ['email_recordatorio' => 'Hola {nombre_cliente}'] + $mensajes);
+      $this->fail('Debía rechazar la variable desconocida');
+    } catch (ValidationException $e) {
+      $this->assertStringContainsString('{nombre_cliente}', $e->getMessage());
+    }
+
+    $this->expectExceptionMessage('debe incluir {link_turno}');
+    $service->guardar('mensajes', ['email_confirmacion' => 'Hola {cliente}'] + $mensajes);
   }
 }

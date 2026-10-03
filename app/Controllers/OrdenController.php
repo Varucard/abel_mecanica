@@ -38,22 +38,31 @@ final class OrdenController extends Controller
     private readonly ClienteRepository $clientes,
     private readonly ConfiguracionService $configuracion,
     private readonly EmpleadoRepository $empleados,
+    private readonly \App\Repositories\AuditoriaRepository $auditoria,
+    private readonly \App\Repositories\TurnoRepository $turnos,
+    private readonly \App\Services\NotificacionService $notificaciones,
+    private readonly \App\Repositories\ComboRepository $combos,
   ) {
     parent::__construct($view, $session);
   }
 
   public function index(Request $request): void
   {
-    $this->render('ordenes/index', [
-      'title' => 'Órdenes de servicio',
-      'ordenes' => $this->ordenes->all(),
-      'estados' => EstadoOrden::cases(),
-    ]);
+    $this->render('ordenes/index', ['title' => 'Órdenes de servicio', 'estados' => EstadoOrden::cases()]);
+  }
+
+  public function datos(Request $request): void
+  {
+    $this->tabla($this->ordenes->paginar($request->queryAll()), 'ordenes/_fila', 'o', ['estados' => EstadoOrden::cases()]);
   }
 
   public function create(Request $request): void
   {
-    $this->form('Nueva orden de servicio', null, ['servicio' => [], 'repuesto' => []], (int) $request->int('vehiculo_id'));
+    // Desde un turno: vehículo y motivo precargados.
+    $turno = ($turnoId = $request->int('turno_id')) ? $this->turnos->find($turnoId) : null;
+    $orden = $turno ? ['turno_id' => (int) $turno['id'], 'diagnostico' => $turno['descripcion']] : null;
+
+    $this->form('Nueva orden de servicio', $orden, ['servicio' => [], 'repuesto' => []], $turno ? (int) $turno['vehiculo_id'] : (int) $request->int('vehiculo_id'), true);
   }
 
   public function store(Request $request): void
@@ -102,7 +111,25 @@ final class OrdenController extends Controller
       'saldo' => round((float) $orden['total'] - array_sum(array_column($pagos, 'monto')), 2),
       'formasPago' => $this->configuracion->obtener()['trabajo']['forma_pago'],
       'estado' => EstadoOrden::from($orden['estado']),
+      'historial' => $this->auditoria->deEntidad('orden', $id),
+      'puedeEnviar' => $this->notificaciones->hayCanalDisponible(),
     ]);
+  }
+
+  public function enviarPresupuesto(Request $request, int $id): void
+  {
+    $this->verifyCsrf($request);
+
+    try {
+      $canal = $this->notificaciones->enviarPresupuesto($id);
+      $canal !== null
+        ? $this->success("Presupuesto enviado al cliente por {$canal}.")
+        : $this->error('El cliente no tiene email cargado.');
+    } catch (\RuntimeException $e) {
+      $this->error($e->getMessage());
+    }
+
+    $this->redirect("/ordenes/{$id}");
   }
 
   public function cambiarEstado(Request $request, int $id): void
@@ -171,6 +198,7 @@ final class OrdenController extends Controller
         $this->items($request, 'repuesto'),
         $id,
         $request->int('mecanico_id') ?: null,
+        $request->all(),
       );
     } catch (ValidationException $e) {
       $this->backWithErrors($id ? "/ordenes/{$id}/editar" : '/ordenes/crear', $e, $request);
@@ -206,8 +234,11 @@ final class OrdenController extends Controller
    * @param array<string, mixed>|null $orden
    * @param array{servicio: array<int, array<string, mixed>>, repuesto: array<int, array<string, mixed>>} $detalle
    */
-  private function form(string $title, ?array $orden, array $detalle, int $vehiculoSugerido = 0): void
+  private function form(string $title, ?array $orden, array $detalle, int $vehiculoSugerido = 0, bool $nueva = false): void
   {
+    $precarga = $nueva ? ($orden ?? []) : [];
+    $orden = $nueva ? null : $orden;
+
     $vehiculos = $this->vehiculos->activos();
 
     // Al editar, el vehículo de la orden debe figurar aunque hoy esté inactivo.
@@ -236,6 +267,10 @@ final class OrdenController extends Controller
       'detalle' => $detalle,
       'vehiculoSugerido' => $vehiculoSugerido,
       'mecanicos' => $this->empleados->activos(),
+      'precarga' => $precarga,
+      'combos' => $this->combos->all(true),
+      'kmVehiculo' => $vehiculoSugerido ? ($this->vehiculos->find($vehiculoSugerido)['kilometraje'] ?? null) : null,
+      'service' => $this->configuracion->seccion('service'),
     ]);
   }
 }

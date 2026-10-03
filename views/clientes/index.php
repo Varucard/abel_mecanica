@@ -1,17 +1,14 @@
-<?php
-/**
- * @var list<array<string, mixed>> $clientes
- * @var array<int, float> $saldos  deuda por cliente
- */
-?>
 <div class="card mt-3">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+  <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h4 class="mb-0">Clientes registrados</h4>
-    <a href="<?= url('clientes/crear') ?>" class="btn btn-success">+ Nuevo cliente</a>
+    <div class="d-flex gap-2 align-items-center flex-wrap">
+      <?= $view->partial('partials/filtro_estado', ['id' => 'filtro_clientes', 'nombre' => 'estado', 'etiqueta' => 'Mostrar', 'opciones' => ['' => 'Todos', 'activo' => 'Activos', 'inactivo' => 'Inactivos']]) ?>
+      <a href="<?= url('clientes/crear') ?>" class="btn btn-success">+ Nuevo cliente</a>
+    </div>
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-striped table-bordered js-datatable" data-order='[[1, "asc"]]'>
+      <table class="table table-striped table-bordered" data-server="<?= e(url('clientes/datos')) ?>" data-filtros="#filtro_clientes" data-order='[[1, "asc"]]'>
         <thead>
           <tr>
             <th>Nombre</th>
@@ -20,43 +17,12 @@
             <th>Teléfono</th>
             <th>Email</th>
             <th>Dirección</th>
-            <th>Saldo</th>
+            <th data-orderable="false">Saldo</th>
             <th>Estado</th>
             <th data-orderable="false">Acciones</th>
           </tr>
         </thead>
-        <tbody>
-          <?php foreach ($clientes as $c): ?>
-            <?php $activo = $c['estado'] === 'activo'; ?>
-            <tr>
-              <td><?= e($c['nombre']) ?></td>
-              <td><?= e($c['apellido']) ?></td>
-              <td><?= e($c['dni']) ?></td>
-              <td><?= e($c['telefono']) ?></td>
-              <td><?= e($c['email'] ?? '') ?></td>
-              <td><?= e($c['direccion'] ?? '') ?></td>
-              <td data-order="<?= $saldos[$c['id']] ?? 0 ?>">
-                <?= isset($saldos[$c['id']]) ? '<span class="text-danger">$ ' . money($saldos[$c['id']]) . '</span>' : '—' ?>
-              </td>
-              <td><span class="badge bg-<?= $activo ? 'success' : 'secondary' ?>"><?= e($c['estado']) ?></span></td>
-              <td class="col-acciones text-nowrap">
-                <a href="<?= url("clientes/{$c['id']}") ?>" class="btn btn-sm btn-info">Ver</a>
-                <a href="<?= url("clientes/{$c['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
-                <?= $view->partial('partials/delete_button', [
-                  'action' => "clientes/{$c['id']}/estado",
-                  'label' => $activo ? 'Desactivar' : 'Activar',
-                  'class' => $activo ? 'btn-warning' : 'btn-success',
-                  'confirm' => '¿' . ($activo ? 'Desactivar' : 'Activar') . " al cliente {$c['nombre']} {$c['apellido']}?",
-                ]) ?>
-                <?= $view->partial('partials/delete_button', [
-                  'action' => "clientes/{$c['id']}/eliminar",
-                  'label' => 'Eliminar',
-                  'confirm' => "¿Eliminar al cliente {$c['nombre']} {$c['apellido']}? Esta acción no se puede deshacer.",
-                ]) ?>
-              </td>
-            </tr>
-          <?php endforeach; ?>
-        </tbody>
+        <tbody></tbody>
       </table>
     </div>
   </div>
