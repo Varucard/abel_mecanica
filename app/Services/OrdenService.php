@@ -29,6 +29,7 @@ final class OrdenService
     private readonly PagoRepository $pagos,
     private readonly EmpleadoRepository $empleados,
     private readonly TurnoRepository $turnos,
+    private readonly ConfiguracionService $configuracion,
     private readonly Auditor $auditor,
   ) {
   }
@@ -215,6 +216,52 @@ final class OrdenService
     }
 
     return $normalizados;
+  }
+
+  /** ¿El presupuesto sigue vigente? (fecha de la orden + días de validez configurados) */
+  public function presupuestoVigente(array $orden): bool
+  {
+    $validez = (int) $this->configuracion->seccion('trabajo')['validez'];
+
+    return date('Y-m-d', strtotime(substr((string) $orden['created_at'], 0, 10) . " +{$validez} days")) >= date('Y-m-d');
+  }
+
+  /** ¿El cliente puede responder el presupuesto desde el link? */
+  public function admiteRespuestaPresupuesto(array $orden): bool
+  {
+    return $orden['estado'] === EstadoOrden::Pendiente->value
+      && $orden['presupuesto_respuesta'] !== 'aceptado'
+      && $this->presupuestoVigente($orden);
+  }
+
+  /**
+   * Respuesta del cliente desde el link del presupuesto.
+   *
+   * @return array<string, mixed> la orden actualizada
+   */
+  public function responderPresupuesto(string $token, string $accion): array
+  {
+    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido o la orden ya no existe.');
+    $orden = $this->obtener($id);
+
+    (new Validator())
+      ->check(in_array($accion, ['aceptar', 'rechazar'], true), 'Acción inválida.')
+      ->check($this->admiteRespuestaPresupuesto($orden), match (true) {
+        $orden['presupuesto_respuesta'] === 'aceptado' => 'Este presupuesto ya fue aceptado.',
+        $orden['estado'] !== EstadoOrden::Pendiente->value => 'El trabajo ya está en curso o finalizado; comunicate con el taller.',
+        default => 'El presupuesto venció; comunicate con el taller para actualizarlo.',
+      })
+      ->validate();
+
+    $respuesta = $accion === 'aceptar' ? 'aceptado' : 'rechazado';
+    $this->ordenes->registrarRespuestaPresupuesto($id, $respuesta);
+    $this->auditor->registrar("presupuesto_{$respuesta}", 'orden', $id, "El cliente {$respuesta} el presupuesto de la orden #{$id}", actor: 'Cliente (link)');
+
+    if ($respuesta === 'aceptado' && $this->configuracion->seccion('trabajo')['aceptar_inicia_trabajo']) {
+      $this->cambiarEstado($id, EstadoOrden::EnProceso->value);
+    }
+
+    return $this->obtener($id);
   }
 
   /** Cambia el estado y mueve el stock de repuestos al entrar o salir de "finalizado". */

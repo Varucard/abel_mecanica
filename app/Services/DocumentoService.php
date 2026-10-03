@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Core\App;
 use App\Core\View;
 use App\Enums\EstadoOrden;
 use App\Repositories\ClienteRepository;
@@ -92,7 +91,7 @@ final class DocumentoService
   /** Dompdf no carga recursos remotos: el logo se incrusta como data URI. */
   private function logoDataUri(): string
   {
-    $file = App::instance()->rootPath . '/public/assets/img/logo.png';
+    $file = dirname(__DIR__, 2) . '/public/assets/img/logo.png';
 
     return is_file($file) ? 'data:image/png;base64,' . base64_encode((string) file_get_contents($file)) : '';
   }

@@ -40,6 +40,7 @@ final class OrdenController extends Controller
     private readonly EmpleadoRepository $empleados,
     private readonly \App\Repositories\AuditoriaRepository $auditoria,
     private readonly \App\Repositories\TurnoRepository $turnos,
+    private readonly \App\Services\NotificacionService $notificaciones,
   ) {
     parent::__construct($view, $session);
   }
@@ -109,7 +110,24 @@ final class OrdenController extends Controller
       'formasPago' => $this->configuracion->obtener()['trabajo']['forma_pago'],
       'estado' => EstadoOrden::from($orden['estado']),
       'historial' => $this->auditoria->deEntidad('orden', $id),
+      'puedeEnviar' => $this->notificaciones->hayCanalDisponible(),
     ]);
+  }
+
+  public function enviarPresupuesto(Request $request, int $id): void
+  {
+    $this->verifyCsrf($request);
+
+    try {
+      $canal = $this->notificaciones->enviarPresupuesto($id);
+      $canal !== null
+        ? $this->success("Presupuesto enviado al cliente por {$canal}.")
+        : $this->error('El cliente no tiene email cargado.');
+    } catch (\RuntimeException $e) {
+      $this->error($e->getMessage());
+    }
+
+    $this->redirect("/ordenes/{$id}");
   }
 
   public function cambiarEstado(Request $request, int $id): void

@@ -8,6 +8,7 @@
  * @var list<string> $formasPago
  * @var \App\Enums\EstadoOrden $estado
  * @var list<array<string, mixed>> $historial
+ * @var bool $puedeEnviar
  */
 use App\Services\OrdenService;
 
@@ -20,6 +21,13 @@ $pagado = (float) $orden['total'] - $saldo;
   <?php endif; ?>
   <a href="<?= url("ordenes/{$orden['id']}/presupuesto") ?>" class="btn btn-info">Presupuesto</a>
   <a href="<?= url("ordenes/{$orden['id']}/presupuesto/pdf") ?>" class="btn btn-outline-secondary">Presupuesto PDF</a>
+  <?php if ($puedeEnviar && $estado->value !== 'cancelado'): ?>
+    <form action="<?= url("ordenes/{$orden['id']}/enviar-presupuesto") ?>" method="POST" class="d-inline"
+      data-confirm="¿Enviar el presupuesto por email a <?= e($cliente['email'] ?: 'el cliente') ?>?">
+      <?= csrf_field() ?>
+      <button type="submit" class="btn btn-outline-primary" <?= $cliente['email'] ? '' : 'disabled title="El cliente no tiene email"' ?>>✉ Enviar presupuesto</button>
+    </form>
+  <?php endif; ?>
   <?php if ($estado->value === 'finalizado'): ?>
     <a href="<?= url("ordenes/{$orden['id']}/entrega") ?>" class="btn btn-success">Comprobante de entrega</a>
     <a href="<?= url("ordenes/{$orden['id']}/entrega/pdf") ?>" class="btn btn-outline-success">Entrega PDF</a>
@@ -35,6 +43,13 @@ $pagado = (float) $orden['total'] - $saldo;
         <p class="mb-1">Estado: <span class="badge bg-<?= $colores[$estado->value] ?>"><?= e($estado->label()) ?></span></p>
         <p class="mb-1">Fecha: <?= format_date($orden['created_at']) ?></p>
         <p class="mb-1">Mecánico: <?= e($orden['mecanico'] ?? 'sin asignar') ?></p>
+        <?php if ($orden['presupuesto_respuesta'] === 'aceptado'): ?>
+          <p class="mb-1 text-success">✔ Presupuesto aceptado por el cliente (<?= format_date($orden['presupuesto_respuesta_en'], 'd/m H:i') ?>)</p>
+        <?php elseif ($orden['presupuesto_respuesta'] === 'rechazado'): ?>
+          <p class="mb-1 text-danger">✖ Presupuesto rechazado por el cliente (<?= format_date($orden['presupuesto_respuesta_en'], 'd/m H:i') ?>)</p>
+        <?php elseif ($orden['presupuesto_enviado']): ?>
+          <p class="mb-1 text-muted">Presupuesto enviado el <?= format_date($orden['presupuesto_enviado'], 'd/m H:i') ?>, sin respuesta</p>
+        <?php endif; ?>
         <?php if ($orden['km_ingreso'] !== null): ?><p class="mb-1">Km al ingresar: <?= number_format((float) $orden['km_ingreso'], 0, ',', '.') ?></p><?php endif; ?>
         <?php if ($orden['turno_id']): ?><p class="mb-1">Desde el turno <a href="<?= url("turnos/{$orden['turno_id']}/editar") ?>">#<?= (int) $orden['turno_id'] ?></a></p><?php endif; ?>
         <?php if ($orden['fecha_realizado']): ?><p class="mb-1">Finalizada: <?= format_date($orden['fecha_realizado']) ?></p><?php endif; ?>

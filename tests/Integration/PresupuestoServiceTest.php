@@ -1,0 +1,108 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Integration;
+
+use App\Repositories\OrdenRepository;
+use App\Services\NotificacionService;
+use App\Services\OrdenService;
+use DateTimeImmutable;
+use Tests\Support\CanalDePrueba;
+
+final class PresupuestoServiceTest extends IntegrationTestCase
+{
+  private CanalDePrueba $canal;
+  private NotificacionService $notificaciones;
+  private int $vehiculo;
+  private int $servicio;
+
+  protected function setUp(): void
+  {
+    parent::setUp();
+    $this->canal = new CanalDePrueba('email');
+    $this->notificaciones = $this->make(NotificacionService::class);
+    $this->notificaciones->usarCanal($this->canal);
+
+    $cliente = $this->crearCliente();
+    $this->db->prepare('UPDATE personas p JOIN clientes c ON c.persona_id = p.id SET p.email = ? WHERE c.id = ?')->execute(['juan@mail.com', $cliente]);
+    $this->vehiculo = $this->crearVehiculo($cliente);
+    $this->servicio = $this->crearServicio('Frenos', 15000);
+  }
+
+  private function orden(array $detalle = []): int
+  {
+    return $this->make(OrdenService::class)->guardar($this->vehiculo, [$this->servicio], [], null, null, $detalle);
+  }
+
+  public function testEnviaElPresupuestoConPdfYLink(): void
+  {
+    $id = $this->orden();
+
+    $this->assertSame('email', $this->notificaciones->enviarPresupuesto($id));
+
+    $mensaje = $this->canal->enviados[0]['mensaje'];
+    $token = $this->make(OrdenRepository::class)->token($id);
+    $this->assertStringContainsString('Presupuesto N° ' . str_pad((string) $id, 4, '0', STR_PAD_LEFT), $mensaje->asunto);
+    $this->assertStringContainsString('$ 15.000,00', $mensaje->texto);
+    $this->assertStringContainsString("/presupuesto/{$token}", $mensaje->texto);
+    $this->assertSame('application/pdf', $mensaje->adjuntos[0]['tipo']);
+    $this->assertStringStartsWith('%PDF', $mensaje->adjuntos[0]['contenido']);
+    $this->assertNotNull($this->make(OrdenRepository::class)->find($id)['presupuesto_enviado']);
+  }
+
+  public function testElClienteAceptaYLaOrdenPasaAEnProceso(): void
+  {
+    $id = $this->orden();
+    $token = $this->make(OrdenRepository::class)->token($id);
+    $ordenes = $this->make(OrdenService::class);
+
+    $ordenes->responderPresupuesto($token, 'rechazar');
+    $this->assertSame('rechazado', $this->make(OrdenRepository::class)->find($id)['presupuesto_respuesta']);
+
+    // Puede cambiar de opinión mientras siga pendiente y vigente.
+    $orden = $ordenes->responderPresupuesto($token, 'aceptar');
+    $this->assertSame('aceptado', $orden['presupuesto_respuesta']);
+    $this->assertSame('en_proceso', $orden['estado']);
+
+    $this->expectExceptionMessage('Este presupuesto ya fue aceptado.');
+    $ordenes->responderPresupuesto($token, 'rechazar');
+  }
+
+  public function testNoSeAceptaUnPresupuestoVencido(): void
+  {
+    $this->configurar('trabajo', ['validez' => 10]);
+    $id = $this->orden();
+    $this->db->exec("UPDATE ordenes SET created_at = NOW() - INTERVAL 11 DAY WHERE id = {$id}");
+
+    $this->expectExceptionMessage('El presupuesto venció');
+    $this->make(OrdenService::class)->responderPresupuesto($this->make(OrdenRepository::class)->token($id), 'aceptar');
+  }
+
+  public function testAvisoDeProximoServiceSoloParaLaUltimaOrdenFinalizada(): void
+  {
+    $semana = ['desde' => '08:00', 'hasta' => '18:00'];
+    $this->configurar('turnos', ['horario' => array_fill_keys(['1', '2', '3', '4', '5', '6', '7'], $semana), 'feriados' => [], 'recordatorio_hora' => '08:00']);
+    $this->configurar('service', ['aviso_dias_antes' => 7]);
+    $ahora = new DateTimeImmutable('today 10:00');
+    $ordenes = $this->make(OrdenService::class);
+
+    $vieja = $this->orden(['proximo_service_fecha' => $ahora->modify('+3 days')->format('Y-m-d'), 'proximo_service_km' => '130000']);
+    $ordenes->cambiarEstado($vieja, 'finalizado');
+
+    $resultado = $this->notificaciones->enviarAvisosService($ahora);
+    $this->assertSame(1, $resultado['enviados']);
+    $this->assertStringContainsString('130.000 km', $this->canal->enviados[0]['mensaje']->texto);
+
+    // No se repite.
+    $this->assertSame(0, $this->notificaciones->enviarAvisosService($ahora)['enviados']);
+
+    // Si el auto vuelve al taller (orden más nueva), la anterior ya no se avisa.
+    $otra = $this->orden(['proximo_service_fecha' => $ahora->modify('+5 days')->format('Y-m-d')]);
+    $ordenes->cambiarEstado($otra, 'finalizado');
+    $this->db->exec("UPDATE ordenes SET proximo_service_avisado = NULL WHERE id = {$vieja}");
+    $this->notificaciones->enviarAvisosService($ahora);
+    $this->assertNull($this->make(OrdenRepository::class)->find($vieja)['proximo_service_avisado']);
+    $this->assertNotNull($this->make(OrdenRepository::class)->find($otra)['proximo_service_avisado']);
+  }
+}

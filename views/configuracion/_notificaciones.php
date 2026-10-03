@@ -27,6 +27,12 @@ $etiquetas = ['email' => 'Email', 'whatsapp' => 'WhatsApp Business (API)'];
   </div>
 <?php endforeach; ?>
 
+<div class="form-check form-switch mt-3">
+  <input class="form-check-input" type="checkbox" role="switch" id="avisar_taller" name="avisar_taller" value="1"
+    <?= ($conOld ? old('avisar_taller') : $valores['avisar_taller']) ? 'checked' : '' ?>>
+  <label class="form-check-label" for="avisar_taller">Avisarle al taller por email cuando un cliente acepta o rechaza un presupuesto</label>
+</div>
+
 <h5 class="mt-4">WhatsApp manual</h5>
 <div class="form-check form-switch mb-2">
   <input class="form-check-input" type="checkbox" role="switch" id="boton_whatsapp_manual" name="boton_whatsapp_manual" value="1"

@@ -15,6 +15,11 @@
   <label for="observaciones" class="form-label">Observaciones del presupuesto (una por línea)</label>
   <textarea class="form-control" id="observaciones" name="observaciones" rows="4"><?= e(old('observaciones', implode("\n", $valores['observaciones']))) ?></textarea>
 </div>
+<div class="form-check form-switch mb-3">
+  <input class="form-check-input" type="checkbox" role="switch" id="aceptar_inicia_trabajo" name="aceptar_inicia_trabajo" value="1"
+    <?= (session()->hasOldInput() ? old('aceptar_inicia_trabajo') : $valores['aceptar_inicia_trabajo']) ? 'checked' : '' ?>>
+  <label class="form-check-label" for="aceptar_inicia_trabajo">Cuando el cliente acepta el presupuesto desde el link, pasar la orden a <em>En proceso</em></label>
+</div>
 <div class="mb-3">
   <label for="mensaje_legal" class="form-label">Mensaje legal</label>
   <textarea class="form-control" id="mensaje_legal" name="mensaje_legal" rows="2"><?= e(old('mensaje_legal', $valores['mensaje_legal'])) ?></textarea>

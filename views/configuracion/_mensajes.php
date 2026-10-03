@@ -11,9 +11,19 @@ $campos = [
     'email_recordatorio_asunto' => ['Asunto', 1],
     'email_recordatorio' => ['Texto', 8],
   ],
+  'Email del presupuesto (con el PDF adjunto)' => [
+    'email_presupuesto_asunto' => ['Asunto', 1],
+    'email_presupuesto' => ['Texto', 7],
+  ],
+  'Email de aviso de próximo service' => [
+    'email_service_asunto' => ['Asunto', 1],
+    'email_service' => ['Texto', 7],
+  ],
   'WhatsApp' => [
     'whatsapp_recordatorio' => ['Recordatorio (botón manual)', 3],
     'whatsapp_confirmacion' => ['Confirmación (para cuando se active WhatsApp Business)', 3],
+    'whatsapp_presupuesto' => ['Presupuesto (para cuando se active WhatsApp Business)', 3],
+    'whatsapp_service' => ['Próximo service (para cuando se active WhatsApp Business)', 3],
   ],
 ];
 ?>

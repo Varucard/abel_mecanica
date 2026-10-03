@@ -23,6 +23,7 @@ final class ConfiguracionService
   /** Variables que se pueden usar en las plantillas de mensajes. */
   public const VARIABLES_MENSAJES = [
     'cliente', 'fecha', 'hora', 'vehiculo', 'patente', 'taller', 'direccion', 'telefono', 'link_turno', 'link_seguimiento',
+    'numero', 'total', 'link_presupuesto', 'km_proximo', 'fecha_proximo',
   ];
 
   private const FERIADOS_API = 'https://api.argentinadatos.com/v1/feriados/%d';
@@ -154,6 +155,7 @@ final class ConfiguracionService
       'forma_pago' => self::lineas($input['forma_pago'] ?? ''),
       'observaciones' => self::lineas($input['observaciones'] ?? ''),
       'mensaje_legal' => trim((string) ($input['mensaje_legal'] ?? '')),
+      'aceptar_inicia_trabajo' => !empty($input['aceptar_inicia_trabajo']),
     ];
 
     (new Validator())
@@ -239,6 +241,7 @@ final class ConfiguracionService
       'canales' => $canales,
       'boton_whatsapp_manual' => !empty($input['boton_whatsapp_manual']),
       'codigo_pais' => $codigo,
+      'avisar_taller' => !empty($input['avisar_taller']),
     ];
   }
 

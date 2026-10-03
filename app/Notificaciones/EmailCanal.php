@@ -49,6 +49,10 @@ final class EmailCanal implements CanalNotificacion
       ->subject($mensaje->asunto)
       ->text($mensaje->texto);
 
+    foreach ($mensaje->adjuntos as $adjunto) {
+      $email->attach($adjunto['contenido'], $adjunto['nombre'], $adjunto['tipo']);
+    }
+
     try {
       (new Mailer(Transport::fromDsn((string) Env::get('MAIL_DSN'))))->send($email);
     } catch (TransportExceptionInterface $e) {

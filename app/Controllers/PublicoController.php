@@ -28,6 +28,10 @@ final class PublicoController extends Controller
     private readonly TurnoService $turnoService,
     private readonly PortalService $portal,
     private readonly ConfiguracionService $configuracion,
+    private readonly \App\Repositories\OrdenRepository $ordenes,
+    private readonly \App\Services\OrdenService $ordenService,
+    private readonly \App\Services\DocumentoService $documentos,
+    private readonly \App\Services\NotificacionService $notificaciones,
   ) {
     parent::__construct($view, $session);
   }
@@ -53,6 +57,57 @@ final class PublicoController extends Controller
   public function cancelarTurno(Request $request, string $token): void
   {
     $this->responder($request, $token, 'cancelar', 'Tu turno fue cancelado. Si querés reprogramarlo, comunicate con el taller.');
+  }
+
+  /** Presupuesto enviado por email: el cliente lo ve y lo acepta o rechaza. */
+  public function presupuesto(Request $request, string $token): void
+  {
+    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido o la orden ya no existe.');
+    $datos = $this->documentos->datos($id);
+
+    $this->publico('publico/presupuesto', [
+      ...$datos,
+      'title' => "Presupuesto N° {$datos['numero']}",
+      'token' => $token,
+      'admiteRespuesta' => $this->ordenService->admiteRespuestaPresupuesto($datos['orden']),
+      'vigente' => $this->ordenService->presupuestoVigente($datos['orden']),
+    ]);
+  }
+
+  public function presupuestoPdf(Request $request, string $token): void
+  {
+    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido o la orden ya no existe.');
+    $pdf = $this->documentos->pdf($id);
+
+    header('Content-Type: application/pdf');
+    header('Content-Disposition: inline; filename="' . $pdf['nombre'] . '"');
+    echo $pdf['contenido'];
+  }
+
+  public function responderPresupuesto(Request $request, string $token): void
+  {
+    $this->verifyCsrf($request);
+    $accion = $request->string('accion');
+
+    try {
+      $orden = $this->ordenService->responderPresupuesto($token, $accion);
+      $this->success($accion === 'aceptar'
+        ? '¡Gracias! Aceptaste el presupuesto. Te avisamos cuando el vehículo esté listo.'
+        : 'Registramos que no aceptás el presupuesto. Si querés revisarlo, comunicate con el taller.');
+
+      $numero = str_pad((string) $orden['id'], 4, '0', STR_PAD_LEFT);
+      $this->notificaciones->avisarTaller(
+        "Presupuesto N° {$numero} " . ($accion === 'aceptar' ? 'ACEPTADO' : 'rechazado') . " por el cliente",
+        "El cliente " . ($accion === 'aceptar' ? 'aceptó' : 'rechazó') . " el presupuesto N° {$numero} ({$orden['marca']} {$orden['modelo']}, {$orden['patente']}).
+
+"
+          . 'Ver la orden: ' . absolute_url("ordenes/{$orden['id']}"),
+      );
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+    }
+
+    $this->redirect("/presupuesto/{$token}");
   }
 
   public function seguimiento(Request $request): void

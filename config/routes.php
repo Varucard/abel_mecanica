@@ -34,6 +34,9 @@ return function (Router $r): void {
   $r->get('/turno/{token:token}', [PublicoController::class, 'turno'], $publico);
   $r->post('/turno/{token:token}/confirmar', [PublicoController::class, 'confirmarTurno'], $publico);
   $r->post('/turno/{token:token}/cancelar', [PublicoController::class, 'cancelarTurno'], $publico);
+  $r->get('/presupuesto/{token:token}', [PublicoController::class, 'presupuesto'], $publico);
+  $r->get('/presupuesto/{token:token}/pdf', [PublicoController::class, 'presupuestoPdf'], $publico);
+  $r->post('/presupuesto/{token:token}', [PublicoController::class, 'responderPresupuesto'], $publico);
   $r->get('/seguimiento', [PublicoController::class, 'seguimiento'], $publico);
   $r->post('/seguimiento', [PublicoController::class, 'consultar'], $publico);
 
@@ -98,6 +101,7 @@ return function (Router $r): void {
   $r->get('/ordenes/{id}', [OrdenController::class, 'show']);
   $r->get('/ordenes/{id}/editar', [OrdenController::class, 'edit']);
   $r->post('/ordenes/{id}/pagos', [PagoController::class, 'store']);
+  $r->post('/ordenes/{id}/enviar-presupuesto', [OrdenController::class, 'enviarPresupuesto']);
   $r->get('/deudores', [PagoController::class, 'deudores']);
   $r->post('/ordenes/{id}', [OrdenController::class, 'update']);
   $r->post('/ordenes/{id}/estado', [OrdenController::class, 'cambiarEstado']);

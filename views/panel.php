@@ -9,6 +9,7 @@
  * @var list<array<string, mixed>> $deudores
  * @var float $totalAdeudado
  * @var list<array<string, mixed>> $stockBajo
+ * @var list<array<string, mixed>> $services
  * @var array{canal: bool, whatsapp: bool} $avisos
  */
 use App\Enums\EstadoTurno;
@@ -149,3 +150,23 @@ $tarjetas = [
     </div>
   </div>
 </div>
+
+<?php if ($services !== []): ?>
+  <div class="card mt-3">
+    <div class="card-header bg-light"><strong>Services a vencer en los próximos 30 días</strong></div>
+    <ul class="list-group list-group-flush">
+      <?php foreach ($services as $sv): ?>
+        <li class="list-group-item d-flex justify-content-between flex-wrap gap-2">
+          <span>
+            <strong><?= format_date($sv['proximo_service_fecha']) ?></strong> ·
+            <a href="<?= url("vehiculos/{$sv['vehiculo_id']}") ?>"><?= e($sv['patente']) ?></a> · <?= e($sv['cliente']) ?>
+            <?= $sv['proximo_service_km'] ? '· ' . number_format((float) $sv['proximo_service_km'], 0, ',', '.') . ' km' : '' ?>
+          </span>
+          <span class="small <?= $sv['proximo_service_avisado'] ? 'text-success' : 'text-muted' ?>">
+            <?= $sv['proximo_service_avisado'] ? '✔ avisado el ' . format_date($sv['proximo_service_avisado']) : 'sin avisar' ?>
+          </span>
+        </li>
+      <?php endforeach; ?>
+    </ul>
+  </div>
+<?php endif; ?>
