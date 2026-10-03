@@ -35,6 +35,8 @@ $pagado = (float) $orden['total'] - $saldo;
         <p class="mb-1">Estado: <span class="badge bg-<?= $colores[$estado->value] ?>"><?= e($estado->label()) ?></span></p>
         <p class="mb-1">Fecha: <?= format_date($orden['created_at']) ?></p>
         <p class="mb-1">Mecánico: <?= e($orden['mecanico'] ?? 'sin asignar') ?></p>
+        <?php if ($orden['km_ingreso'] !== null): ?><p class="mb-1">Km al ingresar: <?= number_format((float) $orden['km_ingreso'], 0, ',', '.') ?></p><?php endif; ?>
+        <?php if ($orden['turno_id']): ?><p class="mb-1">Desde el turno <a href="<?= url("turnos/{$orden['turno_id']}/editar") ?>">#<?= (int) $orden['turno_id'] ?></a></p><?php endif; ?>
         <?php if ($orden['fecha_realizado']): ?><p class="mb-1">Finalizada: <?= format_date($orden['fecha_realizado']) ?></p><?php endif; ?>
       </div>
     </div>
@@ -60,6 +62,35 @@ $pagado = (float) $orden['total'] - $saldo;
     </div>
   </div>
 </div>
+
+<?php if ($orden['diagnostico'] || $orden['trabajo_realizado'] || $orden['notas_internas'] || $orden['proximo_service_km'] || $orden['proximo_service_fecha']): ?>
+  <div class="card mt-3">
+    <div class="card-body">
+      <div class="row g-3">
+        <?php if ($orden['diagnostico']): ?>
+          <div class="col-md-6"><strong>Motivo / diagnóstico</strong><div><?= nl2br(e($orden['diagnostico'])) ?></div></div>
+        <?php endif; ?>
+        <?php if ($orden['trabajo_realizado']): ?>
+          <div class="col-md-6"><strong>Trabajo realizado</strong><div><?= nl2br(e($orden['trabajo_realizado'])) ?></div></div>
+        <?php endif; ?>
+        <?php if ($orden['proximo_service_km'] || $orden['proximo_service_fecha']): ?>
+          <div class="col-md-6">
+            <strong>Próximo service</strong>
+            <div>
+              <?= $orden['proximo_service_km'] ? number_format((float) $orden['proximo_service_km'], 0, ',', '.') . ' km' : '' ?>
+              <?= $orden['proximo_service_km'] && $orden['proximo_service_fecha'] ? ' o el ' : '' ?>
+              <?= $orden['proximo_service_fecha'] ? format_date($orden['proximo_service_fecha']) : '' ?>
+              <?php if ($orden['proximo_service_avisado']): ?><span class="small text-muted">(avisado el <?= format_date($orden['proximo_service_avisado']) ?>)</span><?php endif; ?>
+            </div>
+          </div>
+        <?php endif; ?>
+        <?php if ($orden['notas_internas']): ?>
+          <div class="col-md-6"><strong>Notas internas</strong><div class="text-muted"><?= nl2br(e($orden['notas_internas'])) ?></div></div>
+        <?php endif; ?>
+      </div>
+    </div>
+  </div>
+<?php endif; ?>
 
 <div class="card mt-3">
   <div class="card-header bg-light"><strong>Detalle</strong></div>

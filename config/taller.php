@@ -86,6 +86,15 @@ return [
       . "Dirección: {direccion}\nTeléfono: {telefono}\n\n¡Te esperamos!",
   ],
 
+  'service' => [
+    // Intervalos sugeridos al cargar el próximo service de una orden.
+    'intervalo_km' => 10000,
+    'intervalo_meses' => 6,
+    // Aviso automático al cliente antes de la fecha del próximo service.
+    'aviso_automatico' => true,
+    'aviso_dias_antes' => 7,
+  ],
+
   'stock' => [
     // Permitir finalizar órdenes aunque el stock de un repuesto quede negativo.
     'permitir_negativo' => true,

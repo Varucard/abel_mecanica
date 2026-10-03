@@ -1,54 +1,49 @@
-<nav class="btn-group w-100 mb-3" role="navigation" style="gap: 5px;">
-  <a href="<?= url('/') ?>" class="btn btn-outline-secondary flex-grow-0" title="Inicio">🏠</a>
-  <div class="dropdown flex-fill">
-    <a href="#" class="btn btn-primary w-100">⚙️ Configuración</a>
-    <div class="dropdown-menu">
-      <a href="<?= url('servicios') ?>">Servicios</a>
-      <a href="<?= url('marcas') ?>">Marcas</a>
-      <a href="<?= url('modelos') ?>">Modelos</a>
-      <?php if (auth()->esAdministrador()): ?>
-        <a href="<?= url('configuracion') ?>">Sistema</a>
-        <a href="<?= url('empleados') ?>">Empleados</a>
-        <a href="<?= url('usuarios') ?>">Usuarios</a>
-        <a href="<?= url('auditoria') ?>">Auditoría</a>
-        <a href="<?= url('logs') ?>">Registro del sistema</a>
-      <?php endif; ?>
+<?php
+/**
+ * Menú principal. En celulares y tablets los submenús se abren tocando el botón;
+ * en computadoras también al pasar el mouse.
+ */
+$menus = [
+  ['⚙️ Configuración', 'primary', array_filter([
+    'servicios' => 'Servicios',
+    'combos' => 'Combos de servicios',
+    'marcas' => 'Marcas',
+    'modelos' => 'Modelos',
+    'configuracion' => auth()->esAdministrador() ? 'Sistema' : null,
+    'empleados' => auth()->esAdministrador() ? 'Empleados' : null,
+    'usuarios' => auth()->esAdministrador() ? 'Usuarios' : null,
+    'auditoria' => auth()->esAdministrador() ? 'Auditoría' : null,
+    'logs' => auth()->esAdministrador() ? 'Registro del sistema' : null,
+  ])],
+  ['👤 Clientes', 'success', ['clientes/crear' => 'Registrar cliente', 'clientes' => 'Ver clientes', 'deudores' => 'Deudores']],
+  ['🚗 Vehículos', 'info', ['vehiculos/crear' => 'Registrar vehículo', 'vehiculos' => 'Ver vehículos']],
+  ['📝 Órdenes', 'warning', array_filter([
+    'ordenes/crear' => 'Registrar orden',
+    'ordenes' => 'Ver órdenes',
+    'reportes' => auth()->esAdministrador() ? 'Reportes' : null,
+  ])],
+  ['📦 Stock', 'dark', array_filter([
+    'repuestos' => 'Repuestos',
+    'proveedores' => 'Proveedores',
+    'precios' => auth()->esAdministrador() ? 'Actualizar precios' : null,
+  ])],
+  ['📂 Turnos', 'secondary', ['turnos/crear' => 'Registrar turno', 'turnos/semana' => 'Agenda semanal', 'turnos' => 'Ver turnos']],
+];
+?>
+<nav class="menu-principal mb-3" aria-label="Menú principal">
+  <a href="<?= url('/') ?>" class="btn btn-outline-secondary menu-inicio" title="Inicio" aria-label="Inicio">🏠</a>
+  <?php foreach ($menus as [$titulo, $color, $items]): ?>
+    <div class="dropdown">
+      <button class="btn btn-<?= $color ?> w-100 dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"><?= e($titulo) ?></button>
+      <ul class="dropdown-menu w-100">
+        <?php foreach ($items as $ruta => $etiqueta): ?>
+          <li><a class="dropdown-item" href="<?= url($ruta) ?>"><?= e($etiqueta) ?></a></li>
+        <?php endforeach; ?>
+      </ul>
     </div>
-  </div>
-  <div class="dropdown flex-fill">
-    <a href="<?= url('clientes') ?>" class="btn btn-success w-100">👤 Clientes</a>
-    <div class="dropdown-menu">
-      <a href="<?= url('clientes/crear') ?>">Registrar cliente</a>
-      <a href="<?= url('clientes') ?>">Ver clientes</a>
-      <a href="<?= url('deudores') ?>">Deudores</a>
-    </div>
-  </div>
-  <div class="dropdown flex-fill">
-    <a href="<?= url('vehiculos') ?>" class="btn btn-info w-100">🚗 Vehículos</a>
-    <div class="dropdown-menu">
-      <a href="<?= url('vehiculos/crear') ?>">Registrar vehículo</a>
-      <a href="<?= url('vehiculos') ?>">Ver vehículos</a>
-    </div>
-  </div>
-  <div class="dropdown flex-fill">
-    <a href="<?= url('ordenes') ?>" class="btn btn-warning w-100">📝 Órdenes</a>
-    <div class="dropdown-menu">
-      <a href="<?= url('ordenes/crear') ?>">Registrar orden</a>
-      <a href="<?= url('ordenes') ?>">Ver órdenes</a>
-    </div>
-  </div>
-  <div class="dropdown flex-fill">
-    <a href="<?= url('repuestos') ?>" class="btn btn-dark w-100">📦 Stock</a>
-    <div class="dropdown-menu">
-      <a href="<?= url('repuestos') ?>">Repuestos</a>
-      <a href="<?= url('proveedores') ?>">Proveedores</a>
-    </div>
-  </div>
-  <div class="dropdown flex-fill">
-    <a href="<?= url('turnos') ?>" class="btn btn-secondary w-100">📂 Turnos</a>
-    <div class="dropdown-menu">
-      <a href="<?= url('turnos/crear') ?>">Registrar turno</a>
-      <a href="<?= url('turnos') ?>">Ver turnos</a>
-    </div>
-  </div>
+  <?php endforeach; ?>
+  <form class="menu-buscador" action="<?= url('buscar') ?>" method="GET" role="search">
+    <input type="search" name="q" class="form-control" placeholder="Buscar patente, DNI, apellido u orden…" aria-label="Buscar"
+      value="<?= e(current_section() === 'buscar' ? (string) ($_GET['q'] ?? '') : '') ?>">
+  </form>
 </nav>

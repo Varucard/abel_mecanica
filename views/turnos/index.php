@@ -46,6 +46,9 @@ $view->script('turnos.js');
                 <?php if (in_array($t['estado'], ['pendiente', 'confirmado'], true) && $t['fecha'] >= date('Y-m-d')): ?>
                   <?= $view->partial('turnos/_recordatorio', ['turno' => $t, 'avisos' => $avisos, 'volver' => '']) ?>
                 <?php endif; ?>
+                <?php if (in_array($t['estado'], ['pendiente', 'confirmado'], true)): ?>
+                  <a href="<?= url('ordenes/crear?turno_id=' . $t['id']) ?>" class="btn btn-sm btn-warning" title="Crear la orden de trabajo de este turno">Crear orden</a>
+                <?php endif; ?>
                 <a href="<?= url("turnos/{$t['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
                 <?= $view->partial('partials/delete_button', [
                   'action' => "turnos/{$t['id']}/eliminar",

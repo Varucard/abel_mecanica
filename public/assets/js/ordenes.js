@@ -57,6 +57,17 @@ $(function () {
       $('#total').val(moneda.format(total));
     }
 
+    // Próximo service sugerido: km de ingreso + intervalo y hoy + N meses.
+    $('#sugerir_service').on('click', function () {
+      const km = parseInt($('#km_ingreso').val(), 10);
+      if (!isNaN(km)) {
+        $('#proximo_service_km').val(km + parseInt($(this).data('km'), 10));
+      }
+      const fecha = new Date();
+      fecha.setMonth(fecha.getMonth() + parseInt($(this).data('meses'), 10));
+      $('#proximo_service_fecha').val(fecha.toLocaleDateString('en-CA'));
+    });
+
     $('.js-item-precio').on('change', filas);
     $tbody.on('input', 'input', calcularTotal);
     filas();

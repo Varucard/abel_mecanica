@@ -94,14 +94,25 @@ final class OrdenRepository extends Repository
     return $this->transaction(function () use ($orden) {
       if ($orden->id === null) {
         $id = $this->insert(
-          'INSERT INTO ordenes (vehiculo_id, mecanico_id, estado, total) VALUES (?, ?, ?, ?)',
-          [$orden->vehiculoId, $orden->mecanicoId, $orden->estado->value, $orden->total()]
+          'INSERT INTO ordenes (vehiculo_id, mecanico_id, turno_id, estado, total, km_ingreso, diagnostico, trabajo_realizado,
+                                notas_internas, proximo_service_km, proximo_service_fecha)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [$orden->vehiculoId, $orden->mecanicoId, $orden->turnoId, $orden->estado->value, $orden->total(), ...$this->detalle($orden)]
         );
       } else {
         $id = $orden->id;
+        // Si cambia el próximo service, se vuelve a habilitar su aviso.
         $this->execute(
-          'UPDATE ordenes SET vehiculo_id = ?, mecanico_id = ?, total = ? WHERE id = ?',
-          [$orden->vehiculoId, $orden->mecanicoId, $orden->total(), $id]
+          'UPDATE ordenes SET vehiculo_id = ?, mecanico_id = ?, total = ?, km_ingreso = ?, diagnostico = ?, trabajo_realizado = ?,
+                  notas_internas = ?,
+                  proximo_service_avisado = IF(proximo_service_km <=> ? AND proximo_service_fecha <=> ?, proximo_service_avisado, NULL),
+                  proximo_service_km = ?, proximo_service_fecha = ?
+            WHERE id = ?',
+          [
+            $orden->vehiculoId, $orden->mecanicoId, $orden->total(), $orden->kmIngreso, $orden->diagnostico,
+            $orden->trabajoRealizado, $orden->notasInternas, $orden->proximoServiceKm, $orden->proximoServiceFecha,
+            $orden->proximoServiceKm, $orden->proximoServiceFecha, $id,
+          ]
         );
         $this->execute('DELETE FROM ordenes_servicios WHERE orden_id = ?', [$id]);
       }
@@ -116,6 +127,15 @@ final class OrdenRepository extends Repository
 
       return $id;
     });
+  }
+
+  /** @return list<mixed> */
+  private function detalle(Orden $orden): array
+  {
+    return [
+      $orden->kmIngreso, $orden->diagnostico, $orden->trabajoRealizado, $orden->notasInternas,
+      $orden->proximoServiceKm, $orden->proximoServiceFecha,
+    ];
   }
 
   public function setStockDescontado(int $id, bool $descontado): void

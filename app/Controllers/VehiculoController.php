@@ -54,6 +54,7 @@ final class VehiculoController extends Controller
       'imagenes' => $this->vehiculos->imagenes($id),
       'ordenes' => $this->ordenes->porVehiculo($id),
       'turnos' => $this->turnos->porVehiculo($id),
+      'proximoService' => $this->vehiculos->proximoService($id),
     ]);
   }
 

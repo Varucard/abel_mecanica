@@ -18,7 +18,7 @@ use RuntimeException;
  */
 final class ConfiguracionService
 {
-  public const SECCIONES = ['taller', 'trabajo', 'turnos', 'notificaciones', 'mensajes', 'stock', 'portal'];
+  public const SECCIONES = ['taller', 'trabajo', 'turnos', 'service', 'notificaciones', 'mensajes', 'stock', 'portal'];
 
   /** Variables que se pueden usar en las plantillas de mensajes. */
   public const VARIABLES_MENSAJES = [
@@ -82,6 +82,7 @@ final class ConfiguracionService
       'turnos' => $this->validarTurnos($input),
       'notificaciones' => $this->validarNotificaciones($input),
       'mensajes' => $this->validarMensajes($input),
+      'service' => $this->validarService($input),
       'stock' => ['permitir_negativo' => !empty($input['permitir_negativo'])],
       'portal' => $this->validarPortal($input),
       default => throw new ValidationException(['Sección de configuración inválida.']),
@@ -205,6 +206,24 @@ final class ConfiguracionService
       'recordatorio_automatico' => !empty($input['recordatorio_automatico']),
       'recordatorio_hora' => $horaRecordatorio,
     ];
+  }
+
+  private function validarService(array $input): array
+  {
+    $service = [
+      'intervalo_km' => (int) ($input['intervalo_km'] ?? 0),
+      'intervalo_meses' => (int) ($input['intervalo_meses'] ?? 0),
+      'aviso_automatico' => !empty($input['aviso_automatico']),
+      'aviso_dias_antes' => (int) ($input['aviso_dias_antes'] ?? 0),
+    ];
+
+    (new Validator())
+      ->check($service['intervalo_km'] >= 500 && $service['intervalo_km'] <= 100000, 'El intervalo en km debe estar entre 500 y 100.000.')
+      ->check($service['intervalo_meses'] >= 1 && $service['intervalo_meses'] <= 36, 'El intervalo en meses debe estar entre 1 y 36.')
+      ->check($service['aviso_dias_antes'] >= 0 && $service['aviso_dias_antes'] <= 60, 'Los días de anticipación deben estar entre 0 y 60.')
+      ->validate();
+
+    return $service;
   }
 
   private function validarNotificaciones(array $input): array

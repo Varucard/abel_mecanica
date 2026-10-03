@@ -18,6 +18,13 @@ final class Orden
     public readonly EstadoOrden $estado = EstadoOrden::Pendiente,
     public readonly ?int $id = null,
     public readonly ?int $mecanicoId = null,
+    public readonly ?int $kmIngreso = null,
+    public readonly ?string $diagnostico = null,
+    public readonly ?string $trabajoRealizado = null,
+    public readonly ?string $notasInternas = null,
+    public readonly ?int $proximoServiceKm = null,
+    public readonly ?string $proximoServiceFecha = null,
+    public readonly ?int $turnoId = null,
   ) {
   }
 

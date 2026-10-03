@@ -125,6 +125,24 @@ final class VehiculoRepository extends Repository
     $this->execute('DELETE FROM vehiculo_imagenes WHERE id = ?', [$imagenId]);
   }
 
+  /** Actualiza el kilometraje solo si el nuevo valor es mayor (el odómetro no retrocede). */
+  public function actualizarKilometraje(int $id, int $km): void
+  {
+    $this->execute('UPDATE vehiculos SET kilometraje = ? WHERE id = ? AND (kilometraje IS NULL OR kilometraje < ?)', [$km, $id, $km]);
+  }
+
+  /** Último próximo service cargado para el vehículo (de su orden más reciente con ese dato). */
+  public function proximoService(int $id): ?array
+  {
+    return $this->fetchOne(
+      'SELECT id AS orden_id, proximo_service_km, proximo_service_fecha, proximo_service_avisado
+         FROM ordenes
+        WHERE vehiculo_id = ? AND (proximo_service_km IS NOT NULL OR proximo_service_fecha IS NOT NULL) AND estado <> ?
+        ORDER BY id DESC LIMIT 1',
+      [$id, 'cancelado']
+    );
+  }
+
   public function setEstado(int $id, Estado $estado): void
   {
     $this->execute('UPDATE vehiculos SET estado = ? WHERE id = ?', [$estado->value, $id]);

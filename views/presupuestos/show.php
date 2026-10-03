@@ -272,6 +272,21 @@
       </table>
     </section>
 
+    <?php if (!$entrega && $orden['diagnostico']): ?>
+      <div class="notes"><strong>Motivo / diagnóstico:</strong> <?= nl2br(e($orden['diagnostico'])) ?></div>
+    <?php endif; ?>
+    <?php if ($entrega && $orden['trabajo_realizado']): ?>
+      <div class="notes"><strong>Trabajo realizado:</strong> <?= nl2br(e($orden['trabajo_realizado'])) ?></div>
+    <?php endif; ?>
+    <?php if ($entrega && ($orden['proximo_service_km'] || $orden['proximo_service_fecha'])): ?>
+      <div class="notes"><strong>Próximo service:</strong>
+        <?= $orden['proximo_service_km'] ? number_format((float) $orden['proximo_service_km'], 0, ',', '.') . ' km' : '' ?>
+        <?= $orden['proximo_service_km'] && $orden['proximo_service_fecha'] ? ' o el ' : '' ?>
+        <?= $orden['proximo_service_fecha'] ? format_date($orden['proximo_service_fecha']) : '' ?>
+        (lo que ocurra primero)
+      </div>
+    <?php endif; ?>
+
     <div class="notes">
       <?php if (!$entrega): ?><strong>Observaciones:</strong>
       <ul>

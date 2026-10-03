@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\AuthController;
+use App\Controllers\BusquedaController;
 use App\Controllers\ClienteController;
 use App\Controllers\ConfiguracionController;
 use App\Controllers\EmpleadoController;
@@ -40,6 +41,7 @@ return function (Router $r): void {
   $r->post('/perfil/clave', [UsuarioController::class, 'cambiarClave']);
 
   $r->get('/', [HomeController::class, 'index']);
+  $r->get('/buscar', [BusquedaController::class, 'index']);
 
   // Clientes
   $r->get('/clientes', [ClienteController::class, 'index']);

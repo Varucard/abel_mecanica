@@ -20,6 +20,7 @@ final class ConfiguracionController extends Controller
     'taller' => 'Taller',
     'trabajo' => 'Presupuestos',
     'turnos' => 'Turnos y horario',
+    'service' => 'Service preventivo',
     'notificaciones' => 'Avisos',
     'mensajes' => 'Mensajes',
     'stock' => 'Stock',

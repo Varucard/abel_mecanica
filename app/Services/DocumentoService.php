@@ -59,8 +59,9 @@ final class DocumentoService
       'cliente' => $this->clientes->find((int) $orden['cliente_id']),
       'items' => $items,
       'total' => array_sum(array_map(fn($i) => (float) $i['costo'], $items)),
-      'kilometraje' => $orden['kilometraje'] !== null
-        ? number_format((float) $orden['kilometraje'], 0, ',', '.') . ' km'
+      // Km con que ingresó en esta orden; si no se cargó, el último conocido del vehículo.
+      'kilometraje' => ($orden['km_ingreso'] ?? $orden['kilometraje']) !== null
+        ? number_format((float) ($orden['km_ingreso'] ?? $orden['kilometraje']), 0, ',', '.') . ' km'
         : '—',
       'taller' => $config['taller'],
       'trabajo' => $config['trabajo'],
