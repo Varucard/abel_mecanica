@@ -11,6 +11,9 @@ use App\Exceptions\ValidationException;
  */
 final class Validator
 {
+  /** Máximo que admiten las columnas decimal(10,2) de importes y cantidades. */
+  public const IMPORTE_MAXIMO = 99999999.99;
+
   /** @var list<string> */
   private array $errors = [];
 
@@ -61,12 +64,19 @@ final class Validator
     return $length >= $min && $length <= $max;
   }
 
-  /** Decimal no negativo; acepta coma o punto como separador. */
+  /**
+   * Decimal no negativo y dentro del rango de la base; acepta coma o punto como separador.
+   * No admite notación científica (1e9), signos ni espacios intermedios.
+   */
   public static function importe(string $value): ?float
   {
     $value = str_replace(',', '.', trim($value));
+    if (!preg_match('/^\d+(\.\d+)?$/', $value)) {
+      return null;
+    }
+    $numero = round((float) $value, 2);
 
-    return is_numeric($value) && (float) $value >= 0 ? round((float) $value, 2) : null;
+    return $numero <= self::IMPORTE_MAXIMO ? $numero : null;
   }
 
   /** Cadena vacía → null; si no, el texto recortado. */

@@ -21,7 +21,10 @@ use App\Support\Validator;
 final class PortalService
 {
   private const AMBITO = 'portal';
+  /** Consultas fallidas con el mismo DNI desde la misma IP; desde una IP; con un DNI desde cualquier IP. */
   public const MAX_INTENTOS = 10;
+  public const MAX_INTENTOS_IP = 30;
+  public const MAX_INTENTOS_DNI = 50;
   public const MINUTOS_BLOQUEO = 15;
 
   public function __construct(
@@ -51,7 +54,7 @@ final class PortalService
     $dni = preg_replace('/\D/', '', $dni);
     $patente = strtoupper(preg_replace('/[\s-]/', '', $patente));
 
-    if ($this->intentos->recientes(self::AMBITO, $dni, $ip, self::MINUTOS_BLOQUEO) >= self::MAX_INTENTOS) {
+    if ($this->intentos->bloqueado(self::AMBITO, $dni, $ip, self::MINUTOS_BLOQUEO, self::MAX_INTENTOS, self::MAX_INTENTOS_IP, self::MAX_INTENTOS_DNI)) {
       throw new ValidationException([sprintf('Demasiadas consultas fallidas. Esperá %d minutos e intentá de nuevo.', self::MINUTOS_BLOQUEO)]);
     }
 

@@ -32,7 +32,12 @@ for ($i = 1; ; $i++) {
   }
 }
 
-$aplicadas = (new Migrator($db, dirname(__DIR__) . '/database/migrations'))
-  ->migrate(fn(string $msg) => print($msg . PHP_EOL));
+try {
+  $aplicadas = (new Migrator($db, dirname(__DIR__) . '/database/migrations'))
+    ->migrate(fn(string $msg) => print($msg . PHP_EOL));
+} catch (RuntimeException $e) {
+  fwrite(STDERR, $e->getMessage() . PHP_EOL);
+  exit(1);
+}
 
 echo $aplicadas === [] ? "La base ya está actualizada.\n" : count($aplicadas) . " migración(es) aplicada(s).\n";

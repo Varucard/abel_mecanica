@@ -38,6 +38,14 @@ final class AgendaReportesTest extends IntegrationTestCase
     $this->assertFalse($agenda['celdas'][$agenda['hasta']]['09:00']['abierta'], 'Domingo cerrado');
   }
 
+  public function testUnaFechaInvalidaMuestraLaSemanaActual(): void
+  {
+    $hoy = new DateTimeImmutable('2026-10-07');
+    foreach (['2026-13-45', '2026-02-30', 'cualquier cosa'] as $fecha) {
+      $this->assertSame('2026-10-05', $this->make(AgendaService::class)->semana($fecha, $hoy)['desde'], $fecha);
+    }
+  }
+
   public function testReportes(): void
   {
     $mecanico = $this->make(EmpleadoService::class)->crear(['nombre' => 'Carlos', 'apellido' => 'Gómez', 'dni' => '25111222', 'puesto' => 'Mecánico']);
@@ -55,6 +63,10 @@ final class AgendaReportesTest extends IntegrationTestCase
     $ordenes->cambiarEstado($c, 'cancelado');
     $this->make(PagoService::class)->registrar($a, ['monto' => '1500', 'forma_pago' => 'Contado'], null);
     $this->make(PagoService::class)->registrar($a, ['monto' => '500', 'forma_pago' => 'Mercado Pago'], null);
+    // Un pago de una orden que después se canceló no cuenta como cobrado.
+    $d = $ordenes->guardar($vehiculo, [$aceite], []);
+    $this->make(PagoService::class)->registrar($d, ['monto' => '300', 'forma_pago' => 'Contado'], null);
+    $ordenes->cambiarEstado($d, 'cancelado');
 
     $reportes = $this->make(ReporteRepository::class);
 

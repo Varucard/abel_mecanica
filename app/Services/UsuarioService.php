@@ -15,7 +15,11 @@ use PDOException;
 
 final class UsuarioService
 {
+  /** Intentos fallidos para el mismo usuario desde la misma IP. */
   public const MAX_INTENTOS = 5;
+  /** Desde una IP con cualquier usuario, y para un usuario desde cualquier IP. */
+  public const MAX_INTENTOS_IP = 20;
+  public const MAX_INTENTOS_USUARIO = 50;
   public const MINUTOS_BLOQUEO = 15;
   public const LARGO_MINIMO_CLAVE = 8;
 
@@ -49,7 +53,7 @@ final class UsuarioService
   {
     $usuario = mb_strtolower(trim($usuario));
 
-    if ($this->intentos->recientes(self::AMBITO, $usuario, $ip, self::MINUTOS_BLOQUEO) >= self::MAX_INTENTOS) {
+    if ($this->intentos->bloqueado(self::AMBITO, $usuario, $ip, self::MINUTOS_BLOQUEO, self::MAX_INTENTOS, self::MAX_INTENTOS_IP, self::MAX_INTENTOS_USUARIO)) {
       throw new ValidationException([
         sprintf('Demasiados intentos fallidos. Esperá %d minutos e intentá de nuevo.', self::MINUTOS_BLOQUEO),
       ]);
@@ -112,19 +116,28 @@ final class UsuarioService
       ->check(!$dejaDeSerAdmin || $this->usuarios->contarAdministradoresActivos() > 1, 'Tiene que quedar al menos un administrador activo.')
       ->validate();
 
+    // La clave nueva se valida antes de guardar nada, para no dejar cambios a medias.
+    $clave = (string) ($input['clave'] ?? '');
+    if ($clave !== '') {
+      $this->validarClave($clave, (string) ($input['clave_confirmacion'] ?? ''));
+    }
+
     try {
-      $this->usuarios->update($id, $nombre, $usuario, $rol, $activo);
-      $this->auditor->registrar('editar', 'usuario', $id, "Usuario editado: {$usuario}", array_filter([
-        'rol' => $actual['rol'] !== $rol->value ? "{$actual['rol']} → {$rol->value}" : null,
-        'activo' => (bool) $actual['activo'] !== $activo ? ($activo ? 'reactivado' : 'desactivado') : null,
-      ]));
+      $this->usuarios->transaction(function () use ($id, $nombre, $usuario, $rol, $activo, $clave) {
+        $this->usuarios->update($id, $nombre, $usuario, $rol, $activo);
+        if ($clave !== '') {
+          $this->usuarios->setPassword($id, password_hash($clave, PASSWORD_DEFAULT));
+        }
+      });
     } catch (PDOException $e) {
       throw Repository::isDuplicate($e) ? new ValidationException(['Ese nombre de usuario ya existe.']) : $e;
     }
 
-    if (($input['clave'] ?? '') !== '') {
-      $this->validarClave((string) $input['clave'], (string) ($input['clave_confirmacion'] ?? ''));
-      $this->usuarios->setPassword($id, password_hash((string) $input['clave'], PASSWORD_DEFAULT));
+    $this->auditor->registrar('editar', 'usuario', $id, "Usuario editado: {$usuario}", array_filter([
+      'rol' => $actual['rol'] !== $rol->value ? "{$actual['rol']} → {$rol->value}" : null,
+      'activo' => (bool) $actual['activo'] !== $activo ? ($activo ? 'reactivado' : 'desactivado') : null,
+    ]));
+    if ($clave !== '') {
       $this->auditor->registrar('cambiar_clave', 'usuario', $id, "Se cambió la contraseña de {$usuario}");
     }
   }

@@ -52,9 +52,13 @@ final class TurnoService
       ->check($id !== null || !Validator::fecha($fecha) || $fecha >= date('Y-m-d'), 'No se pueden agendar turnos en fechas pasadas.');
     $v->validate();
 
-    $this->validarHorario($fecha, $hora, $estado, $id);
+    // El control de cupo y el guardado van bajo un mismo candado por fecha y hora: dos altas
+    // simultáneas no pueden ocupar el último cupo a la vez.
+    $guardado = $this->turnos->conCandado("turno {$fecha} {$hora}", function () use ($clienteId, $vehiculoId, $fecha, $hora, $descripcion, $estado, $id) {
+      $this->validarHorario($fecha, $hora, $estado, $id);
 
-    $guardado = $this->turnos->save(new Turno($clienteId, $vehiculoId, $fecha, $hora, $descripcion, $estado, $id));
+      return $this->turnos->save(new Turno($clienteId, $vehiculoId, $fecha, $hora, $descripcion, $estado, $id));
+    });
     $this->auditor->registrar($id === null ? 'crear' : 'editar', 'turno', $guardado, ($id === null ? 'Turno agendado' : 'Turno editado') . ' para el ' . format_date($fecha) . " {$hora}");
 
     return $guardado;
@@ -68,11 +72,14 @@ final class TurnoService
     $v = (new Validator())->check($nuevo !== null, 'Estado de turno inválido.');
     $v->validate();
 
-    if (!$nuevo->liberaHorario() && EstadoTurno::from($turno['estado'])->liberaHorario()) {
-      $v->check($this->hayCupo($turno['fecha'], substr($turno['hora'], 0, 5), $id), 'No se puede reactivar: el horario ya está completo.')->validate();
-    }
+    $hora = substr($turno['hora'], 0, 5);
+    $this->turnos->conCandado("turno {$turno['fecha']} {$hora}", function () use ($id, $turno, $hora, $nuevo, $v) {
+      if (!$nuevo->liberaHorario() && EstadoTurno::from($turno['estado'])->liberaHorario()) {
+        $v->check($this->hayCupo($turno['fecha'], $hora, $id), 'No se puede reactivar: el horario ya está completo.')->validate();
+      }
 
-    $this->turnos->setEstado($id, $nuevo);
+      $this->turnos->setEstado($id, $nuevo);
+    });
     $this->auditor->registrar('cambiar_estado', 'turno', $id, "Turno #{$id}: " . EstadoTurno::from($turno['estado'])->label() . " → {$nuevo->label()}");
 
     return $nuevo;
@@ -85,7 +92,7 @@ final class TurnoService
    */
   public function responderCliente(string $token, string $accion): array
   {
-    $turno = $this->turnos->porToken($token) ?? throw new NotFoundException('El link no es válido o el turno ya no existe.');
+    $turno = $this->turnos->porToken($token) ?? throw new NotFoundException('El link no es válido, venció o el turno ya no existe.');
     $estado = EstadoTurno::from($turno['estado']);
 
     (new Validator())
@@ -144,7 +151,6 @@ final class TurnoService
 
   public function eliminar(int $id): void
   {
-    $this->obtener($id);
     $turno = $this->obtener($id);
     $this->turnos->delete($id);
     $this->auditor->registrar('eliminar', 'turno', $id, 'Turno eliminado (era el ' . format_date($turno['fecha']) . ')');

@@ -68,15 +68,14 @@ final class RepuestoService
 
   public function eliminar(int $id): void
   {
-    $this->obtener($id);
+    $repuesto = $this->obtener($id);
 
     try {
-      $repuesto = $this->obtener($id);
       $this->repuestos->delete($id);
       $this->auditor->registrar('eliminar', 'repuesto', $id, "Repuesto eliminado: {$repuesto['nombre']}");
     } catch (PDOException $e) {
       throw Repository::isReferenced($e)
-        ? new ValidationException(['El repuesto tiene órdenes o movimientos de stock y no se puede eliminar.'])
+        ? new ValidationException(['El repuesto tiene órdenes, movimientos de stock o es parte de un combo y no se puede eliminar (si está en un combo, quitalo del combo primero).'])
         : $e;
     }
   }

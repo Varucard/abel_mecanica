@@ -10,6 +10,14 @@ use App\Support\ConsultaPaginada;
 
 final class TurnoRepository extends Repository
 {
+  /**
+   * Una reserva "enviando" que quedó así más de 30 minutos es de un proceso que se cortó
+   * a mitad del envío: se vuelve a intentar en vez de dejar el turno sin recordatorio.
+   */
+  public const DIAS_LINK = 30;
+
+  private const RESERVA_VENCIDA = "(recordatorio_canal = 'enviando' AND recordatorio_enviado < NOW() - INTERVAL 30 MINUTE)";
+
   /** @return list<array<string, mixed>> */
   public function all(): array
   {
@@ -130,7 +138,7 @@ final class TurnoRepository extends Repository
   public function reservarRecordatorio(int $id): bool
   {
     return $this->execute(
-      "UPDATE turnos SET recordatorio_enviado = NOW(), recordatorio_canal = 'enviando' WHERE id = ? AND recordatorio_enviado IS NULL",
+      "UPDATE turnos SET recordatorio_enviado = NOW(), recordatorio_canal = 'enviando' WHERE id = ? AND (recordatorio_enviado IS NULL OR " . self::RESERVA_VENCIDA . ')',
       [$id]
     ) === 1;
   }
@@ -149,7 +157,8 @@ final class TurnoRepository extends Repository
   {
     return array_map('intval', array_column($this->fetchAll(
       "SELECT id FROM turnos
-        WHERE fecha BETWEEN ? AND ? AND estado IN ('pendiente', 'confirmado') AND recordatorio_enviado IS NULL
+        WHERE fecha BETWEEN ? AND ? AND estado IN ('pendiente', 'confirmado')
+          AND (recordatorio_enviado IS NULL OR " . self::RESERVA_VENCIDA . ")
         ORDER BY fecha, hora",
       [$desde, $hasta]
     ), 'id'));
@@ -169,9 +178,13 @@ final class TurnoRepository extends Repository
     return $this->fetchOne('SELECT token FROM turnos WHERE id = ?', [$id])['token'];
   }
 
+  /**
+   * Turno del link público. El link vence {@see self::DIAS_LINK} días después de la fecha
+   * del turno: después ya no sirve para nada y no conviene que siga mostrando datos.
+   */
   public function porToken(string $token): ?array
   {
-    $fila = $this->fetchOne('SELECT id FROM turnos WHERE token = ?', [$token]);
+    $fila = $this->fetchOne('SELECT id FROM turnos WHERE token = ? AND fecha >= CURDATE() - INTERVAL ' . self::DIAS_LINK . ' DAY', [$token]);
 
     return $fila ? $this->detalle((int) $fila['id']) : null;
   }

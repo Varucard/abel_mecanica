@@ -36,7 +36,7 @@ final class OrdenRepository extends Repository
                  FROM ordenes_servicios os INNER JOIN repuestos r ON r.id = os.repuesto_id WHERE os.orden_id = o.id) AS repuestos
          FROM ordenes o
          INNER JOIN vehiculos v ON v.id = o.vehiculo_id
-         INNER JOIN clientes c ON c.id = v.cliente_id
+         INNER JOIN clientes c ON c.id = o.cliente_id
          INNER JOIN personas p ON p.id = c.persona_id
          INNER JOIN marcas ma ON ma.id = v.marca_id
          INNER JOIN modelos mo ON mo.id = v.modelo_id",
@@ -68,7 +68,7 @@ final class OrdenRepository extends Repository
   /** @return list<array<string, mixed>> */
   public function porCliente(int $clienteId): array
   {
-    return $this->listado('WHERE v.cliente_id = ?', [$clienteId]);
+    return $this->listado('WHERE o.cliente_id = ?', [$clienteId]);
   }
 
   /** @return list<array<string, mixed>> */
@@ -95,7 +95,7 @@ final class OrdenRepository extends Repository
                 WHERE os.orden_id = o.id) AS repuestos
          FROM ordenes o
          INNER JOIN vehiculos v ON v.id = o.vehiculo_id
-         INNER JOIN clientes c ON c.id = v.cliente_id
+         INNER JOIN clientes c ON c.id = o.cliente_id
          INNER JOIN personas p ON p.id = c.persona_id
          INNER JOIN marcas ma ON ma.id = v.marca_id
          INNER JOIN modelos mo ON mo.id = v.modelo_id
@@ -109,7 +109,7 @@ final class OrdenRepository extends Repository
   public function find(int $id): ?array
   {
     return $this->fetchOne(
-      "SELECT o.*, v.patente, v.anio, v.kilometraje, v.cliente_id,
+      "SELECT o.*, v.patente, v.anio, v.kilometraje,
               ma.nombre AS marca, mo.nombre AS modelo,
               CONCAT(pm.apellido, ', ', pm.nombre) AS mecanico
          FROM ordenes o
@@ -144,22 +144,25 @@ final class OrdenRepository extends Repository
     return $this->transaction(function () use ($orden) {
       if ($orden->id === null) {
         $id = $this->insert(
-          'INSERT INTO ordenes (vehiculo_id, mecanico_id, turno_id, estado, total, km_ingreso, diagnostico, trabajo_realizado,
+          'INSERT INTO ordenes (vehiculo_id, cliente_id, mecanico_id, turno_id, estado, total, km_ingreso, diagnostico, trabajo_realizado,
                                 notas_internas, proximo_service_km, proximo_service_fecha)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [$orden->vehiculoId, $orden->mecanicoId, $orden->turnoId, $orden->estado->value, $orden->total(), ...$this->detalle($orden)]
+           VALUES (?, (SELECT cliente_id FROM vehiculos WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [$orden->vehiculoId, $orden->vehiculoId, $orden->mecanicoId, $orden->turnoId, $orden->estado->value, $orden->total(), ...$this->detalle($orden)]
         );
       } else {
         $id = $orden->id;
-        // Si cambia el próximo service, se vuelve a habilitar su aviso.
+        // Si cambia el próximo service, se vuelve a habilitar su aviso. Si cambia el vehículo,
+        // la orden pasa a ser del dueño actual de ese vehículo (cliente_id va antes que vehiculo_id
+        // porque MySQL aplica las asignaciones en orden).
         $this->execute(
-          'UPDATE ordenes SET vehiculo_id = ?, mecanico_id = ?, total = ?, km_ingreso = ?, diagnostico = ?, trabajo_realizado = ?,
+          'UPDATE ordenes SET cliente_id = IF(vehiculo_id = ?, cliente_id, (SELECT cliente_id FROM vehiculos WHERE id = ?)),
+                  vehiculo_id = ?, mecanico_id = ?, total = ?, km_ingreso = ?, diagnostico = ?, trabajo_realizado = ?,
                   notas_internas = ?,
                   proximo_service_avisado = IF(proximo_service_km <=> ? AND proximo_service_fecha <=> ?, proximo_service_avisado, NULL),
                   proximo_service_km = ?, proximo_service_fecha = ?
             WHERE id = ?',
           [
-            $orden->vehiculoId, $orden->mecanicoId, $orden->total(), $orden->kmIngreso, $orden->diagnostico,
+            $orden->vehiculoId, $orden->vehiculoId, $orden->vehiculoId, $orden->mecanicoId, $orden->total(), $orden->kmIngreso, $orden->diagnostico,
             $orden->trabajoRealizado, $orden->notasInternas, $orden->proximoServiceKm, $orden->proximoServiceFecha,
             $orden->proximoServiceKm, $orden->proximoServiceFecha, $id,
           ]
@@ -197,7 +200,7 @@ final class OrdenRepository extends Repository
               CONCAT(ma.nombre, ' ', mo.nombre, ' (', v.patente, ')') AS vehiculo, v.patente
          FROM ordenes o
          INNER JOIN vehiculos v ON v.id = o.vehiculo_id
-         INNER JOIN clientes c ON c.id = v.cliente_id
+         INNER JOIN clientes c ON c.id = o.cliente_id
          INNER JOIN personas p ON p.id = c.persona_id
          INNER JOIN marcas ma ON ma.id = v.marca_id
          INNER JOIN modelos mo ON mo.id = v.modelo_id
@@ -214,16 +217,48 @@ final class OrdenRepository extends Repository
     return (string) $this->fetchOne('SELECT token FROM ordenes WHERE id = ?', [$id])['token'];
   }
 
+  /** Días que el link del presupuesto sigue abriendo desde su último envío (o desde que se creó la orden). */
+  public const DIAS_LINK = 60;
+
   public function idPorToken(string $token): ?int
   {
-    $fila = $this->fetchOne('SELECT id FROM ordenes WHERE token = ?', [$token]);
+    $fila = $this->fetchOne(
+      'SELECT id FROM ordenes WHERE token = ? AND COALESCE(presupuesto_enviado, created_at) >= NOW() - INTERVAL ' . self::DIAS_LINK . ' DAY',
+      [$token]
+    );
 
     return $fila ? (int) $fila['id'] : null;
   }
 
+  /**
+   * Un reenvío conserva la aceptación (la orden no cambió: si cambia, la respuesta se anula
+   * al guardarla) y habilita responder de nuevo si había sido rechazado.
+   */
   public function registrarPresupuestoEnviado(int $id): void
   {
-    $this->execute('UPDATE ordenes SET presupuesto_enviado = NOW(), presupuesto_respuesta = NULL, presupuesto_respuesta_en = NULL WHERE id = ?', [$id]);
+    $this->execute(
+      "UPDATE ordenes SET presupuesto_enviado = NOW(),
+              presupuesto_respuesta_en = IF(presupuesto_respuesta = 'aceptado', presupuesto_respuesta_en, NULL),
+              presupuesto_respuesta = IF(presupuesto_respuesta = 'aceptado', presupuesto_respuesta, NULL)
+        WHERE id = ?",
+      [$id]
+    );
+  }
+
+  public function anularRespuestaPresupuesto(int $id): void
+  {
+    $this->execute('UPDATE ordenes SET presupuesto_respuesta = NULL, presupuesto_respuesta_en = NULL WHERE id = ?', [$id]);
+  }
+
+  /**
+   * Estado y bandera de stock de la orden, bloqueando la fila hasta el fin de la transacción
+   * en curso (debe llamarse dentro de una).
+   *
+   * @return array{estado: string, stock_descontado: int|string}|null
+   */
+  public function bloquear(int $id): ?array
+  {
+    return $this->fetchOne('SELECT estado, stock_descontado FROM ordenes WHERE id = ? FOR UPDATE', [$id]);
   }
 
   public function registrarRespuestaPresupuesto(int $id, string $respuesta): void
@@ -242,7 +277,7 @@ final class OrdenRepository extends Repository
     return array_map('intval', array_column($this->fetchAll(
       "SELECT o.id FROM ordenes o
          INNER JOIN vehiculos v ON v.id = o.vehiculo_id AND v.estado = 'activo'
-         INNER JOIN clientes c ON c.id = v.cliente_id AND c.estado = 'activo'
+         INNER JOIN clientes c ON c.id = o.cliente_id AND c.id = v.cliente_id AND c.estado = 'activo'
         WHERE o.estado = 'finalizado' AND o.proximo_service_avisado IS NULL
           AND o.proximo_service_fecha BETWEEN ? AND ?
           AND NOT EXISTS (SELECT 1 FROM ordenes o2 WHERE o2.vehiculo_id = o.vehiculo_id AND o2.id > o.id AND o2.estado <> 'cancelado')

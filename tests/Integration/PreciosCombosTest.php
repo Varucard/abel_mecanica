@@ -30,7 +30,8 @@ final class PreciosCombosTest extends IntegrationTestCase
     $this->assertSame(10000.0, (float) $this->make(ServicioRepository::class)->find($aceite)['precio_base'], 'La vista previa no guarda');
 
     // Se destilda el filtro: solo se actualizan los dos servicios.
-    $this->assertSame(2, $precios->aplicar([...$params, 'ids' => ["servicio:{$aceite}", "servicio:{$frenos}"]]));
+    $vistos = ['actual' => ["servicio:{$aceite}" => '10000.00', "servicio:{$frenos}" => '20000.00', "repuesto:{$filtro}" => '5000.00']];
+    $this->assertSame(2, $precios->aplicar([...$params, ...$vistos, 'ids' => ["servicio:{$aceite}", "servicio:{$frenos}"]]));
     $this->assertSame(11000.0, (float) $this->make(ServicioRepository::class)->find($aceite)['precio_base']);
     $this->assertSame(22000.0, (float) $this->make(ServicioRepository::class)->find($frenos)['precio_base']);
     $this->assertSame(5000.0, (float) $this->make(RepuestoRepository::class)->find($filtro)['precio']);
@@ -38,6 +39,37 @@ final class PreciosCombosTest extends IntegrationTestCase
     $auditoria = $this->make(AuditoriaRepository::class)->paginar(['entidad' => 'precios'])['filas'];
     $this->assertCount(1, $auditoria);
     $this->assertCount(2, json_decode($auditoria[0]['datos'], true)['cambios']);
+  }
+
+  public function testSinSeleccionNoModificaNadaYNoSeAplicaDosVeces(): void
+  {
+    $aceite = $this->crearServicio('Cambio de aceite', 10000);
+    $filtro = $this->crearRepuesto('Filtro', 5000);
+    $precios = $this->make(PrecioService::class);
+    $params = ['aplicar_a' => 'ambos', 'porcentaje' => '10', 'redondeo' => '0',
+      'actual' => ["servicio:{$aceite}" => '10000.00', "repuesto:{$filtro}" => '5000.00']];
+
+    // Todo destildado: el formulario no manda ids[] y no debe tocarse ningún precio.
+    $this->assertValidationError(fn() => $precios->aplicar($params), 'No hay precios para modificar');
+    $this->assertSame(10000.0, (float) $this->make(ServicioRepository::class)->find($aceite)['precio_base']);
+
+    $todos = [...$params, 'ids' => ["servicio:{$aceite}", "repuesto:{$filtro}"]];
+    $this->assertSame(2, $precios->aplicar($todos));
+
+    // El mismo formulario enviado otra vez (doble click o volver atrás) no suma otro 10%.
+    $this->assertValidationError(fn() => $precios->aplicar($todos), 'cambiaron desde la vista previa');
+    $this->assertSame(11000.0, (float) $this->make(ServicioRepository::class)->find($aceite)['precio_base']);
+    $this->assertSame(5500.0, (float) $this->make(RepuestoRepository::class)->find($filtro)['precio']);
+  }
+
+  public function testUnAumentoQueSuperaElMaximoSeRechaza(): void
+  {
+    $this->crearServicio('Motor completo', 50000000);
+
+    $this->assertValidationError(
+      fn() => $this->make(PrecioService::class)->vistaPrevia(['aplicar_a' => 'servicios', 'porcentaje' => '100', 'redondeo' => '0']),
+      'precio máximo',
+    );
   }
 
   public function testFiltroPorProveedorYValidaciones(): void

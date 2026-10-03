@@ -48,9 +48,16 @@ final class ServicioRepository extends Repository
     return $servicio->id;
   }
 
-  public function setPrecio(int $id, float $precio): void
+  /** Con $esperado, solo actualiza si el precio sigue siendo ese; devuelve si lo actualizó. */
+  public function setPrecio(int $id, float $precio, ?float $esperado = null): bool
   {
-    $this->execute('UPDATE servicios SET precio_base = ? WHERE id = ?', [$precio, $id]);
+    if ($esperado === null) {
+      $this->execute('UPDATE servicios SET precio_base = ? WHERE id = ?', [$precio, $id]);
+
+      return true;
+    }
+
+    return $this->execute('UPDATE servicios SET precio_base = ? WHERE id = ? AND precio_base = ?', [$precio, $id, $esperado]) > 0;
   }
 
   public function delete(int $id): void

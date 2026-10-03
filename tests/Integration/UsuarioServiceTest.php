@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Integration;
 
+use App\Core\Auth;
+use App\Core\Session;
 use App\Enums\Rol;
 use App\Exceptions\ValidationException;
+use App\Repositories\UsuarioRepository;
 use App\Services\UsuarioService;
 
 final class UsuarioServiceTest extends IntegrationTestCase
@@ -104,5 +107,60 @@ final class UsuarioServiceTest extends IntegrationTestCase
 
     $this->expectExceptionMessage('Ese nombre de usuario ya existe.');
     $this->crear('ABEL');
+  }
+
+  public function testUnaClaveInvalidaNoDejaLaEdicionAMedias(): void
+  {
+    $id = $this->crear('abel');
+
+    $this->assertValidationError(
+      fn() => $this->usuarios->actualizar($id, ['nombre' => 'Otro Nombre', 'usuario' => 'abel', 'rol' => 'administrador', 'activo' => 1, 'clave' => 'corta', 'clave_confirmacion' => 'corta'], 999),
+      'al menos',
+    );
+
+    $fila = $this->db->query("SELECT nombre, rol FROM usuarios WHERE id = {$id}")->fetch();
+    $this->assertSame(['nombre' => 'Prueba', 'rol' => 'empleado'], $fila);
+  }
+
+  public function testLaSesionSeRevalidaContraLaBase(): void
+  {
+    $id = $this->crear('abel');
+    // Cada request arma su propio Auth sobre la misma sesión.
+    $request = fn() => new Auth($this->make(Session::class), $this->make(UsuarioRepository::class));
+    $_SESSION = ['_auth' => ['id' => $id, 'nombre' => 'Prueba', 'usuario' => 'abel', 'rol' => 'empleado', 'actividad' => time()]];
+    $this->assertFalse($request()->esAdministrador());
+
+    // Un cambio de rol rige en el request siguiente, sin volver a iniciar sesión.
+    $this->db->exec("UPDATE usuarios SET rol = 'administrador' WHERE id = {$id}");
+    $this->assertTrue($request()->esAdministrador());
+
+    // Al desactivarlo, la sesión se corta.
+    $this->db->exec("UPDATE usuarios SET activo = 0 WHERE id = {$id}");
+    $this->assertNull($request()->user());
+    $this->assertArrayNotHasKey('_auth', $_SESSION);
+    $_SESSION = [];
+  }
+
+  public function testIntentosDesdeOtraIpNoBloqueanAlUsuario(): void
+  {
+    $this->crear('abel');
+    $fallar = function (string $usuario, string $ip) {
+      try {
+        $this->usuarios->autenticar($usuario, 'mal', $ip);
+      } catch (ValidationException) {
+      }
+    };
+
+    // Alguien desde otra IP agota los intentos de "abel": el dueño, desde su IP, entra igual.
+    for ($i = 0; $i < UsuarioService::MAX_INTENTOS; $i++) {
+      $fallar('abel', '6.6.6.6');
+    }
+    $this->assertSame('abel', $this->usuarios->autenticar('abel', 'clave-segura', '10.0.0.9')['usuario']);
+
+    // Una IP que prueba muchos usuarios distintos queda bloqueada para todos.
+    for ($i = 0; $i < UsuarioService::MAX_INTENTOS_IP; $i++) {
+      $fallar("usuario{$i}", '7.7.7.7');
+    }
+    $this->assertValidationError(fn() => $this->usuarios->autenticar('abel', 'clave-segura', '7.7.7.7'), 'Demasiados intentos');
   }
 }

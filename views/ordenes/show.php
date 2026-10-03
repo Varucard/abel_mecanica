@@ -21,7 +21,7 @@ $pagado = (float) $orden['total'] - $saldo;
   <?php endif; ?>
   <a href="<?= url("ordenes/{$orden['id']}/presupuesto") ?>" class="btn btn-info">Presupuesto</a>
   <a href="<?= url("ordenes/{$orden['id']}/presupuesto/pdf") ?>" class="btn btn-outline-secondary">Presupuesto PDF</a>
-  <?php if ($puedeEnviar && $estado->value !== 'cancelado'): ?>
+  <?php if ($puedeEnviar && \App\Services\OrdenService::editable($estado)): ?>
     <form action="<?= url("ordenes/{$orden['id']}/enviar-presupuesto") ?>" method="POST" class="d-inline"
       data-confirm="¿Enviar el presupuesto por email a <?= e($cliente['email'] ?: 'el cliente') ?>?">
       <?= csrf_field() ?>

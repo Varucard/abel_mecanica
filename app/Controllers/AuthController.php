@@ -46,7 +46,7 @@ final class AuthController extends Controller
       $usuario = $this->usuarios->autenticar(
         $request->string('usuario'),
         (string) $request->input('clave', ''),
-        $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0',
+        Request::ip(),
       );
     } catch (ValidationException $e) {
       $this->session->keepInput(['usuario' => $request->string('usuario')]);

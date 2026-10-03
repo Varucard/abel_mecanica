@@ -27,12 +27,10 @@ $campos = [
   ],
 ];
 ?>
-<p class="text-muted">
-  Variables disponibles:
-  <?php foreach (ConfiguracionService::VARIABLES_MENSAJES as $variable): ?>
-    <code>{<?= e($variable) ?>}</code>
-  <?php endforeach; ?>
-</p>
+<?php $codigos = fn(array $variables) => implode(' ', array_map(fn($v) => '<code>{' . e($v) . '}</code>', $variables)); ?>
+<p class="text-muted mb-1">Variables en todos los mensajes: <?= $codigos(ConfiguracionService::VARIABLES_GENERALES) ?></p>
+<p class="text-muted mb-1">Solo en confirmación y recordatorio de turnos: <?= $codigos(ConfiguracionService::VARIABLES_TURNO) ?></p>
+<p class="text-muted">Solo en presupuesto y próximo service: <?= $codigos(ConfiguracionService::VARIABLES_ORDEN) ?></p>
 <?php foreach ($campos as $titulo => $grupo): ?>
   <h5 class="mt-3"><?= e($titulo) ?></h5>
   <?php foreach ($grupo as $campo => [$etiqueta, $filas]): ?>

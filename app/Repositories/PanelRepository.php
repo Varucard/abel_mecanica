@@ -22,7 +22,9 @@ final class PanelRepository extends Repository
   public function cobradoEntre(string $desde, string $hasta): float
   {
     return (float) $this->fetchOne(
-      'SELECT COALESCE(SUM(monto), 0) AS total FROM pagos WHERE fecha BETWEEN ? AND ?',
+      "SELECT COALESCE(SUM(pg.monto), 0) AS total FROM pagos pg
+         INNER JOIN ordenes o ON o.id = pg.orden_id AND o.estado <> 'cancelado'
+        WHERE pg.fecha BETWEEN ? AND ?",
       [$desde, $hasta]
     )['total'];
   }

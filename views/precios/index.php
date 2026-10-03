@@ -49,7 +49,7 @@ $valor = fn(string $k, mixed $def = '') => old($k, $p[$k] ?? $def);
       <div class="col-md-2">
         <button type="submit" class="btn btn-primary w-100">Ver cambios</button>
       </div>
-      <div class="col-12"><small class="text-muted">Un porcentaje negativo baja los precios. El redondeo es hacia arriba. Nada se guarda hasta confirmar.</small></div>
+      <div class="col-12"><small class="text-muted">Un porcentaje negativo baja los precios. El redondeo es hacia arriba en un aumento y hacia abajo en una rebaja. Nada se guarda hasta confirmar.</small></div>
     </form>
   </div>
 </div>
@@ -78,7 +78,10 @@ $valor = fn(string $k, mixed $def = '') => old($k, $p[$k] ?? $def);
             <tbody>
               <?php foreach ($vista['items'] as $item): ?>
                 <tr>
-                  <td><input type="checkbox" class="form-check-input js-precio-item" name="ids[]" value="<?= e("{$item['tipo']}:{$item['id']}") ?>" checked aria-label="Incluir <?= e($item['nombre']) ?>"></td>
+                  <td>
+                    <input type="checkbox" class="form-check-input js-precio-item" name="ids[]" value="<?= e("{$item['tipo']}:{$item['id']}") ?>" checked aria-label="Incluir <?= e($item['nombre']) ?>">
+                    <input type="hidden" name="actual[<?= e("{$item['tipo']}:{$item['id']}") ?>]" value="<?= e(number_format($item['actual'], 2, '.', '')) ?>">
+                  </td>
                   <td><?= $item['tipo'] === 'servicio' ? 'Servicio' : 'Repuesto' ?></td>
                   <td><?= e($item['nombre']) ?></td>
                   <td class="text-end">$ <?= money($item['actual']) ?></td>

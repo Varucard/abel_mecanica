@@ -1,5 +1,9 @@
 FROM php:8.4-apache
 
+# produccion (por defecto): php.ini de producción y sin Xdebug.
+# desarrollo: php.ini de desarrollo y Xdebug instalado (ENTORNO=desarrollo en .env).
+ARG ENTORNO=produccion
+
 # Extensiones necesarias: PDO MySQL, GD (Dompdf), mbstring/zip (Composer)
 RUN apt-get update && apt-get install --yes --no-install-recommends \
         libfreetype6-dev \
@@ -10,8 +14,7 @@ RUN apt-get update && apt-get install --yes --no-install-recommends \
         unzip \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
     && docker-php-ext-install -j"$(nproc)" gd pdo_mysql zip mbstring \
-    && pecl install xdebug \
-    && docker-php-ext-enable xdebug \
+    && if [ "$ENTORNO" = "desarrollo" ]; then pecl install xdebug && docker-php-ext-enable xdebug; fi \
     && rm -rf /var/lib/apt/lists/* /tmp/pear
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
@@ -23,7 +26,8 @@ RUN sed -ri 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-avail
     && echo "ServerName localhost" > /etc/apache2/conf-available/servername.conf \
     && a2enconf servername \
     && a2enmod rewrite headers \
-    && mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
+    && if [ "$ENTORNO" = "desarrollo" ]; then ini=development; else ini=production; fi \
+    && cp "$PHP_INI_DIR/php.ini-$ini" "$PHP_INI_DIR/php.ini"
 
 COPY docker/php.ini "$PHP_INI_DIR/conf.d/zz-app.ini"
 COPY docker/entrypoint.sh /usr/local/bin/app-entrypoint
@@ -34,4 +38,4 @@ WORKDIR /var/www/html
 ENTRYPOINT ["app-entrypoint"]
 CMD ["apache2-foreground"]
 
-LABEL description="Taller Mecánico - PHP 8.4 + Apache + PDO MySQL + GD + Composer + Xdebug"
+LABEL description="Taller Mecánico - PHP 8.4 + Apache + PDO MySQL + GD + Composer (+ Xdebug en desarrollo)"

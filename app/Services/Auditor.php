@@ -41,7 +41,7 @@ final class Auditor
         $entidadId,
         $descripcion,
         $datos,
-        PHP_SAPI === 'cli' ? null : ($_SERVER['REMOTE_ADDR'] ?? null),
+        PHP_SAPI === 'cli' ? null : \App\Core\Request::ip(),
       );
     } catch (Throwable $e) {
       // La auditoría nunca debe impedir la operación principal.

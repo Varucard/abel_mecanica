@@ -69,6 +69,52 @@ final class PresupuestoServiceTest extends IntegrationTestCase
     $ordenes->responderPresupuesto($token, 'rechazar');
   }
 
+  public function testEditarLaOrdenAnulaLaRespuestaDelCliente(): void
+  {
+    $this->configurar('trabajo', ['aceptar_inicia_trabajo' => false]);
+    $id = $this->orden();
+    $repo = $this->make(OrdenRepository::class);
+    $ordenes = $this->make(OrdenService::class);
+    $ordenes->responderPresupuesto($repo->token($id), 'aceptar');
+
+    // Guardar sin cambios en los ítems conserva la aceptación.
+    $ordenes->guardar($this->vehiculo, [$this->servicio], [], $id, null, ['diagnostico' => 'Pastillas gastadas']);
+    $this->assertSame('aceptado', $repo->find($id)['presupuesto_respuesta']);
+
+    // Cambiar precio o ítems la deja sin efecto: el cliente aceptó otro monto.
+    $ordenes->guardar($this->vehiculo, [$this->servicio => ['cantidad' => '1', 'precio' => '18000']], [], $id);
+    $this->assertNull($repo->find($id)['presupuesto_respuesta']);
+
+    // Y puede volver a responder sobre el presupuesto nuevo.
+    $this->assertSame('aceptado', $ordenes->responderPresupuesto($repo->token($id), 'aceptar')['presupuesto_respuesta']);
+  }
+
+  public function testReenviarConservaLaAceptacionYSoloSeEnviaConLaOrdenAbierta(): void
+  {
+    $this->configurar('trabajo', ['aceptar_inicia_trabajo' => false]);
+    $id = $this->orden();
+    $repo = $this->make(OrdenRepository::class);
+    $this->make(OrdenService::class)->responderPresupuesto($repo->token($id), 'aceptar');
+
+    $this->notificaciones->enviarPresupuesto($id);
+    $this->assertSame('aceptado', $repo->find($id)['presupuesto_respuesta']);
+
+    $this->make(OrdenService::class)->cambiarEstado($id, 'cancelado');
+    $this->assertValidationError(fn() => $this->notificaciones->enviarPresupuesto($id), 'pendientes o en proceso');
+  }
+
+  public function testLaVigenciaSeCuentaDesdeElEnvio(): void
+  {
+    $this->configurar('trabajo', ['validez' => 10]);
+    $id = $this->orden();
+    $this->db->exec("UPDATE ordenes SET created_at = NOW() - INTERVAL 15 DAY WHERE id = {$id}");
+
+    // Creada hace 15 días pero enviada hoy: sigue vigente.
+    $this->notificaciones->enviarPresupuesto($id);
+    $orden = $this->make(OrdenService::class)->responderPresupuesto($this->make(OrdenRepository::class)->token($id), 'aceptar');
+    $this->assertSame('aceptado', $orden['presupuesto_respuesta']);
+  }
+
   public function testNoSeAceptaUnPresupuestoVencido(): void
   {
     $this->configurar('trabajo', ['validez' => 10]);
@@ -104,5 +150,20 @@ final class PresupuestoServiceTest extends IntegrationTestCase
     $this->notificaciones->enviarAvisosService($ahora);
     $this->assertNull($this->make(OrdenRepository::class)->find($vieja)['proximo_service_avisado']);
     $this->assertNotNull($this->make(OrdenRepository::class)->find($otra)['proximo_service_avisado']);
+  }
+
+  public function testElLinkDelPresupuestoVence(): void
+  {
+    $id = $this->orden();
+    $repo = $this->make(OrdenRepository::class);
+    $token = $repo->token($id);
+    $this->assertSame($id, $repo->idPorToken($token));
+
+    $this->db->exec("UPDATE ordenes SET created_at = NOW() - INTERVAL 61 DAY WHERE id = {$id}");
+    $this->assertNull($repo->idPorToken($token));
+
+    // Reenviarlo lo vuelve a habilitar.
+    $this->notificaciones->enviarPresupuesto($id);
+    $this->assertSame($id, $repo->idPorToken($token));
   }
 }

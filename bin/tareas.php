@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Tareas periódicas: recordatorios automáticos de turnos y limpieza.
+ * Tareas periódicas: recordatorios de turnos, avisos de service, backup y limpieza.
  *
  *   php bin/tareas.php
  *
@@ -15,43 +15,64 @@ declare(strict_types=1);
 use App\Core\App;
 use App\Core\Env;
 use App\Repositories\IntentoRepository;
+use App\Services\BackupService;
 use App\Services\NotificacionService;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
 
 $app = App::boot(dirname(__DIR__));
 $ahora = new DateTimeImmutable('now');
+$fallas = 0;
 
-try {
-  $notificaciones = $app->container->get(NotificacionService::class);
-  $resultado = $notificaciones->enviarRecordatoriosPendientes($ahora);
-  $services = $notificaciones->enviarAvisosService($ahora);
-  $backups = $app->container->get(\App\Services\BackupService::class);
-  $backup = $backups->corresponde($ahora) ? $backups->generar() : [];
-  $purgados = $app->container->get(IntentoRepository::class)->purgar();
-  $logsBorrados = $app->logger->purgar((int) Env::get('LOG_DIAS', '30'));
-} catch (Throwable $e) {
-  $app->logger->error('Falló la tarea periódica', ['exception' => $e]);
-  fwrite(STDERR, '[' . $ahora->format('Y-m-d H:i') . '] Error: ' . $e->getMessage() . PHP_EOL);
-  exit(1);
-}
+/**
+ * Ejecuta una tarea aislada: si falla se registra y se sigue con las demás (un error en
+ * los recordatorios no debe impedir el backup ni la limpieza).
+ *
+ * @template T
+ * @param callable(): T $tarea
+ * @return T|null
+ */
+$ejecutar = function (string $nombre, callable $tarea) use ($app, $ahora, &$fallas): mixed {
+  try {
+    return $tarea();
+  } catch (Throwable $e) {
+    $fallas++;
+    $app->logger->error("Falló la tarea periódica: {$nombre}", ['exception' => $e]);
+    fwrite(STDERR, '[' . $ahora->format('Y-m-d H:i') . "] Error en {$nombre}: " . $e->getMessage() . PHP_EOL);
 
-if ($services['omitido'] === null && $services['enviados'] + $services['sin_contacto'] + $services['errores'] > 0) {
+    return null;
+  }
+};
+
+$notificaciones = $app->container->get(NotificacionService::class);
+$backups = $app->container->get(BackupService::class);
+
+$resultado = $ejecutar('recordatorios', fn() => $notificaciones->enviarRecordatoriosPendientes($ahora));
+$services = $ejecutar('avisos de service', fn() => $notificaciones->enviarAvisosService($ahora));
+$backup = $ejecutar('backup', fn() => $backups->corresponde($ahora) ? $backups->generar() : []) ?? [];
+$purgados = $ejecutar('limpieza de intentos', fn() => $app->container->get(IntentoRepository::class)->purgar()) ?? 0;
+$logsBorrados = $ejecutar('limpieza de logs', fn() => $app->logger->purgar((int) Env::get('LOG_DIAS', '30'))) ?? 0;
+
+if ($services !== null && $services['omitido'] === null && $services['enviados'] + $services['sin_contacto'] + $services['errores'] > 0) {
   $app->logger->info('Avisos de próximo service: {enviados} enviados, {sin} sin contacto, {errores} con error', [
     'enviados' => $services['enviados'], 'sin' => $services['sin_contacto'], 'errores' => $services['errores'],
   ]);
 }
 
-if ($resultado['omitido'] === null) {
+if ($resultado !== null && $resultado['omitido'] === null) {
   $app->logger->info('Recordatorios automáticos: {enviados} enviados, {sin} sin contacto, {errores} con error', [
     'enviados' => $resultado['enviados'], 'sin' => $resultado['sin_contacto'], 'errores' => $resultado['errores'],
   ]);
 }
 
-$mensaje = $resultado['omitido'] !== null
-  ? "Recordatorios: " . rtrim($resultado['omitido'], '.')
-  : "Recordatorios: {$resultado['enviados']} enviados, {$resultado['sin_contacto']} sin contacto, {$resultado['errores']} con error";
-$mensaje .= $services['omitido'] === null ? ". Services: {$services['enviados']} avisados" : '';
+$mensaje = match (true) {
+  $resultado === null => 'Recordatorios: error',
+  $resultado['omitido'] !== null => 'Recordatorios: ' . rtrim($resultado['omitido'], '.'),
+  default => "Recordatorios: {$resultado['enviados']} enviados, {$resultado['sin_contacto']} sin contacto, {$resultado['errores']} con error",
+};
+$mensaje .= $services === null ? '. Services: error' : ($services['omitido'] === null ? ". Services: {$services['enviados']} avisados" : '');
 $mensaje .= $backup !== [] ? '. Backup: ' . implode(', ', $backup) : '';
 
 echo '[' . $ahora->format('Y-m-d H:i') . "] {$mensaje}. Limpieza: {$purgados} intentos, {$logsBorrados} archivos de log." . PHP_EOL;
+
+exit($fallas > 0 ? 1 : 0);

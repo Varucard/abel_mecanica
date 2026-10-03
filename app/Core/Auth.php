@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Core;
 
 use App\Enums\Rol;
+use App\Repositories\UsuarioRepository;
 
 /**
  * Usuario autenticado en la sesión actual.
@@ -14,8 +15,13 @@ final class Auth
   private const KEY = '_auth';
   private const INACTIVIDAD_MAXIMA = 8 * 3600;
 
-  public function __construct(private readonly Session $session)
-  {
+  /** Id del usuario ya verificado contra la base en este request. */
+  private ?int $verificadoId = null;
+
+  public function __construct(
+    private readonly Session $session,
+    private readonly UsuarioRepository $usuarios,
+  ) {
   }
 
   /** @param array<string, mixed> $usuario */
@@ -35,8 +41,11 @@ final class Auth
 
   public function logout(): void
   {
+    $this->verificadoId = null;
     unset($_SESSION[self::KEY]);
-    session_regenerate_id(true);
+    if (session_status() === PHP_SESSION_ACTIVE) {
+      session_regenerate_id(true);
+    }
   }
 
   /** @return array{id: int, nombre: string, usuario: string, rol: string}|null */
@@ -53,9 +62,22 @@ final class Auth
       return null;
     }
 
+    // Una vez por request se revalida contra la base: si el usuario fue desactivado o
+    // eliminado se corta la sesión, y un cambio de rol o de nombre rige de inmediato.
+    if ($this->verificadoId !== $auth['id']) {
+      $usuario = $this->usuarios->find((int) $auth['id']);
+      if ($usuario === null || !(int) $usuario['activo']) {
+        $this->logout();
+
+        return null;
+      }
+      $this->refrescar($usuario);
+      $this->verificadoId = $auth['id'];
+    }
+
     $_SESSION[self::KEY]['actividad'] = time();
 
-    return $auth;
+    return $_SESSION[self::KEY];
   }
 
   public function id(): ?int

@@ -7,13 +7,15 @@ namespace App\Repositories;
 /** Consultas de los reportes de gestión. Fechas inclusive (AAAA-MM-DD). */
 final class ReporteRepository extends Repository
 {
-  /** @return list<array<string, mixed>> cobrado por mes y forma de pago */
+  /** @return list<array<string, mixed>> cobrado por mes y forma de pago (sin órdenes canceladas) */
   public function cobranzas(string $desde, string $hasta): array
   {
     return $this->fetchAll(
-      "SELECT DATE_FORMAT(fecha, '%Y-%m') AS mes, forma_pago, COUNT(*) AS pagos, SUM(monto) AS total
-         FROM pagos WHERE fecha BETWEEN ? AND ?
-        GROUP BY mes, forma_pago ORDER BY mes, total DESC",
+      "SELECT DATE_FORMAT(pg.fecha, '%Y-%m') AS mes, pg.forma_pago, COUNT(*) AS pagos, SUM(pg.monto) AS total
+         FROM pagos pg
+         INNER JOIN ordenes o ON o.id = pg.orden_id AND o.estado <> 'cancelado'
+        WHERE pg.fecha BETWEEN ? AND ?
+        GROUP BY mes, pg.forma_pago ORDER BY mes, total DESC",
       [$desde, $hasta]
     );
   }
@@ -28,7 +30,7 @@ final class ReporteRepository extends Repository
          FROM ordenes_servicios os
          INNER JOIN ordenes o ON o.id = os.orden_id AND o.estado <> 'cancelado'
          INNER JOIN {$tabla} x ON x.id = os.{$columna}
-        WHERE DATE(o.created_at) BETWEEN ? AND ?
+        WHERE o.created_at >= ? AND o.created_at < ? + INTERVAL 1 DAY
         GROUP BY x.id, x.nombre ORDER BY total DESC",
       [$desde, $hasta]
     );
@@ -46,7 +48,7 @@ final class ReporteRepository extends Repository
          FROM ordenes o
          LEFT JOIN empleados e ON e.id = o.mecanico_id
          LEFT JOIN personas p ON p.id = e.persona_id
-        WHERE DATE(o.created_at) BETWEEN ? AND ?
+        WHERE o.created_at >= ? AND o.created_at < ? + INTERVAL 1 DAY
         GROUP BY o.mecanico_id, p.apellido, p.nombre ORDER BY total DESC",
       [$desde, $hasta]
     );

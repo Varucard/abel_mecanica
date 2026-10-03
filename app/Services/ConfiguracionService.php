@@ -20,11 +20,23 @@ final class ConfiguracionService
 {
   public const SECCIONES = ['taller', 'trabajo', 'turnos', 'service', 'notificaciones', 'mensajes', 'stock', 'portal', 'backups'];
 
-  /** Variables que se pueden usar en las plantillas de mensajes. */
-  public const VARIABLES_MENSAJES = [
-    'cliente', 'fecha', 'hora', 'vehiculo', 'patente', 'taller', 'direccion', 'telefono', 'link_turno', 'link_seguimiento',
-    'numero', 'total', 'link_presupuesto', 'km_proximo', 'fecha_proximo',
-  ];
+  /** Variables que se pueden usar en las plantillas de mensajes, según de qué se trate el aviso. */
+  public const VARIABLES_GENERALES = ['cliente', 'vehiculo', 'patente', 'taller', 'direccion', 'telefono', 'link_seguimiento'];
+  public const VARIABLES_TURNO = ['fecha', 'hora', 'link_turno'];
+  public const VARIABLES_ORDEN = ['numero', 'total', 'link_presupuesto', 'km_proximo', 'fecha_proximo'];
+
+  /**
+   * Variables válidas para una plantilla: las de turnos (confirmación y recordatorio) o las
+   * de órdenes (presupuesto y service), más las generales.
+   *
+   * @return list<string>
+   */
+  public static function variablesDe(string $campo): array
+  {
+    $deTurno = str_contains($campo, 'confirmacion') || str_contains($campo, 'recordatorio');
+
+    return [...self::VARIABLES_GENERALES, ...($deTurno ? self::VARIABLES_TURNO : self::VARIABLES_ORDEN)];
+  }
 
   private const FERIADOS_API = 'https://api.argentinadatos.com/v1/feriados/%d';
 
@@ -268,10 +280,14 @@ final class ConfiguracionService
       $mensajes[$campo] = $texto;
 
       preg_match_all('/\{(\w+)\}/', $texto, $usadas);
-      $desconocidas = array_diff($usadas[1], self::VARIABLES_MENSAJES);
+      $desconocidas = array_values(array_unique(array_diff($usadas[1], self::variablesDe($campo))));
 
       $v->check($texto !== '', 'Ningún mensaje puede quedar vacío.')
-        ->check($desconocidas === [], 'Variables desconocidas: {' . implode('}, {', $desconocidas) . '}.');
+        ->check($desconocidas === [], sprintf(
+          'El mensaje "%s" usa variables que no corresponden a ese aviso: {%s}.',
+          $campo,
+          implode('}, {', $desconocidas),
+        ));
     }
 
     $v->check(

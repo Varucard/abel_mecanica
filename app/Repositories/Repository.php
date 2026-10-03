@@ -86,6 +86,31 @@ abstract class Repository
     }
   }
 
+  /**
+   * Ejecuta $callback con un candado de MySQL (GET_LOCK) por nombre: otro proceso que pida
+   * el mismo candado espera a que termine. Sirve para "controlar y después guardar" sin que
+   * dos pedidos simultáneos pasen el mismo control.
+   *
+   * @template T
+   * @param callable(): T $callback
+   * @return T
+   */
+  public function conCandado(string $nombre, callable $callback, int $espera = 10): mixed
+  {
+    $nombre = 'taller:' . substr(hash('sha256', $nombre), 0, 40);
+    $stmt = $this->db->prepare('SELECT GET_LOCK(?, ?)');
+    $stmt->execute([$nombre, $espera]);
+    if ((int) $stmt->fetchColumn() !== 1) {
+      throw new \RuntimeException('El sistema está ocupado procesando otro pedido igual; probá de nuevo en unos segundos.');
+    }
+
+    try {
+      return $callback();
+    } finally {
+      $this->db->prepare('SELECT RELEASE_LOCK(?)')->execute([$nombre]);
+    }
+  }
+
   public static function isDuplicate(PDOException $e): bool
   {
     return (int) ($e->errorInfo[1] ?? 0) === self::MYSQL_DUPLICATE;

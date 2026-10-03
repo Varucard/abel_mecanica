@@ -97,6 +97,19 @@ abstract class IntegrationTestCase extends TestCase
 
   // ---------- Datos de prueba ----------
 
+  /** Verifica que $accion falle con un error de validación que contenga $mensaje. */
+  protected function assertValidationError(callable $accion, string $mensaje): void
+  {
+    try {
+      $accion();
+    } catch (\App\Exceptions\ValidationException $e) {
+      $this->assertStringContainsString($mensaje, implode(' | ', $e->errors()));
+
+      return;
+    }
+    $this->fail("Se esperaba un error de validación: {$mensaje}");
+  }
+
   protected function crearCliente(string $dni = '30111222'): int
   {
     return $this->make(\App\Services\ClienteService::class)->crear([

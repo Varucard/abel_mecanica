@@ -39,7 +39,7 @@ final class PublicoController extends Controller
   /** Página del link enviado por email. Solo muestra: confirmar/cancelar se hace por POST. */
   public function turno(Request $request, string $token): void
   {
-    $turno = $this->turnos->porToken($token) ?? throw new NotFoundException('El link no es válido o el turno ya no existe.');
+    $turno = $this->turnos->porToken($token) ?? throw new NotFoundException('El link no es válido, venció o el turno ya no existe.');
 
     $this->publico('publico/turno', [
       'title' => 'Tu turno',
@@ -62,7 +62,7 @@ final class PublicoController extends Controller
   /** Presupuesto enviado por email: el cliente lo ve y lo acepta o rechaza. */
   public function presupuesto(Request $request, string $token): void
   {
-    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido o la orden ya no existe.');
+    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido, venció o la orden ya no existe.');
     $datos = $this->documentos->datos($id);
 
     $this->publico('publico/presupuesto', [
@@ -76,11 +76,12 @@ final class PublicoController extends Controller
 
   public function presupuestoPdf(Request $request, string $token): void
   {
-    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido o la orden ya no existe.');
+    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido, venció o la orden ya no existe.');
     $pdf = $this->documentos->pdf($id);
 
     header('Content-Type: application/pdf');
     header('Content-Disposition: inline; filename="' . $pdf['nombre'] . '"');
+    header('Cache-Control: no-store, private');
     echo $pdf['contenido'];
   }
 
@@ -125,7 +126,7 @@ final class PublicoController extends Controller
     $this->verifyCsrf($request);
 
     try {
-      $resultado = $this->portal->consultar($request->string('dni'), $request->string('patente'), $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0');
+      $resultado = $this->portal->consultar($request->string('dni'), $request->string('patente'), Request::ip());
     } catch (ValidationException $e) {
       $this->session->keepInput(['dni' => $request->string('dni'), 'patente' => $request->string('patente')]);
       $this->error($e->getMessage());
@@ -133,7 +134,6 @@ final class PublicoController extends Controller
     }
 
     // El resultado se muestra en la respuesta del POST: los datos no quedan en la URL ni en el historial.
-    header('Cache-Control: no-store');
     $this->publico('publico/seguimiento', ['title' => 'Seguí tu vehículo', 'opciones' => $this->portal->opciones(), 'resultado' => $resultado]);
   }
 
@@ -151,9 +151,16 @@ final class PublicoController extends Controller
     $this->redirect("/turno/{$token}");
   }
 
-  /** @param array<string, mixed> $datos */
+  /**
+   * Las páginas públicas muestran datos personales: no se guardan en caché (ni del
+   * navegador ni de proxies). La dirección con el token tampoco se pasa a otros sitios
+   * (Referrer-Policy same-origin, en public/.htaccess).
+   *
+   * @param array<string, mixed> $datos
+   */
   private function publico(string $vista, array $datos): void
   {
+    header('Cache-Control: no-store, private');
     echo $this->view->render($vista, [...$datos, 'taller' => $this->configuracion->seccion('taller')], 'layouts/publico');
   }
 }

@@ -11,16 +11,13 @@ declare(strict_types=1);
  * En Docker: docker compose exec public php bin/usuario.php clave admin
  */
 
-use App\Core\Container;
-use App\Core\Database;
-use App\Core\Env;
+use App\Core\App;
 use App\Enums\Rol;
 use App\Exceptions\ValidationException;
 use App\Repositories\UsuarioRepository;
 use App\Services\UsuarioService;
 
 require dirname(__DIR__) . '/vendor/autoload.php';
-Env::load(dirname(__DIR__) . '/.env');
 
 [$comando, $usuario, $nombre] = array_pad(array_slice($argv, 1), 3, null);
 
@@ -45,8 +42,8 @@ function leerClave(string $prompt): string
   return $clave;
 }
 
-$container = new Container();
-$container->set(PDO::class, fn() => Database::connect());
+// Mismo contenedor que la aplicación (base, logger, configuración, auditoría).
+$container = App::boot(dirname(__DIR__))->container;
 $service = $container->get(UsuarioService::class);
 $repo = $container->get(UsuarioRepository::class);
 

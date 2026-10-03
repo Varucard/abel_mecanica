@@ -128,4 +128,20 @@ final class NotificacionTest extends IntegrationTestCase
     $this->canal->fallar = false;
     $this->assertSame(1, $this->notificaciones->enviarRecordatoriosPendientes(new DateTimeImmutable('2026-10-09 10:15'))['enviados']);
   }
+
+  public function testUnaReservaQueQuedoTrabadaSeReintenta(): void
+  {
+    $semana = ['desde' => '08:00', 'hasta' => '18:00'];
+    $this->configurar('turnos', ['horario' => array_fill_keys(['1', '2', '3', '4', '5', '6', '7'], $semana), 'feriados' => [], 'recordatorio_hora' => '08:00']);
+    $id = $this->turno('2026-10-10');
+
+    // Un proceso reservó el envío y se cortó: hace 5 minutos todavía puede estar enviando.
+    $this->db->exec("UPDATE turnos SET recordatorio_canal = 'enviando', recordatorio_enviado = NOW() - INTERVAL 5 MINUTE WHERE id = {$id}");
+    $this->assertSame(0, $this->notificaciones->enviarRecordatoriosPendientes(new DateTimeImmutable('2026-10-09 10:00'))['enviados']);
+
+    // Pasada media hora, la reserva se considera abandonada y se reintenta.
+    $this->db->exec("UPDATE turnos SET recordatorio_enviado = NOW() - INTERVAL 31 MINUTE WHERE id = {$id}");
+    $this->assertSame(1, $this->notificaciones->enviarRecordatoriosPendientes(new DateTimeImmutable('2026-10-09 10:15'))['enviados']);
+    $this->assertSame('email', $this->make(TurnoRepository::class)->detalle($id)['recordatorio_canal']);
+  }
 }

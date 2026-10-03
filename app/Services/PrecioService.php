@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exceptions\ValidationException;
 use App\Repositories\RepuestoRepository;
 use App\Repositories\ServicioRepository;
 use App\Support\Validator;
@@ -16,6 +17,8 @@ final class PrecioService
 {
   public const APLICAR_A = ['servicios' => 'Servicios', 'repuestos' => 'Repuestos', 'ambos' => 'Servicios y repuestos'];
   public const REDONDEOS = [0 => 'Sin redondeo', 10 => 'A $10', 50 => 'A $50', 100 => 'A $100', 500 => 'A $500', 1000 => 'A $1.000'];
+  /** Máximo que admite una columna decimal(10,2). */
+  public const PRECIO_MAXIMO = Validator::IMPORTE_MAXIMO;
 
   public function __construct(
     private readonly ServicioRepository $servicios,
@@ -30,12 +33,21 @@ final class PrecioService
     return round($costo * (1 + $margen / 100), 2);
   }
 
-  /** Aplica el porcentaje y redondea hacia arriba al múltiplo indicado (0 = sin redondeo). */
+  /**
+   * Aplica el porcentaje y redondea al múltiplo indicado (0 = sin redondeo): hacia arriba
+   * en un aumento y hacia abajo en una rebaja, para que una rebaja nunca suba el precio.
+   * Si el redondeo hacia abajo dejara el precio en 0, se conserva sin redondear.
+   */
   public static function ajustar(float $precio, float $porcentaje, int $redondeo): float
   {
-    $nuevo = $precio * (1 + $porcentaje / 100);
+    $nuevo = round($precio * (1 + $porcentaje / 100), 2);
+    if ($redondeo <= 0) {
+      return $nuevo;
+    }
 
-    return $redondeo > 0 ? ceil(round($nuevo, 2) / $redondeo) * $redondeo : round($nuevo, 2);
+    $redondeado = ($porcentaje < 0 ? floor($nuevo / $redondeo) : ceil($nuevo / $redondeo)) * $redondeo;
+
+    return $redondeado > 0 ? (float) $redondeado : $nuevo;
   }
 
   /**
@@ -67,6 +79,11 @@ final class PrecioService
     }
     unset($item);
 
+    $excedidos = array_filter($items, fn(array $i) => $i['nuevo'] > self::PRECIO_MAXIMO);
+    (new Validator())
+      ->check($excedidos === [], sprintf('Con ese porcentaje %s superaría el precio máximo admitido ($ %s).', $excedidos ? reset($excedidos)['nombre'] : '', money(self::PRECIO_MAXIMO)))
+      ->validate();
+
     if ($p['ids'] !== null) {
       $items = array_values(array_filter($items, fn(array $i) => in_array("{$i['tipo']}:{$i['id']}", $p['ids'], true)));
     }
@@ -75,22 +92,39 @@ final class PrecioService
   }
 
   /**
-   * Aplica los precios de la vista previa (o solo los ítems seleccionados).
+   * Aplica los precios de la vista previa, solo en los ítems seleccionados (sin selección no
+   * se modifica nada). `actual[tipo:id]` trae el precio que se vio en la vista previa: si
+   * alguno cambió desde entonces (otro usuario, o el mismo formulario enviado dos veces) no
+   * se aplica nada, así el aumento nunca se suma dos veces.
    *
    * @return int cantidad de precios modificados
    */
   public function aplicar(array $input): int
   {
+    $input['ids'] = isset($input['ids']) && is_array($input['ids']) ? $input['ids'] : [];
+    $vistos = isset($input['actual']) && is_array($input['actual']) ? $input['actual'] : [];
+
     ['parametros' => $p, 'items' => $items] = $this->vistaPrevia($input);
     $cambios = array_values(array_filter($items, fn(array $i) => $i['nuevo'] !== $i['actual']));
 
     (new Validator())->check($cambios !== [], 'No hay precios para modificar con esos criterios.')->validate();
 
-    $this->servicios->transaction(function () use ($cambios) {
+    $cambiaron = 'Los precios cambiaron desde la vista previa (¿se aplicó dos veces?). Revisá los precios y generá la vista previa de nuevo.';
+    foreach ($cambios as $c) {
+      $visto = Validator::importe((string) ($vistos["{$c['tipo']}:{$c['id']}"] ?? ''));
+      if ($visto === null || abs($visto - $c['actual']) > 0.001) {
+        throw new ValidationException([$cambiaron]);
+      }
+    }
+
+    $this->servicios->transaction(function () use ($cambios, $cambiaron) {
       foreach ($cambios as $c) {
-        $c['tipo'] === 'servicio'
-          ? $this->servicios->setPrecio($c['id'], $c['nuevo'])
-          : $this->repuestos->setPrecio($c['id'], $c['nuevo']);
+        $ok = $c['tipo'] === 'servicio'
+          ? $this->servicios->setPrecio($c['id'], $c['nuevo'], $c['actual'])
+          : $this->repuestos->setPrecio($c['id'], $c['nuevo'], $c['actual']);
+        if (!$ok) {
+          throw new ValidationException([$cambiaron]);
+        }
       }
     });
 
