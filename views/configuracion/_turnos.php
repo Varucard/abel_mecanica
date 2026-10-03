@@ -44,6 +44,14 @@ $check = fn(string $k) => ($conOld ? old($k) : $valores[$k]) ? 'checked' : '';
       value="<?= e(old('cupos_por_horario', $valores['cupos_por_horario'])) ?>">
     <small class="form-text text-muted">Por ejemplo, la cantidad de elevadores o mecánicos disponibles.</small>
   </div>
+  <div class="col-md-6 mb-3">
+    <label for="intervalo_minutos" class="form-label">Franjas de la agenda semanal</label>
+    <select class="form-select" id="intervalo_minutos" name="intervalo_minutos" style="max-width: 160px;">
+      <?php foreach ([15, 20, 30, 45, 60, 90, 120] as $min): ?>
+        <option value="<?= $min ?>" <?= selected($min === (int) old('intervalo_minutos', $valores['intervalo_minutos'])) ?>><?= $min ?> minutos</option>
+      <?php endforeach; ?>
+    </select>
+  </div>
 </div>
 
 <div class="mb-3">

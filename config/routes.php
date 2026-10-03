@@ -17,6 +17,7 @@ use App\Controllers\PrecioController;
 use App\Controllers\ProveedorController;
 use App\Controllers\PublicoController;
 use App\Controllers\RegistroController;
+use App\Controllers\ReporteController;
 use App\Controllers\RepuestoController;
 use App\Controllers\ServicioController;
 use App\Controllers\TurnoController;
@@ -121,6 +122,7 @@ return function (Router $r): void {
   // Turnos
   $r->get('/turnos', [TurnoController::class, 'index']);
   $r->get('/turnos/crear', [TurnoController::class, 'create']);
+  $r->get('/turnos/semana', [TurnoController::class, 'semana']);
   $r->post('/turnos', [TurnoController::class, 'store']);
   $r->get('/turnos/{id}/editar', [TurnoController::class, 'edit']);
   $r->post('/turnos/{id}', [TurnoController::class, 'update']);
@@ -135,6 +137,8 @@ return function (Router $r): void {
   $r->get('/precios', [PrecioController::class, 'index'], $admin);
   $r->post('/precios/vista-previa', [PrecioController::class, 'vistaPrevia'], $admin);
   $r->post('/precios/aplicar', [PrecioController::class, 'aplicar'], $admin);
+  $r->get('/reportes', [ReporteController::class, 'index'], $admin);
+  $r->get('/reportes/{reporte:slug}/csv', [ReporteController::class, 'csv'], $admin);
   $r->get('/auditoria', [RegistroController::class, 'auditoria'], $admin);
   $r->get('/auditoria/datos', [RegistroController::class, 'auditoriaDatos'], $admin);
   $r->get('/logs', [RegistroController::class, 'logs'], $admin);

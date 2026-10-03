@@ -51,13 +51,13 @@ $view->script('turnos.js');
           <label for="fecha" class="form-label">Fecha *</label>
           <input type="date" id="fecha" name="fecha" class="form-control" required
             <?= $turno ? '' : 'min="' . date('Y-m-d') . '"' ?>
-            value="<?= e(old('fecha', $turno['fecha'] ?? date('Y-m-d'))) ?>">
+            value="<?= e(old('fecha', $turno['fecha'] ?? $sugerido['fecha'] ?? date('Y-m-d'))) ?>">
         </div>
 
         <div class="col-md-4 mb-3">
           <label for="hora" class="form-label">Hora *</label>
           <input type="time" id="hora" name="hora" class="form-control" required
-            value="<?= e(substr((string) old('hora', $turno['hora'] ?? ''), 0, 5)) ?>">
+            value="<?= e(substr((string) old('hora', $turno['hora'] ?? $sugerido['hora'] ?? ''), 0, 5)) ?>">
         </div>
 
         <div class="col-md-4 mb-3">

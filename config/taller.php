@@ -56,6 +56,8 @@ return [
     'validar_horario' => true,
     // Cuántos turnos se aceptan en el mismo día y hora (p. ej. cantidad de elevadores).
     'cupos_por_horario' => 1,
+    // Duración de cada franja en la agenda semanal (minutos).
+    'intervalo_minutos' => 60,
     // Fechas no laborables (AAAA-MM-DD). Se pueden importar los feriados nacionales.
     'feriados' => [],
     // Enviar email para que el cliente confirme o cancele el turno al agendarlo.

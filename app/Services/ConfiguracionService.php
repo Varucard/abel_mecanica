@@ -189,11 +189,13 @@ final class ConfiguracionService
     $feriados = self::lineas($input['feriados'] ?? '');
     $invalidos = array_filter($feriados, fn($f) => !Validator::fecha($f));
     $cupos = (int) ($input['cupos_por_horario'] ?? 0);
+    $intervalo = (int) ($input['intervalo_minutos'] ?? 60);
     $horaRecordatorio = substr(trim((string) ($input['recordatorio_hora'] ?? '')), 0, 5);
 
     $v->check(array_filter($horario) !== [], 'Tiene que haber al menos un día de atención.')
       ->check($invalidos === [], 'Fechas de feriados inválidas (usar AAAA-MM-DD): ' . implode(', ', $invalidos))
       ->check($cupos >= 1 && $cupos <= 20, 'Los turnos simultáneos deben estar entre 1 y 20.')
+      ->check(in_array($intervalo, [15, 20, 30, 45, 60, 90, 120], true), 'El intervalo de la agenda no es válido.')
       ->check(Validator::hora($horaRecordatorio), 'La hora de envío de recordatorios no es válida.')
       ->validate();
 
@@ -203,6 +205,7 @@ final class ConfiguracionService
       'horario' => $horario,
       'validar_horario' => !empty($input['validar_horario']),
       'cupos_por_horario' => $cupos,
+      'intervalo_minutos' => $intervalo,
       'feriados' => array_values(array_unique($feriados)),
       'enviar_confirmacion' => !empty($input['enviar_confirmacion']),
       'recordatorio_automatico' => !empty($input['recordatorio_automatico']),

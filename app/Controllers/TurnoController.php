@@ -28,6 +28,7 @@ final class TurnoController extends Controller
     private readonly VehiculoRepository $vehiculos,
     private readonly NotificacionService $notificaciones,
     private readonly ConfiguracionService $configuracion,
+    private readonly \App\Services\AgendaService $agenda,
   ) {
     parent::__construct($view, $session);
   }
@@ -44,7 +45,20 @@ final class TurnoController extends Controller
 
   public function create(Request $request): void
   {
-    $this->form('Agendar turno', null, (int) $request->int('cliente_id'));
+    // Desde la agenda semanal llegan fecha y hora; desde la ficha, el cliente.
+    $sugerido = array_filter([
+      'fecha' => preg_match('/^\d{4}-\d{2}-\d{2}$/', (string) $request->query('fecha')) ? $request->query('fecha') : null,
+      'hora' => preg_match('/^\d{2}:\d{2}$/', (string) $request->query('hora')) ? $request->query('hora') : null,
+    ]);
+    $this->form('Agendar turno', null, (int) $request->int('cliente_id'), $sugerido);
+  }
+
+  public function semana(Request $request): void
+  {
+    $this->render('turnos/semana', [
+      'title' => 'Agenda semanal',
+      'agenda' => $this->agenda->semana((string) $request->query('desde', ''), new \DateTimeImmutable()),
+    ]);
   }
 
   public function store(Request $request): void
@@ -155,7 +169,7 @@ final class TurnoController extends Controller
   }
 
   /** @param array<string, mixed>|null $turno */
-  private function form(string $title, ?array $turno, int $clienteSugerido = 0): void
+  private function form(string $title, ?array $turno, int $clienteSugerido = 0, array $sugerido = []): void
   {
     $clienteId = (int) old('cliente_id', $turno['cliente_id'] ?? $clienteSugerido);
 
@@ -167,6 +181,7 @@ final class TurnoController extends Controller
       'estados' => EstadoTurno::cases(),
       'clienteSugerido' => $clienteSugerido,
       'horario' => $this->configuracion->horario(),
+      'sugerido' => $sugerido,
     ]);
   }
 }

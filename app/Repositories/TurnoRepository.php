@@ -55,6 +55,15 @@ final class TurnoRepository extends Repository
     return $this->listado('WHERE t.id = ?', [$id])[0] ?? null;
   }
 
+  /** @return list<array<string, mixed>> turnos activos entre dos fechas */
+  public function activosEntre(string $desde, string $hasta): array
+  {
+    return array_reverse($this->listado(
+      "WHERE t.fecha BETWEEN ? AND ? AND t.estado NOT IN ('cancelado', 'no_asistio')",
+      [$desde, $hasta]
+    ));
+  }
+
   /** @return list<array<string, mixed>> turnos activos de una fecha, por hora */
   public function delDia(string $fecha): array
   {
