@@ -17,6 +17,12 @@ final class ImageUpload
 {
   public const MAX_BYTES = 8 * 1024 * 1024;
   private const MAX_LADO = 1600;
+  /**
+   * Máximo de píxeles a decodificar (~40 MP, más que una foto de celular normal). GD usa
+   * unos 4-5 bytes por píxel: sin este límite, un PNG chico pero de 20000×20000 px agota la
+   * memoria del servidor.
+   */
+  private const MAX_PIXELES = 40_000_000;
   private const TIPOS = [IMAGETYPE_JPEG => 'jpg', IMAGETYPE_PNG => 'png', IMAGETYPE_WEBP => 'webp'];
 
   public function __construct(private readonly string $directorio)
@@ -47,6 +53,9 @@ final class ImageUpload
 
     if ($info === false || !isset(self::TIPOS[$tipo])) {
       throw new ValidationException(['El archivo debe ser una imagen JPG, PNG o WEBP de hasta 8 MB.']);
+    }
+    if ($info[0] < 1 || $info[1] < 1 || $info[0] * $info[1] > self::MAX_PIXELES) {
+      throw new ValidationException(['La imagen tiene una resolución demasiado grande. Achicala o sacala con menos megapíxeles.']);
     }
 
     $origen = match ($tipo) {

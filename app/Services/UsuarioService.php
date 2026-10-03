@@ -15,7 +15,11 @@ use PDOException;
 
 final class UsuarioService
 {
+  /** Intentos fallidos para el mismo usuario desde la misma IP. */
   public const MAX_INTENTOS = 5;
+  /** Desde una IP con cualquier usuario, y para un usuario desde cualquier IP. */
+  public const MAX_INTENTOS_IP = 20;
+  public const MAX_INTENTOS_USUARIO = 50;
   public const MINUTOS_BLOQUEO = 15;
   public const LARGO_MINIMO_CLAVE = 8;
 
@@ -49,7 +53,7 @@ final class UsuarioService
   {
     $usuario = mb_strtolower(trim($usuario));
 
-    if ($this->intentos->recientes(self::AMBITO, $usuario, $ip, self::MINUTOS_BLOQUEO) >= self::MAX_INTENTOS) {
+    if ($this->intentos->bloqueado(self::AMBITO, $usuario, $ip, self::MINUTOS_BLOQUEO, self::MAX_INTENTOS, self::MAX_INTENTOS_IP, self::MAX_INTENTOS_USUARIO)) {
       throw new ValidationException([
         sprintf('Demasiados intentos fallidos. Esperá %d minutos e intentá de nuevo.', self::MINUTOS_BLOQUEO),
       ]);

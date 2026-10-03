@@ -293,7 +293,7 @@ final class OrdenService
    */
   public function responderPresupuesto(string $token, string $accion): array
   {
-    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido o la orden ya no existe.');
+    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido, venció o la orden ya no existe.');
     $orden = $this->obtener($id);
 
     (new Validator())

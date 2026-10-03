@@ -24,7 +24,7 @@ final class Session
 
     session_start([
       'cookie_httponly' => true,
-      'cookie_secure' => !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off',
+      'cookie_secure' => Request::esHttps(),
       'cookie_samesite' => 'Lax',
       'use_strict_mode' => true,
     ]);

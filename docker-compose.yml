@@ -2,8 +2,9 @@ services:
   database:
     image: mysql:8.4
     restart: unless-stopped
+    # Solo accesible desde el propio servidor (DB_BIND=0.0.0.0 para abrirlo a la red).
     ports:
-      - "${DB_HOST_PORT:-3309}:3306"
+      - "${DB_BIND:-127.0.0.1}:${DB_HOST_PORT:-3309}:3306"
     environment:
       TZ: ${TZ}
       MYSQL_DATABASE: ${DB_DATABASE}
@@ -22,15 +23,19 @@ services:
   admin:
     image: phpmyadmin:5
     restart: unless-stopped
+    # Solo accesible desde el propio servidor (PMA_BIND=0.0.0.0 para abrirlo a la red).
     ports:
-      - "${PMA_PORT:-8051}:80"
+      - "${PMA_BIND:-127.0.0.1}:${PMA_PORT:-8051}:80"
     environment:
       PMA_HOST: database
     depends_on:
       - database
 
   public:
-    build: ./
+    build:
+      context: ./
+      args:
+        ENTORNO: ${ENTORNO:-produccion}
     restart: unless-stopped
     ports:
       - "${APP_PORT:-8050}:80"
@@ -46,7 +51,10 @@ services:
 
   # Tareas periódicas (recordatorios automáticos de turnos).
   tareas:
-    build: ./
+    build:
+      context: ./
+      args:
+        ENTORNO: ${ENTORNO:-produccion}
     restart: unless-stopped
     user: www-data
     env_file: .env

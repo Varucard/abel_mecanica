@@ -140,4 +140,27 @@ final class UsuarioServiceTest extends IntegrationTestCase
     $this->assertArrayNotHasKey('_auth', $_SESSION);
     $_SESSION = [];
   }
+
+  public function testIntentosDesdeOtraIpNoBloqueanAlUsuario(): void
+  {
+    $this->crear('abel');
+    $fallar = function (string $usuario, string $ip) {
+      try {
+        $this->usuarios->autenticar($usuario, 'mal', $ip);
+      } catch (ValidationException) {
+      }
+    };
+
+    // Alguien desde otra IP agota los intentos de "abel": el dueño, desde su IP, entra igual.
+    for ($i = 0; $i < UsuarioService::MAX_INTENTOS; $i++) {
+      $fallar('abel', '6.6.6.6');
+    }
+    $this->assertSame('abel', $this->usuarios->autenticar('abel', 'clave-segura', '10.0.0.9')['usuario']);
+
+    // Una IP que prueba muchos usuarios distintos queda bloqueada para todos.
+    for ($i = 0; $i < UsuarioService::MAX_INTENTOS_IP; $i++) {
+      $fallar("usuario{$i}", '7.7.7.7');
+    }
+    $this->assertValidationError(fn() => $this->usuarios->autenticar('abel', 'clave-segura', '7.7.7.7'), 'Demasiados intentos');
+  }
 }

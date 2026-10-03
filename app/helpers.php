@@ -109,7 +109,7 @@ function absolute_url(string $path = '/'): string
   $base = \App\Core\Env::get('APP_URL');
 
   if ($base === null) {
-    $esquema = !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http';
+    $esquema = \App\Core\Request::esHttps() ? 'https' : 'http';
     $base = isset($_SERVER['HTTP_HOST']) ? $esquema . '://' . $_SERVER['HTTP_HOST'] . App::instance()->basePath : 'http://localhost';
   }
 

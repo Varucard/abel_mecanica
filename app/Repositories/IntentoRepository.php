@@ -14,14 +14,23 @@ final class IntentoRepository extends Repository
     $this->execute('INSERT INTO intentos (ambito, clave, ip) VALUES (?, ?, ?)', [$ambito, $clave, $ip]);
   }
 
-  /** Intentos recientes con esa clave o desde esa IP. */
-  public function recientes(string $ambito, string $clave, string $ip, int $minutos): int
+  /**
+   * ¿Corresponde bloquear? Se cuentan los intentos fallidos recientes de tres formas:
+   *  - misma clave (usuario o DNI) desde la misma IP: el límite normal;
+   *  - desde la misma IP con cualquier clave: alguien probando muchas cuentas;
+   *  - misma clave desde cualquier IP: un ataque repartido entre muchas IPs (límite más alto).
+   * Así, alguien desde otra IP no puede dejar bloqueado a un usuario con unos pocos intentos.
+   */
+  public function bloqueado(string $ambito, string $clave, string $ip, int $minutos, int $porClaveEIp, int $porIp, int $porClave): bool
   {
-    return (int) $this->fetchOne(
-      'SELECT COUNT(*) AS total FROM intentos
+    $fila = $this->fetchOne(
+      'SELECT COALESCE(SUM(clave = ? AND ip = ?), 0) AS clave_ip, COALESCE(SUM(ip = ?), 0) AS ip, COALESCE(SUM(clave = ?), 0) AS clave
+         FROM intentos
         WHERE ambito = ? AND (clave = ? OR ip = ?) AND created_at > NOW() - INTERVAL ? MINUTE',
-      [$ambito, $clave, $ip, $minutos]
-    )['total'];
+      [$clave, $ip, $ip, $clave, $ambito, $clave, $ip, $minutos]
+    );
+
+    return (int) $fila['clave_ip'] >= $porClaveEIp || (int) $fila['ip'] >= $porIp || (int) $fila['clave'] >= $porClave;
   }
 
   public function limpiar(string $ambito, string $clave): void

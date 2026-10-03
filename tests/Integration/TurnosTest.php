@@ -95,4 +95,27 @@ final class TurnosTest extends IntegrationTestCase
     $this->assertNotSame($repo->token($a), $repo->token($b));
     $this->assertMatchesRegularExpression('/^[a-f0-9]{64}$/', $repo->token($a));
   }
+
+  public function testElLinkDelTurnoVenceUnMesDespuesDelTurno(): void
+  {
+    $repo = $this->make(TurnoRepository::class);
+    $id = $this->guardar(date('Y-m-d', strtotime('+2 days')), '10:00');
+    $token = $repo->token($id);
+
+    $this->db->exec("UPDATE turnos SET fecha = CURDATE() - INTERVAL 30 DAY WHERE id = {$id}");
+    $this->assertNotNull($repo->porToken($token));
+
+    $this->db->exec("UPDATE turnos SET fecha = CURDATE() - INTERVAL 31 DAY WHERE id = {$id}");
+    $this->assertNull($repo->porToken($token));
+  }
+
+  public function testElCupoSeControlaBajoCandado(): void
+  {
+    // El candado es reentrante dentro de la misma conexión y se libera al terminar.
+    $fecha = date('Y-m-d', strtotime('+2 days'));
+    $this->guardar($fecha, '10:00');
+    $this->assertValidationError(fn() => $this->guardar($fecha, '10:00'), 'Ya hay un turno agendado');
+    $libre = $this->db->query("SELECT IS_FREE_LOCK(CONCAT('taller:', LEFT(SHA2('turno {$fecha} 10:00', 256), 40)))")->fetchColumn();
+    $this->assertSame(1, (int) $libre);
+  }
 }

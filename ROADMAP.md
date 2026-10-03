@@ -59,6 +59,17 @@ Estado: ✅ hecho · 🚧 en curso · ⏳ pendiente · 💭 a futuro (requiere d
 | 36 | **Listados paginados desde el servidor**. | ✅ |
 | 37 | **Backup automático diario**. | ✅ |
 
+## Revisión de código (PR #6)
+
+Correcciones surgidas de una revisión completa del código, todas con tests:
+
+- **Precios**: el aumento masivo sin selección no modifica nada, no se aplica dos veces si se reenvía el formulario, una rebaja nunca sube un precio por el redondeo y se rechazan importes fuera de rango.
+- **Presupuestos**: editar la orden anula la respuesta del cliente; la vigencia se cuenta desde el envío; solo se envía con la orden abierta.
+- **Concurrencia**: stock, pagos y cupos de turnos a salvo de pedidos simultáneos.
+- **Seguridad**: sesión revalidada en cada pedido (usuarios desactivados o con otro rol), CSV sin fórmulas, bloqueos por intentos que no permiten bloquear a otro usuario, IP real detrás de un proxy, links públicos que vencen y sin caché, SRI en el CDN, imágenes de resolución exagerada rechazadas, phpMyAdmin y MySQL solo en el servidor e imagen de producción sin Xdebug.
+- **Datos**: cada orden guarda su cliente (el historial no pasa al nuevo dueño de un vehículo); lo cobrado no incluye órdenes canceladas.
+- **Operación**: backup consistente con copia opcional fuera del servidor, tareas periódicas independientes, migraciones retomables y `bin/usuario.php` funcionando de nuevo.
+
 ## A futuro
 
 | Ítem | Qué falta |

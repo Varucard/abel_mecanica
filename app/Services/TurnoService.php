@@ -92,7 +92,7 @@ final class TurnoService
    */
   public function responderCliente(string $token, string $accion): array
   {
-    $turno = $this->turnos->porToken($token) ?? throw new NotFoundException('El link no es válido o el turno ya no existe.');
+    $turno = $this->turnos->porToken($token) ?? throw new NotFoundException('El link no es válido, venció o el turno ya no existe.');
     $estado = EstadoTurno::from($turno['estado']);
 
     (new Validator())

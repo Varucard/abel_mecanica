@@ -151,4 +151,19 @@ final class PresupuestoServiceTest extends IntegrationTestCase
     $this->assertNull($this->make(OrdenRepository::class)->find($vieja)['proximo_service_avisado']);
     $this->assertNotNull($this->make(OrdenRepository::class)->find($otra)['proximo_service_avisado']);
   }
+
+  public function testElLinkDelPresupuestoVence(): void
+  {
+    $id = $this->orden();
+    $repo = $this->make(OrdenRepository::class);
+    $token = $repo->token($id);
+    $this->assertSame($id, $repo->idPorToken($token));
+
+    $this->db->exec("UPDATE ordenes SET created_at = NOW() - INTERVAL 61 DAY WHERE id = {$id}");
+    $this->assertNull($repo->idPorToken($token));
+
+    // Reenviarlo lo vuelve a habilitar.
+    $this->notificaciones->enviarPresupuesto($id);
+    $this->assertSame($id, $repo->idPorToken($token));
+  }
 }

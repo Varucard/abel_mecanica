@@ -217,9 +217,15 @@ final class OrdenRepository extends Repository
     return (string) $this->fetchOne('SELECT token FROM ordenes WHERE id = ?', [$id])['token'];
   }
 
+  /** Días que el link del presupuesto sigue abriendo desde su último envío (o desde que se creó la orden). */
+  public const DIAS_LINK = 60;
+
   public function idPorToken(string $token): ?int
   {
-    $fila = $this->fetchOne('SELECT id FROM ordenes WHERE token = ?', [$token]);
+    $fila = $this->fetchOne(
+      'SELECT id FROM ordenes WHERE token = ? AND COALESCE(presupuesto_enviado, created_at) >= NOW() - INTERVAL ' . self::DIAS_LINK . ' DAY',
+      [$token]
+    );
 
     return $fila ? (int) $fila['id'] : null;
   }

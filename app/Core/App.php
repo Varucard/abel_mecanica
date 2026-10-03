@@ -70,7 +70,7 @@ final class App
   {
     $request = Request::fromGlobals($this->basePath);
     $this->logger->agregarContexto([
-      'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+      'ip' => isset($_SERVER['REMOTE_ADDR']) ? Request::ip() : null,
       'ruta' => "{$request->method} {$request->path}",
     ]);
     if (!headers_sent()) {

@@ -47,7 +47,13 @@ docker compose up -d --build
 ```
 
 - Aplicación: <http://localhost:8050> (puertos configurables en `.env`)
-- phpMyAdmin: <http://localhost:8051>
+- phpMyAdmin: <http://localhost:8051> (solo desde el propio servidor; MySQL también
+  escucha solo en `127.0.0.1`. Para abrirlos a la red: `PMA_BIND` / `DB_BIND` en `.env`)
+
+La imagen se construye para producción (`php.ini` de producción, sin Xdebug). Si el
+sistema queda detrás de un proxy (nginx, Cloudflare), indicar sus IPs en
+`TRUSTED_PROXIES` para que los bloqueos por intentos fallidos y la auditoría usen la
+IP real del cliente.
 
 Al iniciar, el contenedor `public` instala las dependencias (si faltan) y aplica
 las migraciones pendientes. **La primera vez que entrás, la aplicación pide crear
@@ -223,8 +229,21 @@ La migración también funciona directamente sobre MySQL 5.7.
 El backup diario es automático (servicio `tareas`): a partir de la hora configurada
 en *Configuración > Backups* guarda en `storage/backups` la base de datos
 (`db_*.sql.gz`) y las imágenes y configuración (`archivos_*.tar.gz`), conservando los
-últimos N. Desde esa misma pantalla se puede generar uno a mano y descargarlo.
-**Conviene copiar periódicamente algún backup fuera del servidor.**
+últimos N. Desde esa misma pantalla se puede generar uno a mano y descargarlo. El
+volcado se hace desde una foto consistente de la base, aunque se esté usando el sistema.
+
+**Copia fuera del servidor:** con `BACKUP_COPIA_DIR` cada backup se copia además a otra
+carpeta (un disco externo o una carpeta sincronizada con la nube), que hay que montar en
+los contenedores, por ejemplo con un `docker-compose.override.yml`:
+
+```yaml
+services:
+  public: { volumes: ["/mnt/disco_externo/backups_taller:/backups_externos"] }
+  tareas: { volumes: ["/mnt/disco_externo/backups_taller:/backups_externos"] }
+```
+
+y `BACKUP_COPIA_DIR=/backups_externos` en `.env`. Si la copia falla, queda en el registro
+del sistema y el backup local se conserva igual.
 
 También se puede hacer desde la consola del servidor:
 
@@ -256,8 +275,12 @@ no está definida `DB_TEST_HOST`. En GitHub Actions corren en cada push y PR.
 
 La hoja de ruta con lo hecho y lo pendiente está en [ROADMAP.md](ROADMAP.md).
 
-Para depurar con Xdebug: `XDEBUG_MODE=debug` en `.env`, reiniciar el contenedor
-`public` y usar la configuración de `.vscode/launch.json` (puerto 9004).
+Para depurar con Xdebug: `ENTORNO=desarrollo` y `XDEBUG_MODE=debug` en `.env`,
+reconstruir (`docker compose up -d --build`) y usar la configuración de
+`.vscode/launch.json` (puerto 9004).
+
+Si una migración falla a la mitad, el error indica en qué sentencia; una vez corregida,
+`composer migrate` continúa desde esa sentencia (las anteriores ya quedaron aplicadas).
 
 Con `APP_DEBUG=true` se muestran los mensajes de error; en producción dejarlo en
 `false` (los errores quedan en `storage/logs/app.log`).
