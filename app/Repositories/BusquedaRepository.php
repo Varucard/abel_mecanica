@@ -44,7 +44,7 @@ final class BusquedaRepository extends Repository
         "SELECT o.id, o.estado, o.total, o.created_at, v.patente, CONCAT(p.apellido, ', ', p.nombre) AS cliente
            FROM ordenes o
            INNER JOIN vehiculos v ON v.id = o.vehiculo_id
-           INNER JOIN clientes c ON c.id = v.cliente_id
+           INNER JOIN clientes c ON c.id = o.cliente_id
            INNER JOIN personas p ON p.id = c.persona_id
           WHERE o.id = ?",
         [(int) $soloDigitos]

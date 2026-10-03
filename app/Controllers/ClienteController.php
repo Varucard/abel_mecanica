@@ -40,7 +40,9 @@ final class ClienteController extends Controller
 
   public function datos(Request $request): void
   {
-    $this->tabla($this->clientes->paginar($request->queryAll()), 'clientes/_fila', 'c', ['saldos' => $this->pagos->saldosPorCliente()]);
+    $resultado = $this->clientes->paginar($request->queryAll());
+    $saldos = $this->pagos->saldosDe(array_map(fn(array $c) => (int) $c['id'], $resultado['filas']));
+    $this->tabla($resultado, 'clientes/_fila', 'c', ['saldos' => $saldos]);
   }
 
   /** Ficha del cliente: datos, vehículos, órdenes, turnos y saldo. */
@@ -52,7 +54,7 @@ final class ClienteController extends Controller
       'vehiculos' => $this->vehiculos->porCliente($id),
       'ordenes' => $this->ordenes->porCliente($id),
       'turnos' => $this->turnos->porCliente($id),
-      'saldo' => $this->pagos->saldosPorCliente()[$id] ?? 0.0,
+      'saldo' => $this->pagos->saldosDe([$id])[$id] ?? 0.0,
     ]);
   }
 

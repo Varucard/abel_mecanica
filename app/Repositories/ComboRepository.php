@@ -13,9 +13,19 @@ final class ComboRepository extends Repository
       'SELECT id, nombre, descripcion, activo FROM combos ' . ($soloActivos ? 'WHERE activo = 1 ' : '') . 'ORDER BY nombre'
     );
 
-    foreach ($combos as &$combo) {
-      $combo['items'] = $this->items((int) $combo['id']);
+    // Todos los ítems en una sola consulta (en vez de una por combo).
+    $porCombo = [];
+    if ($combos !== []) {
+      $ids = array_map(fn(array $c) => (int) $c['id'], $combos);
+      $marcas = implode(',', array_fill(0, count($ids), '?'));
+      foreach ($this->consultarItems("ci.combo_id IN ({$marcas})", $ids) as $item) {
+        $porCombo[(int) $item['combo_id']][] = $item;
+      }
     }
+    foreach ($combos as &$combo) {
+      $combo['items'] = $porCombo[(int) $combo['id']] ?? [];
+    }
+    unset($combo);
 
     return $combos;
   }
@@ -34,15 +44,21 @@ final class ComboRepository extends Repository
   /** @return list<array<string, mixed>> ítems con nombre y precio actual del catálogo */
   public function items(int $comboId): array
   {
+    return $this->consultarItems('ci.combo_id = ?', [$comboId]);
+  }
+
+  /** @return list<array<string, mixed>> */
+  private function consultarItems(string $where, array $params): array
+  {
     return $this->fetchAll(
-      'SELECT ci.servicio_id, ci.repuesto_id, ci.cantidad,
+      "SELECT ci.combo_id, ci.servicio_id, ci.repuesto_id, ci.cantidad,
               COALESCE(s.nombre, r.nombre) AS nombre, COALESCE(s.precio_base, r.precio) AS precio
          FROM combo_items ci
          LEFT JOIN servicios s ON s.id = ci.servicio_id
          LEFT JOIN repuestos r ON r.id = ci.repuesto_id
-        WHERE ci.combo_id = ?
-        ORDER BY ci.repuesto_id IS NOT NULL, nombre',
-      [$comboId]
+        WHERE {$where}
+        ORDER BY ci.combo_id, ci.repuesto_id IS NOT NULL, nombre",
+      $params
     );
   }
 

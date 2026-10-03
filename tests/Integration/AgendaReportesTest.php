@@ -63,6 +63,10 @@ final class AgendaReportesTest extends IntegrationTestCase
     $ordenes->cambiarEstado($c, 'cancelado');
     $this->make(PagoService::class)->registrar($a, ['monto' => '1500', 'forma_pago' => 'Contado'], null);
     $this->make(PagoService::class)->registrar($a, ['monto' => '500', 'forma_pago' => 'Mercado Pago'], null);
+    // Un pago de una orden que después se canceló no cuenta como cobrado.
+    $d = $ordenes->guardar($vehiculo, [$aceite], []);
+    $this->make(PagoService::class)->registrar($d, ['monto' => '300', 'forma_pago' => 'Contado'], null);
+    $ordenes->cambiarEstado($d, 'cancelado');
 
     $reportes = $this->make(ReporteRepository::class);
 
