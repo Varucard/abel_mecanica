@@ -39,6 +39,26 @@ Estado: ✅ hecho · 🚧 en curso · ⏳ pendiente · 💭 a futuro (requiere d
 | 21 | **Portal "Seguí tu vehículo"**: consulta pública con DNI (+ patente, configurable) y mini historial de trabajos y turnos. | ✅ |
 | 22 | **Canales de aviso intercambiables**: email activo; WhatsApp Business preparado (interfaz y plantillas listas). | ✅ |
 
+## Tercera etapa (mejoras con las herramientas existentes)
+
+| # | Ítem | Estado |
+| --- | --- | --- |
+| 23 | **Sistema de logs**: archivos diarios JSON con nivel, usuario, IP, ruta e id de petición; visor para administradores. | ✅ |
+| 24 | **Auditoría**: quién hizo qué y cuándo (órdenes, pagos, stock, precios, usuarios, configuración). | ✅ |
+| 25 | **Aumento masivo de precios** con porcentaje, redondeo, vista previa y selección. | ✅ |
+| 26 | **Presupuesto por email** con PDF adjunto y **aceptación online** del cliente. | ✅ |
+| 27 | **Km de ingreso, diagnóstico, trabajo realizado y notas internas** en cada orden. | ✅ |
+| 28 | **Próximo service** en la orden y **aviso automático** al cliente. | ✅ |
+| 29 | **De turno a orden** en un clic. | ✅ |
+| 30 | **Combos** de servicios y repuestos. | ✅ |
+| 31 | **Búsqueda rápida** por patente, DNI, apellido u orden. | ✅ |
+| 32 | **Agenda semanal** con cupos libres. | ✅ |
+| 33 | **Reportes** con exportación a Excel (CSV). | ✅ |
+| 34 | **Precio de costo y margen** en repuestos. | ✅ |
+| 35 | **Menú usable en celulares** y tablets. | ✅ |
+| 36 | **Listados paginados desde el servidor**. | ✅ |
+| 37 | **Backup automático diario**. | ✅ |
+
 ## A futuro
 
 | Ítem | Qué falta |

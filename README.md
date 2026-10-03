@@ -6,11 +6,13 @@ Aplicación web en PHP para administrar un taller mecánico.
 
 - **Clientes** con ficha (foto, vehículos, historial de órdenes y turnos, deuda) y acceso directo a WhatsApp.
 - **Vehículos** con motor, combustible, color, VIN, observaciones, galería de imágenes e historial.
-- **Órdenes de servicio** con cantidades y precios por ítem, mecánico asignado, estados, presupuesto y
-  comprobante de entrega con conformidad (HTML imprimible y PDF).
+- **Órdenes de servicio** con cantidades y precios por ítem, combos, mecánico asignado, km de ingreso,
+  diagnóstico, trabajo realizado, notas internas y próximo service; presupuesto y comprobante de entrega
+  (HTML imprimible y PDF). El presupuesto se **envía por email** y el cliente lo **acepta online**.
 - **Pagos** parciales por orden, saldos y listado de **deudores**.
-- **Stock de repuestos**: ingresos por proveedor, ajustes por conteo, descuento automático al finalizar
-  órdenes, historial de movimientos y alerta de stock mínimo. **Proveedores**.
+- **Stock de repuestos**: precio de costo y margen, ingresos por proveedor, ajustes por conteo, descuento
+  automático al finalizar órdenes, historial de movimientos y alerta de stock mínimo. **Proveedores**.
+- **Actualización masiva de precios** por porcentaje, con redondeo y vista previa.
 - **Turnos** según el horario de atención y los feriados, con cupos simultáneos configurables.
   Al agendar, el cliente recibe un **email para confirmar o cancelar** y, el día hábil anterior,
   un **recordatorio automático**.
@@ -18,7 +20,11 @@ Aplicación web en PHP para administrar un taller mecánico.
   de sus trabajos y sus próximos turnos, sin necesidad de usuario.
 - **Todo configurable** desde *Configuración > Sistema*: datos del taller, presupuestos, horario,
   feriados, textos de los mensajes, canales de aviso, stock y portal.
-- **Panel de inicio** con la actividad del día.
+- **Panel de inicio** con la actividad del día, **agenda semanal** con cupos libres y **búsqueda rápida**.
+- **Reportes** (cobranzas, más vendidos, por mecánico, stock valorizado) con exportación a Excel.
+- **Aviso automático de próximo service** al cliente.
+- **Auditoría** (quién hizo qué y cuándo) y **registro técnico** (logs) con visor.
+- **Backup automático diario** de la base y las imágenes.
 - **Usuarios** con roles (administrador / empleado) y **empleados** del taller.
 
 ## Stack
@@ -71,8 +77,9 @@ canal y el registro de avisos enviados están en *Configuración > Avisos*.
 ### Tareas automáticas
 
 El servicio `tareas` de Docker ejecuta `bin/tareas.php` cada 15 minutos: envía los
-recordatorios del día hábil siguiente (solo en días hábiles, dentro del horario de
-atención y desde la hora configurada) y limpia registros viejos. Sin Docker, agregar
+recordatorios de turnos del día hábil siguiente y los avisos de próximo service
+(solo en días hábiles, dentro del horario de atención y desde la hora configurada),
+genera el backup diario y limpia registros y logs viejos. Sin Docker, agregar
 al crontab: `*/15 * * * * cd /ruta/al/proyecto && php bin/tareas.php`.
 
 ### WhatsApp Business (preparado, no activo)
@@ -102,7 +109,7 @@ Patrón MVC liviano, sin framework, con separación estricta de responsabilidade
 ```
 app/
 ├── Core/           Infraestructura: App, Router, Container (autowiring), Request,
-│                   View, Session (flash + CSRF), Database, Env
+│                   View, Session (flash + CSRF), Auth, Logger, Migrator, Database, Env
 ├── Controllers/    Reciben la petición, llaman al servicio y renderizan. Sin SQL ni reglas.
 ├── Services/       Lógica de negocio y validaciones (precios congelados, disponibilidad
 │                   de turnos, bajas protegidas, configuración, PDF).
@@ -110,7 +117,7 @@ app/
 ├── Models/         Entidades del dominio (Persona → Cliente, Vehiculo, Orden, Turno…).
 ├── Enums/          Estados de órdenes, turnos y clientes/vehículos.
 ├── Notificaciones/ Canales de aviso (email activo, WhatsApp preparado).
-├── Support/        Validator, ImageUpload, HorarioAtencion.
+├── Support/        Validator, ImageUpload, HorarioAtencion, ConsultaPaginada (DataTables en el servidor).
 └── helpers.php     Funciones para vistas: e(), url(), asset(), money(), csrf_field()…
 bin/                migrate.php (migraciones), tareas.php (recordatorios) y usuario.php (recuperar acceso).
 config/
@@ -147,8 +154,9 @@ Para cambiar la base de datos se agrega un archivo nuevo en `database/migrations
 | Órdenes | `/ordenes/{id}` (ficha con pagos), `/ordenes/{id}/entrega`, `/ordenes/{id}/entrega/pdf` |
 | Stock | `/repuestos/{id}/stock`, `/proveedores` |
 | Acceso | `/login`, `/perfil/clave` |
-| Públicas (clientes) | `/seguimiento`, `/turno/{token}` (confirmar o cancelar) |
-| Solo administradores | `/configuracion/{seccion}`, `/usuarios`, `/empleados` |
+| Públicas (clientes) | `/seguimiento`, `/turno/{token}` (confirmar o cancelar), `/presupuesto/{token}` (aceptar o rechazar) |
+| Búsqueda y agenda | `/buscar?q=`, `/turnos/semana` |
+| Solo administradores | `/configuracion/{seccion}`, `/usuarios`, `/empleados`, `/precios`, `/reportes`, `/auditoria`, `/logs` |
 
 Todas las acciones que modifican datos (alta, edición, baja, cambio de estado)
 son `POST` con token CSRF.
@@ -212,16 +220,28 @@ La migración también funciona directamente sobre MySQL 5.7.
 
 ## Backups
 
+El backup diario es automático (servicio `tareas`): a partir de la hora configurada
+en *Configuración > Backups* guarda en `storage/backups` la base de datos
+(`db_*.sql.gz`) y las imágenes y configuración (`archivos_*.tar.gz`), conservando los
+últimos N. Desde esa misma pantalla se puede generar uno a mano y descargarlo.
+**Conviene copiar periódicamente algún backup fuera del servidor.**
+
+También se puede hacer desde la consola del servidor:
+
 ```bash
-scripts/backup.sh                       # base + imágenes + configuración en backups/ (conserva 14)
-scripts/restore.sh backups/db_<fecha>.sql.gz backups/archivos_<fecha>.tar.gz
+scripts/backup.sh                       # en backups/ (usa mysqldump del contenedor de la base)
+scripts/restore.sh storage/backups/db_<fecha>.sql.gz storage/backups/archivos_<fecha>.tar.gz
 ```
 
-Para un backup diario automático, agregar al crontab del servidor:
+## Logs y auditoría
 
-```
-0 22 * * * cd /ruta/al/proyecto && scripts/backup.sh >> backups/backup.log 2>&1
-```
+- **Auditoría** (*Configuración > Auditoría*): acciones del negocio con usuario, IP y detalle
+  (cambios de estado, pagos, stock, precios, configuración, ingresos al sistema). También se ve
+  en la ficha de cada orden.
+- **Registro del sistema** (*Configuración > Registro del sistema*): archivos diarios
+  `storage/logs/app-AAAA-MM-DD.log` (una línea JSON por evento) con errores, avisos de PHP y
+  eventos. Cada petición tiene un id (`X-Request-Id`) que aparece en la página de error, para
+  encontrarla en el registro. Nivel y días a conservar: `LOG_LEVEL` y `LOG_DIAS` en `.env`.
 
 ## Desarrollo
 
