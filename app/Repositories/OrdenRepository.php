@@ -221,9 +221,35 @@ final class OrdenRepository extends Repository
     return $fila ? (int) $fila['id'] : null;
   }
 
+  /**
+   * Un reenvío conserva la aceptación (la orden no cambió: si cambia, la respuesta se anula
+   * al guardarla) y habilita responder de nuevo si había sido rechazado.
+   */
   public function registrarPresupuestoEnviado(int $id): void
   {
-    $this->execute('UPDATE ordenes SET presupuesto_enviado = NOW(), presupuesto_respuesta = NULL, presupuesto_respuesta_en = NULL WHERE id = ?', [$id]);
+    $this->execute(
+      "UPDATE ordenes SET presupuesto_enviado = NOW(),
+              presupuesto_respuesta_en = IF(presupuesto_respuesta = 'aceptado', presupuesto_respuesta_en, NULL),
+              presupuesto_respuesta = IF(presupuesto_respuesta = 'aceptado', presupuesto_respuesta, NULL)
+        WHERE id = ?",
+      [$id]
+    );
+  }
+
+  public function anularRespuestaPresupuesto(int $id): void
+  {
+    $this->execute('UPDATE ordenes SET presupuesto_respuesta = NULL, presupuesto_respuesta_en = NULL WHERE id = ?', [$id]);
+  }
+
+  /**
+   * Estado y bandera de stock de la orden, bloqueando la fila hasta el fin de la transacción
+   * en curso (debe llamarse dentro de una).
+   *
+   * @return array{estado: string, stock_descontado: int|string}|null
+   */
+  public function bloquear(int $id): ?array
+  {
+    return $this->fetchOne('SELECT estado, stock_descontado FROM ordenes WHERE id = ? FOR UPDATE', [$id]);
   }
 
   public function registrarRespuestaPresupuesto(int $id, string $respuesta): void

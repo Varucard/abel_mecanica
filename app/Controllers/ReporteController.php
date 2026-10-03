@@ -10,6 +10,7 @@ use App\Core\Session;
 use App\Core\View;
 use App\Exceptions\NotFoundException;
 use App\Repositories\ReporteRepository;
+use App\Support\Csv;
 use App\Support\Validator;
 
 /** Reportes de gestión con exportación a CSV (se abre con Excel). */
@@ -59,7 +60,7 @@ final class ReporteController extends Controller
     fputcsv($salida, array_values($columnas), ';', '"', '');
     foreach ($this->datos($reporte, $desde, $hasta) as $fila) {
       fputcsv($salida, array_map(
-        fn(string $col) => is_numeric($fila[$col]) && !in_array($col, ['codigo', 'mes'], true) ? str_replace('.', ',', (string) $fila[$col]) : $fila[$col],
+        fn(string $col) => Csv::celda($fila[$col], in_array($col, ['codigo', 'mes'], true)),
         array_keys($columnas)
       ), ';', '"', '');
     }

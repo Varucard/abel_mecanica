@@ -66,9 +66,16 @@ final class RepuestoRepository extends Repository
     return $r->id;
   }
 
-  public function setPrecio(int $id, float $precio): void
+  /** Con $esperado, solo actualiza si el precio sigue siendo ese; devuelve si lo actualizó. */
+  public function setPrecio(int $id, float $precio, ?float $esperado = null): bool
   {
-    $this->execute('UPDATE repuestos SET precio = ? WHERE id = ?', [$precio, $id]);
+    if ($esperado === null) {
+      $this->execute('UPDATE repuestos SET precio = ? WHERE id = ?', [$precio, $id]);
+
+      return true;
+    }
+
+    return $this->execute('UPDATE repuestos SET precio = ? WHERE id = ? AND precio = ?', [$precio, $id, $esperado]) > 0;
   }
 
   public function setCosto(int $id, float $costo): void

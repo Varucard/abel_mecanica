@@ -72,7 +72,8 @@ final class OrdenService
         ->check(self::editable(EstadoOrden::from($actual['estado'])), 'Solo se pueden editar órdenes pendientes o en proceso.')
         ->validate();
 
-      foreach ($this->ordenes->items($id) as $item) {
+      $itemsPrevios = $this->ordenes->items($id);
+      foreach ($itemsPrevios as $item) {
         $tipo = $item['repuesto_id'] !== null ? 'repuesto' : 'servicio';
         $preciosPrevios[$tipo][(int) $item["{$tipo}_id"]] = (float) $item['precio_unitario'];
       }
@@ -119,8 +120,19 @@ final class OrdenService
       ->check($orden->total() >= $pagado, sprintf('El total no puede quedar por debajo de lo ya pagado ($ %s).', money($pagado)))
       ->validate();
 
-    $guardada = $this->ordenes->transaction(function () use ($orden, $vehiculoId) {
+    // Si el cliente ya había respondido el presupuesto y cambian los ítems o los precios, la
+    // respuesta deja de valer: lo que aceptó (o rechazó) ya no es lo que dice la orden.
+    $anulaRespuesta = isset($actual, $itemsPrevios) && $actual['presupuesto_respuesta'] !== null
+      && self::firmaItems($itemsPrevios) !== self::firmaItems(array_map(fn(OrdenItem $i) => [
+        'servicio_id' => $i->servicioId, 'repuesto_id' => $i->repuestoId, 'cantidad' => $i->cantidad, 'precio_unitario' => $i->precioUnitario,
+      ], $items));
+
+    $guardada = $this->ordenes->transaction(function () use ($orden, $vehiculoId, $anulaRespuesta) {
       $guardada = $this->ordenes->save($orden);
+
+      if ($anulaRespuesta) {
+        $this->ordenes->anularRespuestaPresupuesto($guardada);
+      }
 
       if ($orden->kmIngreso !== null) {
         $this->vehiculos->actualizarKilometraje($vehiculoId, $orden->kmIngreso);
@@ -139,8 +151,36 @@ final class OrdenService
       ($id === null ? 'Orden creada' : 'Orden editada') . " #{$guardada} por $ " . money($orden->total()),
       $id !== null && isset($actual) && (float) $actual['total'] !== $orden->total() ? ['total_antes' => (float) $actual['total'], 'total_despues' => $orden->total()] : [],
     );
+    if ($anulaRespuesta) {
+      $this->auditor->registrar(
+        'presupuesto_anulado',
+        'orden',
+        $guardada,
+        "Orden #{$guardada}: se modificó después de que el cliente {$actual['presupuesto_respuesta']} el presupuesto; la respuesta quedó sin efecto",
+        ['respuesta' => $actual['presupuesto_respuesta'], 'total_respondido' => (float) $actual['total'], 'total_nuevo' => $orden->total()],
+      );
+    }
 
     return $guardada;
+  }
+
+  /**
+   * Representación comparable de los ítems (tipo, id, cantidad y precio), sin importar el orden.
+   *
+   * @param list<array<string, mixed>> $items
+   */
+  private static function firmaItems(array $items): string
+  {
+    $firma = array_map(fn(array $i) => sprintf(
+      '%s:%d:%.2f:%.2f',
+      $i['repuesto_id'] !== null ? 'r' : 's',
+      (int) ($i['repuesto_id'] ?? $i['servicio_id']),
+      (float) $i['cantidad'],
+      (float) $i['precio_unitario'],
+    ), $items);
+    sort($firma);
+
+    return implode('|', $firma);
   }
 
   /**
@@ -218,12 +258,16 @@ final class OrdenService
     return $normalizados;
   }
 
-  /** ¿El presupuesto sigue vigente? (fecha de la orden + días de validez configurados) */
+  /**
+   * ¿El presupuesto sigue vigente? Días de validez configurados contados desde el último
+   * envío al cliente (o desde que se creó la orden, si nunca se envió).
+   */
   public function presupuestoVigente(array $orden): bool
   {
     $validez = (int) $this->configuracion->seccion('trabajo')['validez'];
+    $desde = substr((string) ($orden['presupuesto_enviado'] ?? null ?: $orden['created_at']), 0, 10);
 
-    return date('Y-m-d', strtotime(substr((string) $orden['created_at'], 0, 10) . " +{$validez} days")) >= date('Y-m-d');
+    return date('Y-m-d', strtotime("{$desde} +{$validez} days")) >= date('Y-m-d');
   }
 
   /** ¿El cliente puede responder el presupuesto desde el link? */
@@ -267,12 +311,16 @@ final class OrdenService
   /** Cambia el estado y mueve el stock de repuestos al entrar o salir de "finalizado". */
   public function cambiarEstado(int $id, string $estado, ?int $usuarioId = null): EstadoOrden
   {
-    $orden = $this->obtener($id);
+    $this->obtener($id);
 
     $nuevo = EstadoOrden::tryFrom($estado);
     (new Validator())->check($nuevo !== null, 'Estado de orden inválido.')->validate();
 
-    $this->ordenes->transaction(function () use ($id, $orden, $nuevo, $usuarioId) {
+    // La orden se lee bloqueada dentro de la transacción: dos cambios simultáneos (dos
+    // pestañas, o el cliente aceptando mientras un empleado finaliza) se ejecutan uno
+    // detrás del otro y el stock no se descuenta dos veces.
+    $orden = $this->ordenes->transaction(function () use ($id, $nuevo, $usuarioId) {
+      $orden = $this->ordenes->bloquear($id) ?? throw new NotFoundException('Orden no encontrada.');
       $descontado = (bool) $orden['stock_descontado'];
 
       if ($nuevo === EstadoOrden::Finalizado && !$descontado) {
@@ -282,6 +330,8 @@ final class OrdenService
       }
 
       $this->ordenes->setEstado($id, $nuevo);
+
+      return $orden;
     });
 
     if ($orden['estado'] !== $nuevo->value) {

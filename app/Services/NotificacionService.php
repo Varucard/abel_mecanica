@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Core\Logger;
+use App\Enums\EstadoOrden;
 use App\Exceptions\NotFoundException;
 use App\Notificaciones\CanalNotificacion;
 use App\Notificaciones\Destinatario;
@@ -14,6 +15,7 @@ use App\Notificaciones\WhatsAppCanal;
 use App\Repositories\NotificacionRepository;
 use App\Repositories\OrdenRepository;
 use App\Repositories\TurnoRepository;
+use App\Support\Validator;
 use DateTimeImmutable;
 use RuntimeException;
 use Throwable;
@@ -163,6 +165,9 @@ final class NotificacionService
   public function enviarPresupuesto(int $ordenId): ?string
   {
     $orden = $this->orden($ordenId);
+    (new Validator())
+      ->check(OrdenService::editable(EstadoOrden::from($orden['estado'])), 'Solo se puede enviar el presupuesto de órdenes pendientes o en proceso.')
+      ->validate();
     $pdf = $this->documentos->pdf($ordenId);
 
     $canal = $this->enviarMensaje(

@@ -112,19 +112,28 @@ final class UsuarioService
       ->check(!$dejaDeSerAdmin || $this->usuarios->contarAdministradoresActivos() > 1, 'Tiene que quedar al menos un administrador activo.')
       ->validate();
 
+    // La clave nueva se valida antes de guardar nada, para no dejar cambios a medias.
+    $clave = (string) ($input['clave'] ?? '');
+    if ($clave !== '') {
+      $this->validarClave($clave, (string) ($input['clave_confirmacion'] ?? ''));
+    }
+
     try {
-      $this->usuarios->update($id, $nombre, $usuario, $rol, $activo);
-      $this->auditor->registrar('editar', 'usuario', $id, "Usuario editado: {$usuario}", array_filter([
-        'rol' => $actual['rol'] !== $rol->value ? "{$actual['rol']} → {$rol->value}" : null,
-        'activo' => (bool) $actual['activo'] !== $activo ? ($activo ? 'reactivado' : 'desactivado') : null,
-      ]));
+      $this->usuarios->transaction(function () use ($id, $nombre, $usuario, $rol, $activo, $clave) {
+        $this->usuarios->update($id, $nombre, $usuario, $rol, $activo);
+        if ($clave !== '') {
+          $this->usuarios->setPassword($id, password_hash($clave, PASSWORD_DEFAULT));
+        }
+      });
     } catch (PDOException $e) {
       throw Repository::isDuplicate($e) ? new ValidationException(['Ese nombre de usuario ya existe.']) : $e;
     }
 
-    if (($input['clave'] ?? '') !== '') {
-      $this->validarClave((string) $input['clave'], (string) ($input['clave_confirmacion'] ?? ''));
-      $this->usuarios->setPassword($id, password_hash((string) $input['clave'], PASSWORD_DEFAULT));
+    $this->auditor->registrar('editar', 'usuario', $id, "Usuario editado: {$usuario}", array_filter([
+      'rol' => $actual['rol'] !== $rol->value ? "{$actual['rol']} → {$rol->value}" : null,
+      'activo' => (bool) $actual['activo'] !== $activo ? ($activo ? 'reactivado' : 'desactivado') : null,
+    ]));
+    if ($clave !== '') {
       $this->auditor->registrar('cambiar_clave', 'usuario', $id, "Se cambió la contraseña de {$usuario}");
     }
   }
