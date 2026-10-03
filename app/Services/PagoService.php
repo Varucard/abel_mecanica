@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Enums\EstadoOrden;
 use App\Exceptions\NotFoundException;
+use App\Repositories\OrdenRepository;
 use App\Repositories\PagoRepository;
 use App\Support\Validator;
 
@@ -14,6 +15,7 @@ final class PagoService
   public function __construct(
     private readonly PagoRepository $pagos,
     private readonly OrdenService $ordenes,
+    private readonly OrdenRepository $ordenRepo,
     private readonly ConfiguracionService $configuracion,
     private readonly Auditor $auditor,
   ) {
@@ -30,22 +32,28 @@ final class PagoService
   /** @param array<string, mixed> $input */
   public function registrar(int $ordenId, array $input, ?int $usuarioId): int
   {
-    $orden = $this->ordenes->obtener($ordenId);
-    $saldo = $this->saldo($ordenId);
+    $this->ordenes->obtener($ordenId);
     $monto = Validator::importe((string) ($input['monto'] ?? ''));
     $fecha = trim((string) ($input['fecha'] ?? date('Y-m-d')));
     $forma = trim((string) ($input['forma_pago'] ?? ''));
     $formasValidas = $this->configuracion->obtener()['trabajo']['forma_pago'];
 
-    (new Validator())
-      ->check($orden['estado'] !== EstadoOrden::Cancelado->value, 'No se registran pagos en órdenes canceladas.')
-      ->check($monto !== null && $monto > 0, 'El monto debe ser mayor a 0.')
-      ->check($monto === null || $monto <= $saldo, sprintf('El monto supera el saldo pendiente ($ %s).', money($saldo)))
-      ->check(Validator::fecha($fecha) && $fecha <= date('Y-m-d'), 'La fecha del pago no es válida.')
-      ->check(in_array($forma, $formasValidas, true), 'Seleccioná una forma de pago válida.')
-      ->validate();
+    // La orden queda bloqueada mientras se controla el saldo y se registra el pago: dos
+    // pagos simultáneos se procesan uno detrás del otro y no pueden superar el saldo.
+    $pagoId = $this->pagos->transaction(function () use ($ordenId, $monto, $fecha, $forma, $formasValidas, $input, $usuarioId) {
+      $orden = $this->ordenRepo->bloquear($ordenId);
+      $saldo = $this->saldo($ordenId);
 
-    $pagoId = $this->pagos->create($ordenId, $fecha, $monto, $forma, Validator::nullable((string) ($input['observacion'] ?? '')), $usuarioId);
+      (new Validator())
+        ->check($orden['estado'] !== EstadoOrden::Cancelado->value, 'No se registran pagos en órdenes canceladas.')
+        ->check($monto !== null && $monto > 0, 'El monto debe ser mayor a 0.')
+        ->check($monto === null || $monto <= $saldo, sprintf('El monto supera el saldo pendiente ($ %s).', money($saldo)))
+        ->check(Validator::fecha($fecha) && $fecha <= date('Y-m-d'), 'La fecha del pago no es válida.')
+        ->check(in_array($forma, $formasValidas, true), 'Seleccioná una forma de pago válida.')
+        ->validate();
+
+      return $this->pagos->create($ordenId, $fecha, $monto, $forma, Validator::nullable((string) ($input['observacion'] ?? '')), $usuarioId);
+    });
     $this->auditor->registrar('registrar_pago', 'orden', $ordenId, "Pago de $ " . money($monto) . " ({$forma}) en la orden #{$ordenId}", ['pago_id' => $pagoId, 'monto' => $monto]);
 
     return $pagoId;

@@ -115,9 +115,8 @@ final class OrdenService
       notasInternas: $datos['notas_internas'], proximoServiceKm: $datos['proximo_service_km'],
       proximoServiceFecha: $datos['proximo_service_fecha'], turnoId: $datos['turno_id'],
     );
-    $pagado = $id !== null ? $this->pagos->totalPagado($id) : 0.0;
     (new Validator())
-      ->check($orden->total() >= $pagado, sprintf('El total no puede quedar por debajo de lo ya pagado ($ %s).', money($pagado)))
+      ->check($orden->total() <= Validator::IMPORTE_MAXIMO, sprintf('El total de la orden supera el máximo admitido ($ %s).', money(Validator::IMPORTE_MAXIMO)))
       ->validate();
 
     // Si el cliente ya había respondido el presupuesto y cambian los ítems o los precios, la
@@ -128,6 +127,15 @@ final class OrdenService
       ], $items));
 
     $guardada = $this->ordenes->transaction(function () use ($orden, $vehiculoId, $anulaRespuesta) {
+      // Con la orden bloqueada, un pago simultáneo no puede dejar el total por debajo de lo pagado.
+      if ($orden->id !== null) {
+        $this->ordenes->bloquear($orden->id);
+        $pagado = $this->pagos->totalPagado($orden->id);
+        (new Validator())
+          ->check($orden->total() >= $pagado, sprintf('El total no puede quedar por debajo de lo ya pagado ($ %s).', money($pagado)))
+          ->validate();
+      }
+
       $guardada = $this->ordenes->save($orden);
 
       if ($anulaRespuesta) {

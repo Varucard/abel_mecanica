@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Core\Env;
 use App\Core\Logger;
 use DateTimeImmutable;
 use PDO;
@@ -16,7 +17,9 @@ use Throwable;
  * `mysql` o scripts/restore.sh) y de los archivos (imágenes y configuración).
  *
  * Se guardan en storage/backups. La tarea periódica genera uno por día a
- * partir de la hora configurada y conserva los últimos N.
+ * partir de la hora configurada y conserva los últimos N. Si BACKUP_COPIA_DIR
+ * apunta a otra carpeta (un disco externo o una carpeta sincronizada con la
+ * nube, montada en el contenedor), además se copian ahí.
  */
 final class BackupService
 {
@@ -64,7 +67,9 @@ final class BackupService
       $creados[] = $archivos;
     }
 
-    $borrados = $this->rotar((int) $this->configuracion->seccion('backups')['conservar']);
+    $conservar = (int) $this->configuracion->seccion('backups')['conservar'];
+    $borrados = $this->rotar($conservar);
+    $this->copiarFueraDelServidor($creados, $conservar);
     $this->logger->info('Backup generado: {archivos} ({borrados} viejos borrados)', ['archivos' => implode(', ', $creados), 'borrados' => $borrados]);
     if ($manual) {
       $this->auditor->registrar('backup', 'sistema', null, 'Backup manual generado: ' . implode(', ', $creados));
@@ -95,12 +100,41 @@ final class BackupService
     return preg_match(self::PATRON, $nombre) && is_file($ruta) ? $ruta : null;
   }
 
-  /** Conserva los últimos $cantidad backups de cada tipo. Devuelve cuántos borró. */
-  public function rotar(int $cantidad): int
+  /**
+   * Copia los backups recién creados a BACKUP_COPIA_DIR (si está configurada). Un fallo
+   * se registra pero no invalida el backup local.
+   *
+   * @param list<string> $creados
+   */
+  private function copiarFueraDelServidor(array $creados, int $conservar): void
   {
+    $destino = rtrim(trim(Env::get('BACKUP_COPIA_DIR', '')), '/');
+    if ($destino === '') {
+      return;
+    }
+
+    try {
+      if (!is_dir($destino) || !is_writable($destino)) {
+        throw new RuntimeException("La carpeta {$destino} no existe o no se puede escribir.");
+      }
+      foreach ($creados as $nombre) {
+        if (!copy("{$this->directorio}/{$nombre}", "{$destino}/{$nombre}")) {
+          throw new RuntimeException("No se pudo copiar {$nombre}.");
+        }
+      }
+      $this->rotar($conservar, $destino);
+    } catch (Throwable $e) {
+      $this->logger->error('No se pudo copiar el backup a BACKUP_COPIA_DIR', ['exception' => $e]);
+    }
+  }
+
+  /** Conserva los últimos $cantidad backups de cada tipo. Devuelve cuántos borró. */
+  public function rotar(int $cantidad, ?string $directorio = null): int
+  {
+    $directorio ??= $this->directorio;
     $borrados = 0;
     foreach (['db', 'archivos'] as $tipo) {
-      $lista = glob("{$this->directorio}/{$tipo}_*.gz") ?: [];
+      $lista = glob("{$directorio}/{$tipo}_*.gz") ?: [];
       rsort($lista);
       foreach (array_slice($lista, max(1, $cantidad)) as $viejo) {
         $borrados += (int) @unlink($viejo);
@@ -116,6 +150,15 @@ final class BackupService
     $gz = gzopen($ruta . '.tmp', 'wb6');
     if ($gz === false) {
       throw new RuntimeException('No se pudo crear el archivo de backup.');
+    }
+
+    // Todas las tablas se leen desde una misma foto de la base (lectura consistente de
+    // InnoDB): lo que se escriba mientras corre el backup no lo deja a medias. Si ya hay
+    // una transacción abierta, sus lecturas ya son consistentes.
+    $snapshot = !$this->db->inTransaction();
+    if ($snapshot) {
+      $this->db->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+      $this->db->exec('START TRANSACTION WITH CONSISTENT SNAPSHOT, READ ONLY');
     }
 
     try {
@@ -152,6 +195,10 @@ final class BackupService
       gzclose($gz);
       @unlink($ruta . '.tmp');
       throw $e;
+    } finally {
+      if ($snapshot) {
+        $this->db->exec('COMMIT');
+      }
     }
 
     gzclose($gz);

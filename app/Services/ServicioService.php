@@ -57,15 +57,14 @@ final class ServicioService
 
   public function eliminar(int $id): void
   {
-    $this->obtener($id);
+    $servicio = $this->obtener($id);
 
     try {
-      $servicio = $this->obtener($id);
       $this->servicios->delete($id);
       $this->auditor->registrar('eliminar', 'servicio', $id, "Servicio eliminado: {$servicio['nombre']}");
     } catch (PDOException $e) {
       throw Repository::isReferenced($e)
-        ? new ValidationException(['El servicio figura en órdenes existentes y no se puede eliminar.'])
+        ? new ValidationException(['El servicio figura en órdenes o en combos y no se puede eliminar (si es parte de un combo, quitalo del combo primero).'])
         : $e;
     }
   }

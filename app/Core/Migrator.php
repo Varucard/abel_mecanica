@@ -5,10 +5,17 @@ declare(strict_types=1);
 namespace App\Core;
 
 use PDO;
+use PDOException;
+use RuntimeException;
 
 /**
  * Aplica en orden los archivos database/migrations/NNNN_*.sql que todavía no
  * figuran en la tabla `migraciones`.
+ *
+ * En MySQL cada sentencia DDL se confirma sola, así que una migración que falla
+ * a la mitad deja aplicadas las sentencias anteriores. Por eso se registra hasta
+ * qué sentencia llegó (tabla `migraciones_parciales`) y, una vez corregido el
+ * problema, el reintento continúa desde la sentencia que falló.
  */
 final class Migrator
 {
@@ -27,18 +34,43 @@ final class Migrator
          aplicada_en timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+    $this->db->exec(
+      'CREATE TABLE IF NOT EXISTS migraciones_parciales (
+         nombre varchar(190) NOT NULL PRIMARY KEY,
+         sentencias_aplicadas int NOT NULL
+       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
 
     $aplicadas = $this->db->query('SELECT nombre FROM migraciones')->fetchAll(PDO::FETCH_COLUMN);
+    $parciales = $this->db->query('SELECT nombre, sentencias_aplicadas FROM migraciones_parciales')->fetchAll(PDO::FETCH_KEY_PAIR);
     $nuevas = [];
 
     foreach ($this->pendientes($aplicadas) as $nombre => $archivo) {
-      $log && $log("Aplicando {$nombre}...");
+      $hechas = (int) ($parciales[$nombre] ?? 0);
+      $log && $log($hechas > 0 ? "Retomando {$nombre} desde la sentencia " . ($hechas + 1) . '...' : "Aplicando {$nombre}...");
 
-      foreach (self::sentencias((string) file_get_contents($archivo)) as $sql) {
-        $this->db->exec($sql);
+      $sentencias = self::sentencias((string) file_get_contents($archivo));
+      foreach ($sentencias as $i => $sql) {
+        if ($i < $hechas) {
+          continue;
+        }
+        try {
+          $this->db->exec($sql);
+        } catch (PDOException $e) {
+          $this->db->prepare(
+            'INSERT INTO migraciones_parciales (nombre, sentencias_aplicadas) VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE sentencias_aplicadas = VALUES(sentencias_aplicadas)'
+          )->execute([$nombre, $i]);
+
+          throw new RuntimeException(sprintf(
+            'La migración %s falló en la sentencia %d de %d (las anteriores quedaron aplicadas; al reintentar se continúa desde esta): %s%sSentencia: %s',
+            $nombre, $i + 1, count($sentencias), $e->getMessage(), PHP_EOL, mb_strimwidth($sql, 0, 300, '…'),
+          ), 0, $e);
+        }
       }
 
       $this->db->prepare('INSERT INTO migraciones (nombre) VALUES (?)')->execute([$nombre]);
+      $this->db->prepare('DELETE FROM migraciones_parciales WHERE nombre = ?')->execute([$nombre]);
       $nuevas[] = $nombre;
     }
 

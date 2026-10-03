@@ -76,6 +76,11 @@ final class ValidatorTest extends TestCase
     $this->assertNull(Validator::importe('-1'));
     $this->assertNull(Validator::importe('abc'));
     $this->assertNull(Validator::importe(''));
+    $this->assertNull(Validator::importe('1e9'), 'Sin notación científica');
+    $this->assertNull(Validator::importe('1e400'));
+    $this->assertNull(Validator::importe('+5'));
+    $this->assertSame(99999999.99, Validator::importe('99999999.99'));
+    $this->assertNull(Validator::importe('100000000'), 'Fuera del rango de la base');
   }
 
   public function testLargoCuentaCaracteresNoBytes(): void

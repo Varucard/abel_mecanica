@@ -118,6 +118,16 @@ final class ConfiguracionServiceTest extends TestCase
       $this->assertStringContainsString('{nombre_cliente}', $e->getMessage());
     }
 
+    // Variables que existen pero no corresponden a ese aviso: quedarían sin reemplazar.
+    foreach (['email_presupuesto' => '{link_turno}', 'email_service' => '{fecha}', 'whatsapp_recordatorio' => '{total}'] as $campo => $variable) {
+      try {
+        $service->guardar('mensajes', [$campo => "Hola {cliente} {$variable}"] + $mensajes);
+        $this->fail("Debía rechazar {$variable} en {$campo}");
+      } catch (ValidationException $e) {
+        $this->assertStringContainsString("\"{$campo}\" usa variables que no corresponden a ese aviso: {$variable}", $e->getMessage());
+      }
+    }
+
     $this->expectExceptionMessage('debe incluir {link_turno}');
     $service->guardar('mensajes', ['email_confirmacion' => 'Hola {cliente}'] + $mensajes);
   }

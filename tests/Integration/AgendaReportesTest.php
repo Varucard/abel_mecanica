@@ -38,6 +38,14 @@ final class AgendaReportesTest extends IntegrationTestCase
     $this->assertFalse($agenda['celdas'][$agenda['hasta']]['09:00']['abierta'], 'Domingo cerrado');
   }
 
+  public function testUnaFechaInvalidaMuestraLaSemanaActual(): void
+  {
+    $hoy = new DateTimeImmutable('2026-10-07');
+    foreach (['2026-13-45', '2026-02-30', 'cualquier cosa'] as $fecha) {
+      $this->assertSame('2026-10-05', $this->make(AgendaService::class)->semana($fecha, $hoy)['desde'], $fecha);
+    }
+  }
+
   public function testReportes(): void
   {
     $mecanico = $this->make(EmpleadoService::class)->crear(['nombre' => 'Carlos', 'apellido' => 'Gómez', 'dni' => '25111222', 'puesto' => 'Mecánico']);

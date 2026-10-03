@@ -18,7 +18,7 @@ final class PrecioService
   public const APLICAR_A = ['servicios' => 'Servicios', 'repuestos' => 'Repuestos', 'ambos' => 'Servicios y repuestos'];
   public const REDONDEOS = [0 => 'Sin redondeo', 10 => 'A $10', 50 => 'A $50', 100 => 'A $100', 500 => 'A $500', 1000 => 'A $1.000'];
   /** Máximo que admite una columna decimal(10,2). */
-  public const PRECIO_MAXIMO = 99999999.99;
+  public const PRECIO_MAXIMO = Validator::IMPORTE_MAXIMO;
 
   public function __construct(
     private readonly ServicioRepository $servicios,

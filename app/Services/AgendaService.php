@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Repositories\TurnoRepository;
 use App\Support\HorarioAtencion;
+use App\Support\Validator;
 use DateTimeImmutable;
 
 /** Grilla semanal de turnos con los cupos libres de cada franja. */
@@ -27,7 +28,7 @@ final class AgendaService
    */
   public function semana(?string $fecha, DateTimeImmutable $ahora): array
   {
-    $base = $fecha && preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha) ? new DateTimeImmutable($fecha) : $ahora;
+    $base = $fecha && Validator::fecha($fecha) ? new DateTimeImmutable($fecha) : $ahora;
     $lunes = $base->modify('monday this week')->setTime(0, 0);
     $domingo = $lunes->modify('+6 days');
 
