@@ -6,6 +6,7 @@ namespace App\Repositories;
 
 use App\Enums\Estado;
 use App\Models\Vehiculo;
+use App\Support\ConsultaPaginada;
 
 final class VehiculoRepository extends Repository
 {
@@ -24,6 +25,25 @@ final class VehiculoRepository extends Repository
   public function all(): array
   {
     return $this->fetchAll(self::SELECT . ' ORDER BY v.id DESC');
+  }
+
+  /** @param array<string, mixed> $peticion parámetros de DataTables; filtro opcional: estado */
+  public function paginar(array $peticion): array
+  {
+    $consulta = new ConsultaPaginada(self::SELECT, [
+      ['sql' => "CONCAT(p.apellido, ', ', p.nombre)", 'buscar' => true],
+      ['sql' => 'ma.nombre', 'buscar' => true],
+      ['sql' => 'mo.nombre', 'buscar' => true],
+      ['sql' => 'v.anio'],
+      ['sql' => 'v.patente', 'buscar' => true],
+      ['sql' => 'v.kilometraje'],
+      ['sql' => 'v.estado'],
+      ['sql' => null],
+    ], 'v.patente');
+
+    $estado = (string) ($peticion['estado'] ?? '');
+
+    return $consulta->ejecutar($this->db, $peticion, in_array($estado, ['activo', 'inactivo'], true) ? [['v.estado = ?', [$estado]]] : []);
   }
 
   /** @return list<array<string, mixed>> */

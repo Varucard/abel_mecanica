@@ -6,6 +6,7 @@ namespace App\Repositories;
 
 use App\Enums\EstadoTurno;
 use App\Models\Turno;
+use App\Support\ConsultaPaginada;
 
 final class TurnoRepository extends Repository
 {
@@ -13,6 +14,50 @@ final class TurnoRepository extends Repository
   public function all(): array
   {
     return $this->listado('', []);
+  }
+
+  /**
+   * Listado paginado. Filtros opcionales: estado, periodo (proximos | pasados).
+   *
+   * @param array<string, mixed> $peticion
+   */
+  public function paginar(array $peticion): array
+  {
+    $consulta = new ConsultaPaginada(
+      "SELECT t.id, t.cliente_id, t.vehiculo_id, t.fecha, t.hora, t.descripcion, t.estado,
+              t.recordatorio_enviado, t.recordatorio_canal, t.token, t.confirmacion_enviada,
+              t.respuesta_cliente, t.respuesta_en, v.patente,
+              p.nombre AS cliente_nombre, p.email AS cliente_email, c.telefono AS cliente_telefono,
+              CONCAT(p.apellido, ', ', p.nombre) AS cliente,
+              CONCAT(ma.nombre, ' ', mo.nombre, ' (', v.patente, ')') AS vehiculo
+         FROM turnos t
+         INNER JOIN clientes c ON c.id = t.cliente_id
+         INNER JOIN personas p ON p.id = c.persona_id
+         INNER JOIN vehiculos v ON v.id = t.vehiculo_id
+         INNER JOIN marcas ma ON ma.id = v.marca_id
+         INNER JOIN modelos mo ON mo.id = v.modelo_id",
+      [
+        ['sql' => "CONCAT(t.fecha, ' ', t.hora)"],
+        ['sql' => "CONCAT(p.apellido, ', ', p.nombre)", 'buscar' => true],
+        ['sql' => "CONCAT(ma.nombre, ' ', mo.nombre, ' ', v.patente)", 'buscar' => true],
+        ['sql' => 't.descripcion', 'buscar' => true],
+        ['sql' => 't.estado'],
+        ['sql' => null],
+      ],
+      't.fecha DESC, t.hora DESC',
+    );
+
+    $filtros = [];
+    if (in_array($peticion['estado'] ?? '', array_map(fn(EstadoTurno $e) => $e->value, EstadoTurno::cases()), true)) {
+      $filtros[] = ['t.estado = ?', [$peticion['estado']]];
+    }
+    if (($peticion['periodo'] ?? '') === 'proximos') {
+      $filtros[] = ['t.fecha >= CURDATE()', []];
+    } elseif (($peticion['periodo'] ?? '') === 'pasados') {
+      $filtros[] = ['t.fecha < CURDATE()', []];
+    }
+
+    return $consulta->ejecutar($this->db, $peticion, $filtros);
   }
 
   /** @return list<array<string, mixed>> */

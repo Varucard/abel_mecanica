@@ -39,10 +39,12 @@ final class VehiculoController extends Controller
 
   public function index(Request $request): void
   {
-    $this->render('vehiculos/index', [
-      'title' => 'Vehículos',
-      'vehiculos' => $this->vehiculos->all(),
-    ]);
+    $this->render('vehiculos/index', ['title' => 'Vehículos']);
+  }
+
+  public function datos(Request $request): void
+  {
+    $this->tabla($this->vehiculos->paginar($request->queryAll()), 'vehiculos/_fila', 'v');
   }
 
   /** Ficha del vehículo: datos, imágenes, órdenes y turnos. */

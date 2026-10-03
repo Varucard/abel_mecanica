@@ -51,6 +51,7 @@ return function (Router $r): void {
 
   // Clientes
   $r->get('/clientes', [ClienteController::class, 'index']);
+  $r->get('/clientes/datos', [ClienteController::class, 'datos']);
   $r->get('/clientes/crear', [ClienteController::class, 'create']);
   $r->post('/clientes', [ClienteController::class, 'store']);
   $r->get('/clientes/{id}', [ClienteController::class, 'show']);
@@ -65,6 +66,7 @@ return function (Router $r): void {
 
   // Vehículos
   $r->get('/vehiculos', [VehiculoController::class, 'index']);
+  $r->get('/vehiculos/datos', [VehiculoController::class, 'datos']);
   $r->get('/vehiculos/crear', [VehiculoController::class, 'create']);
   $r->post('/vehiculos', [VehiculoController::class, 'store']);
   $r->get('/vehiculos/{id}', [VehiculoController::class, 'show']);
@@ -105,6 +107,7 @@ return function (Router $r): void {
 
   // Órdenes y presupuestos
   $r->get('/ordenes', [OrdenController::class, 'index']);
+  $r->get('/ordenes/datos', [OrdenController::class, 'datos']);
   $r->get('/ordenes/crear', [OrdenController::class, 'create']);
   $r->post('/ordenes', [OrdenController::class, 'store']);
   $r->get('/ordenes/{id}', [OrdenController::class, 'show']);
@@ -121,6 +124,7 @@ return function (Router $r): void {
 
   // Turnos
   $r->get('/turnos', [TurnoController::class, 'index']);
+  $r->get('/turnos/datos', [TurnoController::class, 'datos']);
   $r->get('/turnos/crear', [TurnoController::class, 'create']);
   $r->get('/turnos/semana', [TurnoController::class, 'semana']);
   $r->post('/turnos', [TurnoController::class, 'store']);

@@ -6,6 +6,7 @@ namespace App\Repositories;
 
 use App\Enums\EstadoOrden;
 use App\Models\Orden;
+use App\Support\ConsultaPaginada;
 
 final class OrdenRepository extends Repository
 {
@@ -13,6 +14,55 @@ final class OrdenRepository extends Repository
   public function all(): array
   {
     return $this->listado('', []);
+  }
+
+  /**
+   * Listado paginado en el servidor (DataTables). Filtro opcional: estado.
+   *
+   * @param array<string, mixed> $peticion
+   */
+  public function paginar(array $peticion): array
+  {
+    $saldo = 'o.total - COALESCE((SELECT SUM(pg.monto) FROM pagos pg WHERE pg.orden_id = o.id), 0)';
+    $consulta = new ConsultaPaginada(
+      "SELECT o.id, o.total, o.estado, o.created_at, o.presupuesto_respuesta, {$saldo} AS saldo,
+              CONCAT(p.apellido, ', ', p.nombre) AS cliente,
+              CONCAT(v.patente, ' - ', ma.nombre, ' ', mo.nombre) AS vehiculo,
+              (SELECT CONCAT(pm.apellido, ', ', pm.nombre) FROM empleados em
+                 INNER JOIN personas pm ON pm.id = em.persona_id WHERE em.id = o.mecanico_id) AS mecanico,
+              (SELECT GROUP_CONCAT(s.nombre ORDER BY s.nombre SEPARATOR ', ')
+                 FROM ordenes_servicios os INNER JOIN servicios s ON s.id = os.servicio_id WHERE os.orden_id = o.id) AS servicios,
+              (SELECT GROUP_CONCAT(r.nombre ORDER BY r.nombre SEPARATOR ', ')
+                 FROM ordenes_servicios os INNER JOIN repuestos r ON r.id = os.repuesto_id WHERE os.orden_id = o.id) AS repuestos
+         FROM ordenes o
+         INNER JOIN vehiculos v ON v.id = o.vehiculo_id
+         INNER JOIN clientes c ON c.id = v.cliente_id
+         INNER JOIN personas p ON p.id = c.persona_id
+         INNER JOIN marcas ma ON ma.id = v.marca_id
+         INNER JOIN modelos mo ON mo.id = v.modelo_id",
+      [
+        ['sql' => 'o.id', 'buscar' => true],
+        ['sql' => "CONCAT(p.apellido, ', ', p.nombre)", 'buscar' => true],
+        ['sql' => "CONCAT(v.patente, ' ', ma.nombre, ' ', mo.nombre)", 'buscar' => true],
+        ['sql' => null],
+        ['sql' => 'o.total'],
+        ['sql' => $saldo],
+        ['sql' => 'o.created_at'],
+        ['sql' => 'o.estado'],
+        ['sql' => null],
+      ],
+      'o.id DESC',
+    );
+
+    $estado = (string) ($peticion['estado'] ?? '');
+    $filtros = match ($estado) {
+      '' => [],
+      'abiertas' => [["o.estado IN ('pendiente', 'en_proceso')", []]],
+      'con_saldo' => [["o.estado <> 'cancelado' AND {$saldo} > 0", []]],
+      default => [['o.estado = ?', [$estado]]],
+    };
+
+    return $consulta->ejecutar($this->db, $peticion, $filtros);
   }
 
   /** @return list<array<string, mixed>> */

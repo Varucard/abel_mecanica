@@ -35,9 +35,12 @@ final class TurnoController extends Controller
 
   public function index(Request $request): void
   {
-    $this->render('turnos/index', [
-      'title' => 'Agenda de turnos',
-      'turnos' => $this->turnos->all(),
+    $this->render('turnos/index', ['title' => 'Agenda de turnos', 'estados' => EstadoTurno::cases()]);
+  }
+
+  public function datos(Request $request): void
+  {
+    $this->tabla($this->turnos->paginar($request->queryAll()), 'turnos/_fila', 't', [
       'estados' => EstadoTurno::cases(),
       'avisos' => $this->avisos(),
     ]);

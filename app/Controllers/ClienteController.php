@@ -35,11 +35,12 @@ final class ClienteController extends Controller
 
   public function index(Request $request): void
   {
-    $this->render('clientes/index', [
-      'title' => 'Clientes',
-      'clientes' => $this->clientes->all(),
-      'saldos' => $this->pagos->saldosPorCliente(),
-    ]);
+    $this->render('clientes/index', ['title' => 'Clientes']);
+  }
+
+  public function datos(Request $request): void
+  {
+    $this->tabla($this->clientes->paginar($request->queryAll()), 'clientes/_fila', 'c', ['saldos' => $this->pagos->saldosPorCliente()]);
   }
 
   /** Ficha del cliente: datos, vehículos, órdenes, turnos y saldo. */

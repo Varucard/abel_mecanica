@@ -48,11 +48,12 @@ final class OrdenController extends Controller
 
   public function index(Request $request): void
   {
-    $this->render('ordenes/index', [
-      'title' => 'Órdenes de servicio',
-      'ordenes' => $this->ordenes->all(),
-      'estados' => EstadoOrden::cases(),
-    ]);
+    $this->render('ordenes/index', ['title' => 'Órdenes de servicio', 'estados' => EstadoOrden::cases()]);
+  }
+
+  public function datos(Request $request): void
+  {
+    $this->tabla($this->ordenes->paginar($request->queryAll()), 'ordenes/_fila', 'o', ['estados' => EstadoOrden::cases()]);
   }
 
   public function create(Request $request): void

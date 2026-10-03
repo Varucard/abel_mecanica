@@ -6,6 +6,7 @@ namespace App\Repositories;
 
 use App\Enums\Estado;
 use App\Models\Cliente;
+use App\Support\ConsultaPaginada;
 
 final class ClienteRepository extends Repository
 {
@@ -24,6 +25,26 @@ final class ClienteRepository extends Repository
   public function all(): array
   {
     return $this->fetchAll(self::SELECT . ' ORDER BY p.apellido, p.nombre');
+  }
+
+  /** @param array<string, mixed> $peticion parámetros de DataTables; filtro opcional: estado */
+  public function paginar(array $peticion): array
+  {
+    $consulta = new ConsultaPaginada(self::SELECT, [
+      ['sql' => 'p.nombre', 'buscar' => true],
+      ['sql' => 'p.apellido', 'buscar' => true],
+      ['sql' => 'p.dni', 'buscar' => true],
+      ['sql' => 'c.telefono', 'buscar' => true],
+      ['sql' => 'p.email', 'buscar' => true],
+      ['sql' => 'c.direccion', 'buscar' => true],
+      ['sql' => null],
+      ['sql' => 'c.estado'],
+      ['sql' => null],
+    ], 'p.apellido, p.nombre');
+
+    $estado = (string) ($peticion['estado'] ?? '');
+
+    return $consulta->ejecutar($this->db, $peticion, in_array($estado, ['activo', 'inactivo'], true) ? [['c.estado = ?', [$estado]]] : []);
   }
 
   /** @return list<array<string, mixed>> */
