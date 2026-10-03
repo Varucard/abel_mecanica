@@ -19,6 +19,7 @@ final class TurnoService
     private readonly ClienteRepository $clientes,
     private readonly VehiculoRepository $vehiculos,
     private readonly ConfiguracionService $configuracion,
+    private readonly Auditor $auditor,
   ) {
   }
 
@@ -53,7 +54,10 @@ final class TurnoService
 
     $this->validarHorario($fecha, $hora, $estado, $id);
 
-    return $this->turnos->save(new Turno($clienteId, $vehiculoId, $fecha, $hora, $descripcion, $estado, $id));
+    $guardado = $this->turnos->save(new Turno($clienteId, $vehiculoId, $fecha, $hora, $descripcion, $estado, $id));
+    $this->auditor->registrar($id === null ? 'crear' : 'editar', 'turno', $guardado, ($id === null ? 'Turno agendado' : 'Turno editado') . ' para el ' . format_date($fecha) . " {$hora}");
+
+    return $guardado;
   }
 
   public function cambiarEstado(int $id, string $estado): EstadoTurno
@@ -69,6 +73,7 @@ final class TurnoService
     }
 
     $this->turnos->setEstado($id, $nuevo);
+    $this->auditor->registrar('cambiar_estado', 'turno', $id, "Turno #{$id}: " . EstadoTurno::from($turno['estado'])->label() . " → {$nuevo->label()}");
 
     return $nuevo;
   }
@@ -93,6 +98,7 @@ final class TurnoService
       ->validate();
 
     $this->turnos->registrarRespuesta((int) $turno['id'], $accion === 'confirmar' ? EstadoTurno::Confirmado : EstadoTurno::Cancelado);
+    $this->auditor->registrar($accion === 'confirmar' ? 'confirmar' : 'cancelar', 'turno', (int) $turno['id'], 'El cliente ' . ($accion === 'confirmar' ? 'confirmó' : 'canceló') . ' el turno del ' . format_date($turno['fecha']), actor: 'Cliente (link)');
 
     return $this->turnos->porToken($token);
   }
@@ -139,6 +145,8 @@ final class TurnoService
   public function eliminar(int $id): void
   {
     $this->obtener($id);
+    $turno = $this->obtener($id);
     $this->turnos->delete($id);
+    $this->auditor->registrar('eliminar', 'turno', $id, 'Turno eliminado (era el ' . format_date($turno['fecha']) . ')');
   }
 }

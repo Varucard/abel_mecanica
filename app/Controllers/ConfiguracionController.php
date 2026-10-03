@@ -32,6 +32,7 @@ final class ConfiguracionController extends Controller
     private readonly ConfiguracionService $service,
     private readonly NotificacionService $notificaciones,
     private readonly NotificacionRepository $registro,
+    private readonly \App\Services\Auditor $auditor,
   ) {
     parent::__construct($view, $session);
   }
@@ -73,6 +74,7 @@ final class ConfiguracionController extends Controller
       $this->backWithErrors("/configuracion/{$seccion}", $e, $request);
     }
 
+    $this->auditor->registrar('configurar', 'configuracion', null, 'Configuración modificada: ' . (self::PESTANAS[$seccion] ?? $seccion));
     $this->success('Configuración guardada.');
     $this->redirect("/configuracion/{$seccion}");
   }
@@ -84,6 +86,7 @@ final class ConfiguracionController extends Controller
 
     try {
       $nuevos = $this->service->importarFeriados($anio);
+      $this->auditor->registrar('configurar', 'configuracion', null, "Se importaron {$nuevos} feriados de {$anio}");
       $this->success($nuevos > 0 ? "Se agregaron {$nuevos} feriados de {$anio}." : "Los feriados de {$anio} ya estaban cargados.");
     } catch (ValidationException $e) {
       $this->error($e->getMessage());

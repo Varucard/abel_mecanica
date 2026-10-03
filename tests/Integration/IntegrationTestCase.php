@@ -44,6 +44,7 @@ abstract class IntegrationTestCase extends TestCase
       \App\Services\ConfiguracionService::class,
       fn() => new \App\Services\ConfiguracionService($this->configRoot)
     );
+    $this->container->set(\App\Core\Logger::class, fn() => new \App\Core\Logger($this->configRoot . '/logs', 'debug'));
     $this->container->set(\App\Core\View::class, fn() => new \App\Core\View(dirname(__DIR__, 2) . '/views'));
   }
 
@@ -53,6 +54,8 @@ abstract class IntegrationTestCase extends TestCase
       $this->db->rollBack();
     }
 
+    array_map('unlink', glob($this->configRoot . '/logs/*') ?: []);
+    @rmdir($this->configRoot . '/logs');
     @unlink($this->configRoot . '/storage/config/taller.json');
     @unlink($this->configRoot . '/config/taller.php');
     @rmdir($this->configRoot . '/storage/config');

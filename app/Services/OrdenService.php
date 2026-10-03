@@ -26,6 +26,7 @@ final class OrdenService
     private readonly StockService $stock,
     private readonly PagoRepository $pagos,
     private readonly EmpleadoRepository $empleados,
+    private readonly Auditor $auditor,
   ) {
   }
 
@@ -104,7 +105,16 @@ final class OrdenService
       ->check($orden->total() >= $pagado, sprintf('El total no puede quedar por debajo de lo ya pagado ($ %s).', money($pagado)))
       ->validate();
 
-    return $this->ordenes->save($orden);
+    $guardada = $this->ordenes->save($orden);
+    $this->auditor->registrar(
+      $id === null ? 'crear' : 'editar',
+      'orden',
+      $guardada,
+      ($id === null ? 'Orden creada' : 'Orden editada') . " #{$guardada} por $ " . money($orden->total()),
+      $id !== null && isset($actual) && (float) $actual['total'] !== $orden->total() ? ['total_antes' => (float) $actual['total'], 'total_despues' => $orden->total()] : [],
+    );
+
+    return $guardada;
   }
 
   /** Sin mecánico, uno activo, o el que la orden ya tenía asignado (aunque hoy esté inactivo). */
@@ -162,6 +172,10 @@ final class OrdenService
 
       $this->ordenes->setEstado($id, $nuevo);
     });
+
+    if ($orden['estado'] !== $nuevo->value) {
+      $this->auditor->registrar('cambiar_estado', 'orden', $id, "Orden #{$id}: " . EstadoOrden::from($orden['estado'])->label() . " → {$nuevo->label()}");
+    }
 
     return $nuevo;
   }

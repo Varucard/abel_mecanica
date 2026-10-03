@@ -38,6 +38,7 @@ final class OrdenController extends Controller
     private readonly ClienteRepository $clientes,
     private readonly ConfiguracionService $configuracion,
     private readonly EmpleadoRepository $empleados,
+    private readonly \App\Repositories\AuditoriaRepository $auditoria,
   ) {
     parent::__construct($view, $session);
   }
@@ -102,6 +103,7 @@ final class OrdenController extends Controller
       'saldo' => round((float) $orden['total'] - array_sum(array_column($pagos, 'monto')), 2),
       'formasPago' => $this->configuracion->obtener()['trabajo']['forma_pago'],
       'estado' => EstadoOrden::from($orden['estado']),
+      'historial' => $this->auditoria->deEntidad('orden', $id),
     ]);
   }
 

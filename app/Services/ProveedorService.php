@@ -14,8 +14,10 @@ use PDOException;
 
 final class ProveedorService
 {
-  public function __construct(private readonly ProveedorRepository $proveedores)
-  {
+  public function __construct(
+    private readonly ProveedorRepository $proveedores,
+    private readonly Auditor $auditor,
+  ) {
   }
 
   /** @return array<string, mixed> */
@@ -59,7 +61,9 @@ final class ProveedorService
     $this->obtener($id);
 
     try {
+      $proveedor = $this->obtener($id);
       $this->proveedores->delete($id);
+      $this->auditor->registrar('eliminar', 'proveedor', $id, "Proveedor eliminado: {$proveedor['nombre']}");
     } catch (PDOException $e) {
       throw Repository::isReferenced($e)
         ? new ValidationException(['El proveedor tiene repuestos o ingresos de stock asociados. Podés desactivarlo.'])

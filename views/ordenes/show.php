@@ -7,6 +7,7 @@
  * @var float $saldo
  * @var list<string> $formasPago
  * @var \App\Enums\EstadoOrden $estado
+ * @var list<array<string, mixed>> $historial
  */
 use App\Services\OrdenService;
 
@@ -156,6 +157,24 @@ $pagado = (float) $orden['total'] - $saldo;
           <button type="submit" class="btn btn-success">Registrar pago</button>
         </div>
       </form>
+    <?php endif; ?>
+  </div>
+</div>
+
+<div class="card mt-3">
+  <div class="card-header bg-light"><strong>Historial</strong></div>
+  <div class="card-body">
+    <?php if ($historial === []): ?>
+      <p class="text-muted mb-0">Sin movimientos registrados.</p>
+    <?php else: ?>
+      <ul class="list-unstyled mb-0 small">
+        <?php foreach ($historial as $h): ?>
+          <li class="mb-1">
+            <span class="text-muted"><?= format_date($h['created_at'], 'd/m/Y H:i') ?></span> ·
+            <strong><?= e($h['usuario_nombre'] ?? '—') ?></strong> · <?= e($h['descripcion']) ?>
+          </li>
+        <?php endforeach; ?>
+      </ul>
     <?php endif; ?>
   </div>
 </div>

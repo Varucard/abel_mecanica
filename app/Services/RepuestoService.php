@@ -18,6 +18,7 @@ final class RepuestoService
   public function __construct(
     private readonly RepuestoRepository $repuestos,
     private readonly ProveedorRepository $proveedores,
+    private readonly Auditor $auditor,
   ) {
   }
 
@@ -30,9 +31,7 @@ final class RepuestoService
   /** @param array<string, mixed> $input */
   public function guardar(array $input, ?int $id = null): int
   {
-    if ($id !== null) {
-      $this->obtener($id);
-    }
+    $anterior = $id !== null ? $this->obtener($id) : null;
 
     $nombre = trim((string) ($input['nombre'] ?? ''));
     $codigo = Validator::nullable(mb_strtoupper((string) ($input['codigo'] ?? '')));
@@ -50,10 +49,18 @@ final class RepuestoService
       ->validate();
 
     try {
-      return $this->repuestos->save(new Repuesto($nombre, $precio, $descripcion, $codigo, $minimo, $proveedorId, $id));
+      $guardado = $this->repuestos->save(new Repuesto($nombre, $precio, $descripcion, $codigo, $minimo, $proveedorId, $id));
     } catch (PDOException $e) {
       throw Repository::isDuplicate($e) ? new ValidationException(['Ya existe un repuesto con ese código.']) : $e;
     }
+
+    if ($anterior === null) {
+      $this->auditor->registrar('crear', 'repuesto', $guardado, "Repuesto creado: {$nombre} ($ " . money($precio) . ')');
+    } elseif ((float) $anterior['precio'] !== $precio) {
+      $this->auditor->registrar('cambiar_precio', 'repuesto', $guardado, "Precio de \"{$nombre}\": $ " . money($anterior['precio']) . ' → $ ' . money($precio), ['antes' => (float) $anterior['precio'], 'despues' => $precio]);
+    }
+
+    return $guardado;
   }
 
   public function eliminar(int $id): void
@@ -61,7 +68,9 @@ final class RepuestoService
     $this->obtener($id);
 
     try {
+      $repuesto = $this->obtener($id);
       $this->repuestos->delete($id);
+      $this->auditor->registrar('eliminar', 'repuesto', $id, "Repuesto eliminado: {$repuesto['nombre']}");
     } catch (PDOException $e) {
       throw Repository::isReferenced($e)
         ? new ValidationException(['El repuesto tiene órdenes o movimientos de stock y no se puede eliminar.'])

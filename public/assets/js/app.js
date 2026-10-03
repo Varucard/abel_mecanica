@@ -46,20 +46,48 @@
   setTimeout(() => $('.js-autohide.alert-success').fadeOut('slow'), 6000);
 
   // ---------- DataTables ----------
-  $('.js-datatable').DataTable({
-    language: {
-      decimal: ',',
-      thousands: '.',
-      emptyTable: 'No hay registros cargados',
-      info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
-      infoEmpty: 'Sin registros',
-      infoFiltered: '(filtrado de _MAX_ registros)',
-      lengthMenu: 'Mostrar _MENU_ registros',
-      loadingRecords: 'Cargando...',
-      search: 'Buscar:',
-      zeroRecords: 'No se encontraron resultados',
-      paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
-    },
+  const idioma = {
+    decimal: ',',
+    thousands: '.',
+    emptyTable: 'No hay registros cargados',
+    info: 'Mostrando _START_ a _END_ de _TOTAL_ registros',
+    infoEmpty: 'Sin registros',
+    infoFiltered: '(filtrado de _MAX_ registros)',
+    lengthMenu: 'Mostrar _MENU_ registros',
+    loadingRecords: 'Cargando...',
+    search: 'Buscar:',
+    zeroRecords: 'No se encontraron resultados',
+    paginate: { first: 'Primero', last: 'Último', next: 'Siguiente', previous: 'Anterior' },
+    processing: 'Cargando...',
+  };
+
+  // Tablas con todos los datos en la página.
+  $('.js-datatable').DataTable({ language: idioma });
+
+  // Tablas paginadas en el servidor: data-server="url" y, opcional,
+  // data-filtros="#form" con campos que se envían junto a cada consulta.
+  $('table[data-server]').each(function () {
+    const $tabla = $(this);
+    const $filtros = $($tabla.data('filtros') || []);
+
+    const tabla = $tabla.DataTable({
+      language: idioma,
+      serverSide: true,
+      processing: true,
+      searchDelay: 400,
+      pageLength: 25,
+      ajax: {
+        url: $tabla.data('server'),
+        data: (d) => {
+          $filtros.serializeArray().forEach((campo) => { d[campo.name] = campo.value; });
+        },
+      },
+    });
+
+    $filtros.on('change submit', (e) => {
+      e.preventDefault();
+      tabla.ajax.reload();
+    });
   });
 
   // ---------- Select2 ----------

@@ -26,6 +26,7 @@ final class StockService
     private readonly ProveedorRepository $proveedores,
     private readonly OrdenRepository $ordenes,
     private readonly ConfiguracionService $configuracion,
+    private readonly Auditor $auditor,
   ) {
   }
 
@@ -39,7 +40,10 @@ final class StockService
       ->check($proveedorId === null || $this->proveedores->find($proveedorId) !== null, 'El proveedor seleccionado no existe.')
       ->validate();
 
-    return $this->stock->registrar($repuestoId, 'ingreso', $valor, null, $proveedorId, $usuarioId, Validator::nullable((string) $motivo));
+    $resultante = $this->stock->registrar($repuestoId, 'ingreso', $valor, null, $proveedorId, $usuarioId, Validator::nullable((string) $motivo));
+    $this->auditor->registrar('ingreso_stock', 'repuesto', $repuestoId, "Ingreso de stock: +" . qty($valor) . ' (queda ' . qty($resultante) . ')', ['cantidad' => $valor, 'proveedor_id' => $proveedorId]);
+
+    return $resultante;
   }
 
   /** Corrige el stock al valor contado físicamente; registra la diferencia. */
@@ -59,7 +63,10 @@ final class StockService
       return $valor;
     }
 
-    return $this->stock->registrar($repuestoId, 'ajuste', $diferencia, null, null, $usuarioId, $motivo);
+    $resultante = $this->stock->registrar($repuestoId, 'ajuste', $diferencia, null, null, $usuarioId, $motivo);
+    $this->auditor->registrar('ajuste_stock', 'repuesto', $repuestoId, "Ajuste de stock de \"{$repuesto['nombre']}\": " . qty($repuesto['stock_actual']) . ' → ' . qty($resultante) . " ({$motivo})", ['antes' => (float) $repuesto['stock_actual'], 'despues' => $resultante]);
+
+    return $resultante;
   }
 
   public function descontarOrden(int $ordenId, ?int $usuarioId): void

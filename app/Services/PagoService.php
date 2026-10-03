@@ -15,6 +15,7 @@ final class PagoService
     private readonly PagoRepository $pagos,
     private readonly OrdenService $ordenes,
     private readonly ConfiguracionService $configuracion,
+    private readonly Auditor $auditor,
   ) {
   }
 
@@ -44,7 +45,10 @@ final class PagoService
       ->check(in_array($forma, $formasValidas, true), 'Seleccioná una forma de pago válida.')
       ->validate();
 
-    return $this->pagos->create($ordenId, $fecha, $monto, $forma, Validator::nullable((string) ($input['observacion'] ?? '')), $usuarioId);
+    $pagoId = $this->pagos->create($ordenId, $fecha, $monto, $forma, Validator::nullable((string) ($input['observacion'] ?? '')), $usuarioId);
+    $this->auditor->registrar('registrar_pago', 'orden', $ordenId, "Pago de $ " . money($monto) . " ({$forma}) en la orden #{$ordenId}", ['pago_id' => $pagoId, 'monto' => $monto]);
+
+    return $pagoId;
   }
 
   /** Anula un pago. Devuelve el id de la orden a la que pertenecía. */
@@ -52,6 +56,7 @@ final class PagoService
   {
     $pago = $this->pagos->find($pagoId) ?? throw new NotFoundException('Pago no encontrado.');
     $this->pagos->delete($pagoId);
+    $this->auditor->registrar('anular_pago', 'orden', (int) $pago['orden_id'], "Pago anulado: $ " . money($pago['monto']) . " ({$pago['forma_pago']}) de la orden #{$pago['orden_id']}", ['pago' => $pago]);
 
     return (int) $pago['orden_id'];
   }

@@ -26,6 +26,7 @@ final class VehiculoService
     private readonly VehiculoRepository $vehiculos,
     private readonly ClienteRepository $clientes,
     private readonly ModeloRepository $modelos,
+    private readonly Auditor $auditor,
   ) {
   }
 
@@ -50,14 +51,20 @@ final class VehiculoService
   /** @param array<string, mixed> $input */
   public function crear(array $input): int
   {
-    return $this->persistir($this->construir($input));
+    $vehiculo = $this->construir($input);
+    $id = $this->persistir($vehiculo);
+    $this->auditor->registrar('crear', 'vehiculo', $id, "Vehículo registrado: {$vehiculo->patente}");
+
+    return $id;
   }
 
   /** @param array<string, mixed> $input */
   public function actualizar(int $id, array $input): void
   {
     $this->obtener($id);
-    $this->persistir($this->construir($input, $id));
+    $vehiculo = $this->construir($input, $id);
+    $this->persistir($vehiculo);
+    $this->auditor->registrar('editar', 'vehiculo', $id, "Vehículo editado: {$vehiculo->patente}");
   }
 
   /** @param array<string, mixed> $archivo elemento de $_FILES */
@@ -93,6 +100,7 @@ final class VehiculoService
   {
     $nuevo = Estado::from($this->obtener($id)['estado'])->alternar();
     $this->vehiculos->setEstado($id, $nuevo);
+    $this->auditor->registrar('cambiar_estado', 'vehiculo', $id, "Vehículo #{$id} pasó a {$nuevo->value}");
 
     return $nuevo;
   }

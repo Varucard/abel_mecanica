@@ -24,6 +24,8 @@ final class UsuarioService
   public function __construct(
     private readonly UsuarioRepository $usuarios,
     private readonly IntentoRepository $intentos,
+    private readonly Auditor $auditor,
+    private readonly \App\Core\Logger $logger,
   ) {
   }
 
@@ -63,6 +65,7 @@ final class UsuarioService
 
     if ($fila === null || !$valida || !$fila['activo']) {
       $this->intentos->registrar(self::AMBITO, $usuario, $ip);
+      $this->logger->warning('Intento de ingreso fallido para "{usuario}"', ['usuario' => $usuario, 'ip' => $ip]);
       throw new ValidationException(['Usuario o contraseña incorrectos.']);
     }
 
@@ -85,7 +88,10 @@ final class UsuarioService
     $this->validarClave($clave, (string) ($input['clave_confirmacion'] ?? ''));
 
     try {
-      return $this->usuarios->create($nombre, $usuario, password_hash($clave, PASSWORD_DEFAULT), $rol);
+      $id = $this->usuarios->create($nombre, $usuario, password_hash($clave, PASSWORD_DEFAULT), $rol);
+      $this->auditor->registrar('crear', 'usuario', $id, "Usuario creado: {$usuario} ({$rol->label()})");
+
+      return $id;
     } catch (PDOException $e) {
       throw Repository::isDuplicate($e) ? new ValidationException(['Ese nombre de usuario ya existe.']) : $e;
     }
@@ -108,6 +114,10 @@ final class UsuarioService
 
     try {
       $this->usuarios->update($id, $nombre, $usuario, $rol, $activo);
+      $this->auditor->registrar('editar', 'usuario', $id, "Usuario editado: {$usuario}", array_filter([
+        'rol' => $actual['rol'] !== $rol->value ? "{$actual['rol']} → {$rol->value}" : null,
+        'activo' => (bool) $actual['activo'] !== $activo ? ($activo ? 'reactivado' : 'desactivado') : null,
+      ]));
     } catch (PDOException $e) {
       throw Repository::isDuplicate($e) ? new ValidationException(['Ese nombre de usuario ya existe.']) : $e;
     }
@@ -115,6 +125,7 @@ final class UsuarioService
     if (($input['clave'] ?? '') !== '') {
       $this->validarClave((string) $input['clave'], (string) ($input['clave_confirmacion'] ?? ''));
       $this->usuarios->setPassword($id, password_hash((string) $input['clave'], PASSWORD_DEFAULT));
+      $this->auditor->registrar('cambiar_clave', 'usuario', $id, "Se cambió la contraseña de {$usuario}");
     }
   }
 
@@ -127,6 +138,7 @@ final class UsuarioService
     $this->validarClave($nueva, $confirmacion);
 
     $this->usuarios->setPassword($id, password_hash($nueva, PASSWORD_DEFAULT));
+    $this->auditor->registrar('cambiar_clave', 'usuario', $id, "{$usuario['usuario']} cambió su contraseña");
   }
 
   /** Desbloquea el usuario (lo usa bin/usuario.php al reiniciar la clave). */

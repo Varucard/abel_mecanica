@@ -20,6 +20,7 @@ final class App
 
   public readonly Container $container;
   public readonly string $basePath;
+  public readonly Logger $logger;
 
   private function __construct(public readonly string $rootPath)
   {
@@ -28,12 +29,23 @@ final class App
     date_default_timezone_set(Env::get('TZ', 'America/Argentina/Buenos_Aires'));
     ini_set('display_errors', Env::bool('APP_DEBUG') ? '1' : '0');
     ini_set('log_errors', '1');
-    ini_set('error_log', $rootPath . '/storage/logs/app.log');
+    ini_set('error_log', $rootPath . '/storage/logs/php-errors.log');
     error_reporting(E_ALL);
 
     $this->basePath = rtrim(str_replace('\\', '/', dirname($_SERVER['SCRIPT_NAME'] ?? '/')), '/');
 
+    $this->logger = new Logger(
+      $rootPath . '/storage/logs',
+      Env::get('LOG_LEVEL', Env::bool('APP_DEBUG') ? 'debug' : 'info'),
+    );
+    $this->logger->agregarContexto([
+      'request_id' => bin2hex(random_bytes(6)),
+      'canal' => PHP_SAPI === 'cli' ? 'cli' : 'web',
+    ]);
+    $this->registrarManejadorDeErrores();
+
     $this->container = new Container();
+    $this->container->set(Logger::class, fn() => $this->logger);
     $this->container->set(PDO::class, fn() => Database::connect());
     $this->container->set(View::class, fn() => new View($rootPath . '/views'));
     $this->container->set(Session::class, function () {
@@ -57,9 +69,18 @@ final class App
   public function run(): void
   {
     $request = Request::fromGlobals($this->basePath);
+    $this->logger->agregarContexto([
+      'ip' => $_SERVER['REMOTE_ADDR'] ?? null,
+      'ruta' => "{$request->method} {$request->path}",
+    ]);
+    if (!headers_sent()) {
+      header('X-Request-Id: ' . $this->logger->contexto('request_id'));
+    }
 
     try {
       $this->container->get(Session::class);
+      $usuario = $this->container->get(Auth::class)->user();
+      $this->logger->agregarContexto(['usuario' => $usuario['usuario'] ?? null]);
 
       $router = new Router($this->container);
       $router->setGuard(fn(string $acceso, Request $r) => $this->guard($acceso, $r));
@@ -72,10 +93,29 @@ final class App
     } catch (ForbiddenException $e) {
       $this->renderError(403, $e->getMessage(), $request);
     } catch (Throwable $e) {
-      error_log((string) $e);
+      $this->logger->error('Error no controlado: ' . $e->getMessage(), ['exception' => $e]);
       $message = Env::bool('APP_DEBUG') ? $e->getMessage() : 'Ocurrió un error inesperado. Intentá nuevamente.';
       $this->renderError(500, $message, $request);
     }
+  }
+
+  /** Warnings y notices de PHP van al log (y se siguen mostrando si APP_DEBUG está activo). */
+  private function registrarManejadorDeErrores(): void
+  {
+    set_error_handler(function (int $tipo, string $mensaje, string $archivo, int $linea): bool {
+      if (!(error_reporting() & $tipo)) {
+        return false;
+      }
+
+      $nivel = match ($tipo) {
+        E_WARNING, E_USER_WARNING, E_CORE_WARNING, E_COMPILE_WARNING => 'warning',
+        E_NOTICE, E_USER_NOTICE, E_DEPRECATED, E_USER_DEPRECATED => 'notice',
+        default => 'error',
+      };
+      $this->logger->log($nivel, "PHP: {$mensaje}", ['archivo' => "{$archivo}:{$linea}"]);
+
+      return false;
+    });
   }
 
   /** Control de acceso de cada ruta según su nivel (ver Router::ACCESO_*). */
@@ -146,9 +186,10 @@ final class App
         },
         'status' => $status,
         'message' => $message,
+        'codigo' => $status >= 500 ? $this->logger->contexto('request_id') : null,
       ]);
     } catch (Throwable $e) {
-      error_log((string) $e);
+      $this->logger->critical('No se pudo mostrar la página de error', ['exception' => $e]);
       echo htmlspecialchars($message, ENT_QUOTES, 'UTF-8');
     }
   }

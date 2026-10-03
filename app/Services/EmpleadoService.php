@@ -15,8 +15,10 @@ use PDOException;
 
 final class EmpleadoService
 {
-  public function __construct(private readonly EmpleadoRepository $empleados)
-  {
+  public function __construct(
+    private readonly EmpleadoRepository $empleados,
+    private readonly Auditor $auditor,
+  ) {
   }
 
   /** @return array<string, mixed> */
@@ -29,7 +31,11 @@ final class EmpleadoService
   public function crear(array $input): int
   {
     try {
-      return $this->empleados->create($this->construir($input));
+      $empleado = $this->construir($input);
+      $id = $this->empleados->create($empleado);
+      $this->auditor->registrar('crear', 'empleado', $id, "Empleado registrado: {$empleado->nombreCompleto()} ({$empleado->puesto})");
+
+      return $id;
     } catch (PDOException $e) {
       throw Repository::isDuplicate($e) ? new ValidationException(['Esa persona ya está registrada como empleado.']) : $e;
     }
@@ -40,13 +46,16 @@ final class EmpleadoService
   {
     $actual = $this->obtener($id);
     $input['dni'] = $actual['dni'];
-    $this->empleados->update($this->construir($input, $id));
+    $empleado = $this->construir($input, $id);
+    $this->empleados->update($empleado);
+    $this->auditor->registrar('editar', 'empleado', $id, "Empleado editado: {$empleado->nombreCompleto()}");
   }
 
   public function alternarEstado(int $id): Estado
   {
     $nuevo = Estado::from($this->obtener($id)['estado'])->alternar();
     $this->empleados->setEstado($id, $nuevo);
+    $this->auditor->registrar('cambiar_estado', 'empleado', $id, "Empleado #{$id} pasó a {$nuevo->value}");
 
     return $nuevo;
   }

@@ -39,6 +39,7 @@ final class NotificacionService
     private readonly TurnoRepository $turnos,
     private readonly NotificacionRepository $registro,
     private readonly ConfiguracionService $configuracion,
+    private readonly \App\Core\Logger $logger,
   ) {
   }
 
@@ -227,12 +228,15 @@ final class NotificacionService
       try {
         $canal->enviar($destinatario, $mensaje);
       } catch (Throwable $e) {
-        error_log("Notificación {$tipo} del turno {$turnoId} por {$canal->nombre()}: {$e->getMessage()}");
+        $this->logger->error('Falló el envío de {tipo} del turno {turno} por {canal}', [
+          'tipo' => $tipo, 'turno' => $turnoId, 'canal' => $canal->nombre(), 'exception' => $e,
+        ]);
         $this->registro->registrar($turnoId, $tipo, $canal->nombre(), $canal->destino($destinatario), 'error', $e->getMessage());
         throw new RuntimeException("No se pudo enviar el aviso por {$canal->nombre()}. Revisá la configuración del servidor de correo.", 0, $e);
       }
 
       $this->registro->registrar($turnoId, $tipo, $canal->nombre(), $canal->destino($destinatario), 'enviado');
+      $this->logger->info('Aviso de {tipo} del turno {turno} enviado por {canal}', ['tipo' => $tipo, 'turno' => $turnoId, 'canal' => $canal->nombre()]);
 
       return $canal->nombre();
     }

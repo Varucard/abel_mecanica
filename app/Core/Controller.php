@@ -37,6 +37,23 @@ abstract class Controller
     exit;
   }
 
+  /**
+   * Responde a DataTables con las filas de una consulta paginada.
+   *
+   * @param array{draw: int, recordsTotal: int, recordsFiltered: int, filas: list<array<string, mixed>>} $resultado
+   * @param string $template  template de fila que devuelve las celdas
+   * @param string $variable  nombre con el que el template recibe cada fila
+   */
+  protected function tabla(array $resultado, string $template, string $variable, array $extra = []): never
+  {
+    $this->json([
+      'draw' => $resultado['draw'],
+      'recordsTotal' => $resultado['recordsTotal'],
+      'recordsFiltered' => $resultado['recordsFiltered'],
+      'data' => array_map(fn(array $fila) => $this->view->fila($template, [$variable => $fila, ...$extra]), $resultado['filas']),
+    ]);
+  }
+
   /** Corta la petición si el token CSRF no es válido. */
   protected function verifyCsrf(Request $request): void
   {

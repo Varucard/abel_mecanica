@@ -13,6 +13,7 @@ use App\Controllers\OrdenController;
 use App\Controllers\PagoController;
 use App\Controllers\ProveedorController;
 use App\Controllers\PublicoController;
+use App\Controllers\RegistroController;
 use App\Controllers\RepuestoController;
 use App\Controllers\ServicioController;
 use App\Controllers\TurnoController;
@@ -117,6 +118,9 @@ return function (Router $r): void {
 
   // Solo administradores
   $admin = Router::ACCESO_ADMIN;
+  $r->get('/auditoria', [RegistroController::class, 'auditoria'], $admin);
+  $r->get('/auditoria/datos', [RegistroController::class, 'auditoriaDatos'], $admin);
+  $r->get('/logs', [RegistroController::class, 'logs'], $admin);
   $r->get('/configuracion', [ConfiguracionController::class, 'index'], $admin);
   $r->post('/configuracion/feriados/importar', [ConfiguracionController::class, 'importarFeriados'], $admin);
   $r->get('/configuracion/{seccion:slug}', [ConfiguracionController::class, 'edit'], $admin);

@@ -115,3 +115,20 @@ function absolute_url(string $path = '/'): string
 
   return rtrim($base, '/') . '/' . ltrim($path, '/');
 }
+
+/** URL de la ficha de una entidad auditada, o null si no tiene pantalla propia. */
+function url_entidad(string $entidad, ?int $id): ?string
+{
+  if ($id === null) {
+    return null;
+  }
+
+  $rutas = [
+    'orden' => "ordenes/{$id}", 'cliente' => "clientes/{$id}", 'vehiculo' => "vehiculos/{$id}",
+    'repuesto' => "repuestos/{$id}/stock", 'turno' => "turnos/{$id}/editar", 'usuario' => "usuarios/{$id}/editar",
+    'empleado' => "empleados/{$id}/editar", 'servicio' => "servicios/{$id}/editar", 'proveedor' => "proveedores/{$id}/editar",
+    'combo' => "combos/{$id}/editar",
+  ];
+
+  return isset($rutas[$entidad]) ? url($rutas[$entidad]) : null;
+}

@@ -10,6 +10,8 @@
         <a href="<?= url('configuracion') ?>">Sistema</a>
         <a href="<?= url('empleados') ?>">Empleados</a>
         <a href="<?= url('usuarios') ?>">Usuarios</a>
+        <a href="<?= url('auditoria') ?>">Auditoría</a>
+        <a href="<?= url('logs') ?>">Registro del sistema</a>
       <?php endif; ?>
     </div>
   </div>
