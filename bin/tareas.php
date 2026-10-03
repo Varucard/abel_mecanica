@@ -26,6 +26,8 @@ try {
   $notificaciones = $app->container->get(NotificacionService::class);
   $resultado = $notificaciones->enviarRecordatoriosPendientes($ahora);
   $services = $notificaciones->enviarAvisosService($ahora);
+  $backups = $app->container->get(\App\Services\BackupService::class);
+  $backup = $backups->corresponde($ahora) ? $backups->generar() : [];
   $purgados = $app->container->get(IntentoRepository::class)->purgar();
   $logsBorrados = $app->logger->purgar((int) Env::get('LOG_DIAS', '30'));
 } catch (Throwable $e) {
@@ -50,5 +52,6 @@ $mensaje = $resultado['omitido'] !== null
   ? "Recordatorios: " . rtrim($resultado['omitido'], '.')
   : "Recordatorios: {$resultado['enviados']} enviados, {$resultado['sin_contacto']} sin contacto, {$resultado['errores']} con error";
 $mensaje .= $services['omitido'] === null ? ". Services: {$services['enviados']} avisados" : '';
+$mensaje .= $backup !== [] ? '. Backup: ' . implode(', ', $backup) : '';
 
 echo '[' . $ahora->format('Y-m-d H:i') . "] {$mensaje}. Limpieza: {$purgados} intentos, {$logsBorrados} archivos de log." . PHP_EOL;

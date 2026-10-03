@@ -42,6 +42,17 @@
   </div>
 <?php endif; ?>
 
+<?php if ($seccion === 'backups'): ?>
+  <div class="card mt-3">
+    <div class="card-body">
+      <form action="<?= url('configuracion/backups/generar') ?>" method="POST" class="d-inline">
+        <?= csrf_field() ?>
+        <button type="submit" class="btn btn-outline-primary">Generar backup ahora</button>
+      </form>
+    </div>
+  </div>
+<?php endif; ?>
+
 <?php if ($seccion === 'notificaciones'): ?>
   <div class="card mt-3">
     <div class="card-header bg-light"><strong>Últimos avisos enviados</strong></div>

@@ -119,6 +119,13 @@ return [
     'margen_sugerido' => 40,
   ],
 
+  'backups' => [
+    // Backup automático diario de la base y de las imágenes (storage/backups).
+    'habilitado' => true,
+    'hora' => '22:00',
+    'conservar' => 14,
+  ],
+
   'portal' => [
     // Página pública "Seguí tu vehículo" (/seguimiento).
     'habilitado' => true,

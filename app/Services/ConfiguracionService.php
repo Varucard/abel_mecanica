@@ -18,7 +18,7 @@ use RuntimeException;
  */
 final class ConfiguracionService
 {
-  public const SECCIONES = ['taller', 'trabajo', 'turnos', 'service', 'notificaciones', 'mensajes', 'stock', 'portal'];
+  public const SECCIONES = ['taller', 'trabajo', 'turnos', 'service', 'notificaciones', 'mensajes', 'stock', 'portal', 'backups'];
 
   /** Variables que se pueden usar en las plantillas de mensajes. */
   public const VARIABLES_MENSAJES = [
@@ -86,6 +86,7 @@ final class ConfiguracionService
       'service' => $this->validarService($input),
       'stock' => $this->validarStock($input),
       'portal' => $this->validarPortal($input),
+      'backups' => $this->validarBackups($input),
       default => throw new ValidationException(['Sección de configuración inválida.']),
     };
 
@@ -279,6 +280,19 @@ final class ConfiguracionService
     )->validate();
 
     return $mensajes;
+  }
+
+  private function validarBackups(array $input): array
+  {
+    $hora = substr(trim((string) ($input['hora'] ?? '')), 0, 5);
+    $conservar = (int) ($input['conservar'] ?? 0);
+
+    (new Validator())
+      ->check(Validator::hora($hora), 'La hora del backup no es válida.')
+      ->check($conservar >= 1 && $conservar <= 365, 'La cantidad de backups a conservar debe estar entre 1 y 365.')
+      ->validate();
+
+    return ['habilitado' => !empty($input['habilitado']), 'hora' => $hora, 'conservar' => $conservar];
   }
 
   private function validarPortal(array $input): array

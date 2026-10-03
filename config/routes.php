@@ -148,6 +148,8 @@ return function (Router $r): void {
   $r->get('/logs', [RegistroController::class, 'logs'], $admin);
   $r->get('/configuracion', [ConfiguracionController::class, 'index'], $admin);
   $r->post('/configuracion/feriados/importar', [ConfiguracionController::class, 'importarFeriados'], $admin);
+  $r->post('/configuracion/backups/generar', [ConfiguracionController::class, 'generarBackup'], $admin);
+  $r->get('/configuracion/backups/descargar', [ConfiguracionController::class, 'descargarBackup'], $admin);
   $r->get('/configuracion/{seccion:slug}', [ConfiguracionController::class, 'edit'], $admin);
   $r->post('/configuracion/{seccion:slug}', [ConfiguracionController::class, 'update'], $admin);
   $r->get('/usuarios', [UsuarioController::class, 'index'], $admin);

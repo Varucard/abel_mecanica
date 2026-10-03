@@ -2,6 +2,7 @@
 # Restaura un backup generado por scripts/backup.sh.
 #
 #   scripts/restore.sh backups/db_2026-10-02_220000.sql.gz [backups/archivos_2026-10-02_220000.tar.gz]
+#   scripts/restore.sh storage/backups/db_2026-10-02_220000.sql.gz   (backups automáticos)
 #
 # ATENCIÓN: reemplaza los datos actuales de la base (y los archivos, si se indican).
 set -euo pipefail
