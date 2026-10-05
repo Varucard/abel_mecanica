@@ -11,13 +11,13 @@ use App\Enums\Combustible;
 $dato = fn(?string $v) => $v !== null && $v !== '' ? e($v) : '—';
 ?>
 <div class="card mt-3">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h4 class="mb-0"><?= e($vehiculo['patente']) ?> · <?= e("{$vehiculo['marca']} {$vehiculo['modelo']} ({$vehiculo['anio']})") ?>
       <?php if ($vehiculo['estado'] !== 'activo'): ?><span class="badge bg-secondary fs-6">inactivo</span><?php endif; ?>
     </h4>
     <div class="d-flex gap-2">
-      <a href="<?= url('ordenes/crear?vehiculo_id=' . $vehiculo['id']) ?>" class="btn btn-sm btn-warning">+ Nueva orden</a>
-      <a href="<?= url("vehiculos/{$vehiculo['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
+      <a href="<?= url('ordenes/crear?vehiculo_id=' . $vehiculo['id']) ?>" class="btn btn-sm btn-seccion"><?= icono('plus-lg') ?> Nueva orden</a>
+      <?= boton_accion("vehiculos/{$vehiculo['id']}/editar", 'pencil', 'Editar', 'btn-outline-primary') ?>
     </div>
   </div>
   <div class="card-body">
@@ -43,7 +43,7 @@ $dato = fn(?string $v) => $v !== null && $v !== '' ? e($v) : '—';
 </div>
 
 <div class="card mt-3">
-  <div class="card-header bg-light"><strong>Imágenes</strong></div>
+  <div class="card-header"><strong>Imágenes</strong></div>
   <div class="card-body">
     <?php if ($imagenes !== []): ?>
       <div class="row g-3 mb-3">
@@ -52,7 +52,7 @@ $dato = fn(?string $v) => $v !== null && $v !== '' ? e($v) : '—';
           <div class="col-6 col-md-3">
             <div class="card h-100">
               <a href="<?= $src ?>" target="_blank" rel="noopener">
-                <img src="<?= $src ?>" alt="<?= e($img['descripcion'] ?? 'Imagen del vehículo') ?>" class="card-img-top" style="height: 160px; object-fit: cover;" loading="lazy">
+                <img src="<?= $src ?>" alt="<?= e($img['descripcion'] ?? 'Imagen del vehículo') ?>" class="card-img-top galeria-imagen" loading="lazy">
               </a>
               <div class="card-body p-2 small">
                 <div><?= e($img['descripcion'] ?? '') ?></div>
@@ -74,7 +74,7 @@ $dato = fn(?string $v) => $v !== null && $v !== '' ? e($v) : '—';
         <input type="file" class="form-control" name="imagen" accept="image/jpeg,image/png,image/webp" required aria-label="Imagen">
       </div>
       <div class="col-md-5">
-        <input type="text" class="form-control" name="descripcion" maxlength="255" placeholder="Descripción (ej: estado al ingresar)">
+        <input type="text" class="form-control" name="descripcion" maxlength="255" placeholder="Descripción (ej: estado al ingresar)" aria-label="Descripción de la imagen">
       </div>
       <div class="col-md-2">
         <button type="submit" class="btn btn-outline-primary w-100">Subir imagen</button>
@@ -84,11 +84,11 @@ $dato = fn(?string $v) => $v !== null && $v !== '' ? e($v) : '—';
 </div>
 
 <div class="card mt-3">
-  <div class="card-header bg-light"><strong>Historial de órdenes</strong></div>
+  <div class="card-header"><strong>Historial de órdenes</strong></div>
   <div class="card-body"><?= $view->partial('partials/historial_ordenes', ['ordenes' => $ordenes]) ?></div>
 </div>
 
 <div class="card mt-3">
-  <div class="card-header bg-light"><strong>Historial de turnos</strong></div>
+  <div class="card-header"><strong>Historial de turnos</strong></div>
   <div class="card-body"><?= $view->partial('partials/historial_turnos', ['turnos' => $turnos]) ?></div>
 </div>

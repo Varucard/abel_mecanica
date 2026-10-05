@@ -21,9 +21,42 @@ function url(string $path = '/'): string
   return App::instance()->basePath . '/' . ltrim($path, '/');
 }
 
+/**
+ * URL de un archivo de public/assets con su fecha de modificación como versión: al
+ * cambiar el archivo cambia la URL, y ni el navegador ni la app instalada sirven uno viejo.
+ */
 function asset(string $path): string
 {
-  return url('assets/' . ltrim($path, '/'));
+  $path = ltrim($path, '/');
+  $archivo = App::instance()->rootPath . '/public/assets/' . $path;
+
+  return url('assets/' . $path) . (is_file($archivo) ? '?v=' . filemtime($archivo) : '');
+}
+
+/**
+ * Importe listo para mostrar: "$ 1.234,50" que nunca se parte en dos líneas y con cifras
+ * de ancho fijo (clase .importe). Devuelve HTML.
+ */
+function importe(mixed $amount): string
+{
+  return '<span class="importe">$&nbsp;' . money($amount) . '</span>';
+}
+
+/** Ícono de Bootstrap Icons (https://icons.getbootstrap.com), decorativo: icono('check-lg'). */
+function icono(string $nombre): string
+{
+  return '<i class="bi bi-' . e($nombre) . '" aria-hidden="true"></i>';
+}
+
+/**
+ * Botón de acción de una fila (Ver, Editar…): ícono + texto. En el celular queda solo el
+ * ícono (el texto sigue para lectores de pantalla). Criterio de colores:
+ * contorno gris para ver, contorno azul para editar, rojo solo para lo destructivo.
+ */
+function boton_accion(string $ruta, string $icono, string $texto, string $clase = 'btn-outline-secondary'): string
+{
+  return '<a href="' . e(url($ruta)) . '" class="btn btn-sm btn-accion ' . e($clase) . '" title="' . e($texto) . '">'
+    . icono($icono) . '<span class="btn-texto"> ' . e($texto) . '</span></a>';
 }
 
 /** Formato de moneda argentino: 1.234,50 */

@@ -16,6 +16,7 @@ use App\Controllers\PagoController;
 use App\Controllers\PrecioController;
 use App\Controllers\ProveedorController;
 use App\Controllers\PublicoController;
+use App\Controllers\PwaController;
 use App\Controllers\RegistroController;
 use App\Controllers\ReporteController;
 use App\Controllers\RepuestoController;
@@ -42,6 +43,9 @@ return function (Router $r): void {
   $r->post('/presupuesto/{token:token}', [PublicoController::class, 'responderPresupuesto'], $publico);
   $r->get('/presupuesto/{token:token}/seguimiento', [PublicoController::class, 'seguimientoPresupuesto'], $publico);
   $r->get('/seguimiento', [PublicoController::class, 'seguimiento'], $publico);
+  // App instalable (PWA)
+  $r->get('/app.webmanifest', [PwaController::class, 'app'], $publico);
+  $r->get('/portal.webmanifest', [PwaController::class, 'portal'], $publico);
   $r->post('/seguimiento', [PublicoController::class, 'consultar'], $publico);
 
   $r->get('/perfil/clave', [UsuarioController::class, 'claveForm']);

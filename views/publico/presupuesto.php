@@ -37,17 +37,17 @@
             <tr>
               <td><?= e($item['repuesto_id'] !== null ? 'Repuesto: ' . $item['repuesto_nombre'] : $item['servicio_nombre']) ?></td>
               <td class="text-end"><?= qty($item['cantidad']) ?></td>
-              <td class="text-end">$ <?= money($item['precio_unitario']) ?></td>
-              <td class="text-end">$ <?= money($item['costo']) ?></td>
+              <td class="text-end"><?= importe($item['precio_unitario']) ?></td>
+              <td class="text-end"><?= importe($item['costo']) ?></td>
             </tr>
           <?php endforeach; ?>
         </tbody>
-        <tfoot><tr><th colspan="3" class="text-end">Total</th><th class="text-end">$ <?= money($total) ?></th></tr></tfoot>
+        <tfoot><tr><th colspan="3" class="text-end">Total</th><th class="text-end"><?= importe($total) ?></th></tr></tfoot>
       </table>
     </div>
 
     <?php if ($orden['presupuesto_respuesta'] === 'aceptado'): ?>
-      <p class="text-success fs-5">✔ Aceptaste este presupuesto el <?= format_date($orden['presupuesto_respuesta_en']) ?>.</p>
+      <p class="text-success fs-5"><?= icono('check-circle-fill') ?> Aceptaste este presupuesto el <?= format_date($orden['presupuesto_respuesta_en']) ?>.</p>
     <?php elseif ($orden['presupuesto_respuesta'] === 'rechazado' && !$admiteRespuesta): ?>
       <p class="text-muted">No aceptaste este presupuesto.</p>
     <?php endif; ?>
@@ -60,7 +60,7 @@
         <form action="<?= url("presupuesto/{$token}") ?>" method="POST">
           <?= csrf_field() ?>
           <input type="hidden" name="accion" value="aceptar">
-          <button type="submit" class="btn btn-success btn-lg">✔ Acepto el presupuesto</button>
+          <button type="submit" class="btn btn-success btn-lg"><?= icono('check-lg') ?> Acepto el presupuesto</button>
         </form>
         <?php if ($orden['presupuesto_respuesta'] !== 'rechazado'): ?>
           <form action="<?= url("presupuesto/{$token}") ?>" method="POST" data-confirm="¿Seguro que no aceptás el presupuesto?">
@@ -81,9 +81,3 @@
     <?php endif; ?>
   </div>
 </div>
-<script>
-  document.addEventListener('submit', (e) => {
-    const msg = e.target.dataset.confirm;
-    if (msg && !window.confirm(msg)) e.preventDefault();
-  });
-</script>

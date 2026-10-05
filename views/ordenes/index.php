@@ -7,16 +7,16 @@ foreach ($estados as $e) {
 }
 ?>
 <div class="card mt-3">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h4 class="mb-0">Órdenes registradas</h4>
     <div class="d-flex gap-2 align-items-center flex-wrap">
       <?= $view->partial('partials/filtro_estado', ['id' => 'filtro_ordenes', 'nombre' => 'estado', 'etiqueta' => 'Mostrar', 'opciones' => $filtro]) ?>
-      <a href="<?= url('ordenes/crear') ?>" class="btn btn-warning">+ Crear orden</a>
+      <a href="<?= url('ordenes/crear') ?>" class="btn btn-seccion"><?= icono('plus-lg') ?> Crear orden</a>
     </div>
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-striped table-bordered" data-server="<?= e(url('ordenes/datos')) ?>" data-filtros="#filtro_ordenes" data-order='[[0, "desc"]]'>
+      <table data-vacio="Todavía no hay órdenes registradas." class="table table-striped table-bordered" data-server="<?= e(url('ordenes/datos')) ?>" data-filtros="#filtro_ordenes" data-order='[[0, "desc"]]'>
         <thead>
           <tr>
             <th>N°</th>

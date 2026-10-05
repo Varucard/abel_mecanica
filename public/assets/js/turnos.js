@@ -19,7 +19,7 @@ $(function () {
         .done((vehiculos) => {
           window.cargarOpciones($vehiculo, vehiculos, vehiculos.length ? 'Seleccione un vehículo' : 'El cliente no tiene vehículos activos');
         })
-        .fail(() => window.alert('No se pudieron cargar los vehículos del cliente.'));
+        .fail(() => window.avisar('No se pudieron cargar los vehículos del cliente.'));
     });
   }
 

@@ -1,12 +1,12 @@
 <?php /** @var list<array<string, mixed>> $proveedores */ ?>
 <div class="card mt-3">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+  <div class="card-header d-flex justify-content-between align-items-center">
     <h4 class="mb-0">Proveedores</h4>
-    <a href="<?= url('proveedores/crear') ?>" class="btn btn-primary">+ Nuevo proveedor</a>
+    <a href="<?= url('proveedores/crear') ?>" class="btn btn-seccion"><?= icono('plus-lg') ?> Nuevo proveedor</a>
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-striped table-bordered js-datatable" data-order='[[0, "asc"]]'>
+      <table data-vacio="Todavía no hay proveedores cargados." class="table table-striped table-bordered js-datatable" data-order='[[0, "asc"]]'>
         <thead>
           <tr>
             <th>Nombre</th>
@@ -30,7 +30,7 @@
               <td><?= (int) $p['repuestos'] ?></td>
               <td><span class="badge bg-<?= $p['activo'] ? 'success' : 'secondary' ?>"><?= $p['activo'] ? 'activo' : 'inactivo' ?></span></td>
               <td class="col-acciones text-nowrap">
-                <a href="<?= url("proveedores/{$p['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
+                <?= boton_accion("proveedores/{$p['id']}/editar", 'pencil', 'Editar', 'btn-outline-primary') ?>
                 <?= $view->partial('partials/delete_button', [
                   'action' => "proveedores/{$p['id']}/eliminar",
                   'label' => 'Eliminar',

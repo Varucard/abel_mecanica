@@ -12,41 +12,40 @@
  */
 use App\Services\OrdenService;
 
-$colores = ['pendiente' => 'warning', 'en_proceso' => 'info', 'finalizado' => 'success', 'cancelado' => 'secondary'];
 $pagado = (float) $orden['total'] - $saldo;
 ?>
 <div class="d-flex flex-wrap gap-2 mt-3 mb-3">
   <?php if (OrdenService::editable($estado)): ?>
-    <a href="<?= url("ordenes/{$orden['id']}/editar") ?>" class="btn btn-primary">Editar orden</a>
+    <a href="<?= url("ordenes/{$orden['id']}/editar") ?>" class="btn btn-outline-primary"><?= icono('pencil') ?> Editar orden</a>
   <?php endif; ?>
-  <a href="<?= url("ordenes/{$orden['id']}/presupuesto") ?>" class="btn btn-info">Presupuesto</a>
-  <a href="<?= url("ordenes/{$orden['id']}/presupuesto/pdf") ?>" class="btn btn-outline-secondary">Presupuesto PDF</a>
+  <a href="<?= url("ordenes/{$orden['id']}/presupuesto") ?>" class="btn btn-outline-secondary"><?= icono('file-text') ?> Presupuesto</a>
+  <a href="<?= url("ordenes/{$orden['id']}/presupuesto/pdf") ?>" class="btn btn-outline-secondary"><?= icono('file-earmark-pdf') ?> Presupuesto PDF</a>
   <?php if ($puedeEnviar && \App\Services\OrdenService::editable($estado)): ?>
     <form action="<?= url("ordenes/{$orden['id']}/enviar-presupuesto") ?>" method="POST" class="d-inline"
       data-confirm="¿Enviar el presupuesto por email a <?= e($cliente['email'] ?: 'el cliente') ?>?">
       <?= csrf_field() ?>
-      <button type="submit" class="btn btn-outline-primary" <?= $cliente['email'] ? '' : 'disabled title="El cliente no tiene email"' ?>>✉ Enviar presupuesto</button>
+      <button type="submit" class="btn btn-outline-primary" <?= $cliente['email'] ? '' : 'disabled title="El cliente no tiene email"' ?>><?= icono('envelope') ?> Enviar presupuesto</button>
     </form>
   <?php endif; ?>
   <?php if ($estado->value === 'finalizado'): ?>
-    <a href="<?= url("ordenes/{$orden['id']}/entrega") ?>" class="btn btn-success">Comprobante de entrega</a>
-    <a href="<?= url("ordenes/{$orden['id']}/entrega/pdf") ?>" class="btn btn-outline-success">Entrega PDF</a>
+    <a href="<?= url("ordenes/{$orden['id']}/entrega") ?>" class="btn btn-seccion"><?= icono('receipt') ?> Comprobante de entrega</a>
+    <a href="<?= url("ordenes/{$orden['id']}/entrega/pdf") ?>" class="btn btn-outline-secondary"><?= icono('file-earmark-pdf') ?> Entrega PDF</a>
   <?php endif; ?>
-  <a href="<?= url('ordenes') ?>" class="btn btn-secondary ms-auto">Volver al listado</a>
+  <a href="<?= url('ordenes') ?>" class="btn btn-outline-secondary ms-auto">Volver al listado</a>
 </div>
 
 <div class="row g-3">
   <div class="col-md-4">
     <div class="card h-100">
-      <div class="card-header bg-light"><strong>Orden #<?= (int) $orden['id'] ?></strong></div>
+      <div class="card-header"><strong>Orden #<?= (int) $orden['id'] ?></strong></div>
       <div class="card-body">
-        <p class="mb-1">Estado: <span class="badge bg-<?= $colores[$estado->value] ?>"><?= e($estado->label()) ?></span></p>
+        <p class="mb-1">Estado: <?= $view->partial('componentes/estado', ['estado' => $estado]) ?></p>
         <p class="mb-1">Fecha: <?= format_date($orden['created_at']) ?></p>
         <p class="mb-1">Mecánico: <?= e($orden['mecanico'] ?? 'sin asignar') ?></p>
         <?php if ($orden['presupuesto_respuesta'] === 'aceptado'): ?>
-          <p class="mb-1 text-success">✔ Presupuesto aceptado por el cliente (<?= format_date($orden['presupuesto_respuesta_en'], 'd/m H:i') ?>)</p>
+          <p class="mb-1 text-success"><?= icono('check-lg') ?> Presupuesto aceptado por el cliente (<?= format_date($orden['presupuesto_respuesta_en'], 'd/m H:i') ?>)</p>
         <?php elseif ($orden['presupuesto_respuesta'] === 'rechazado'): ?>
-          <p class="mb-1 text-danger">✖ Presupuesto rechazado por el cliente (<?= format_date($orden['presupuesto_respuesta_en'], 'd/m H:i') ?>)</p>
+          <p class="mb-1 text-danger"><?= icono('x-lg') ?> Presupuesto rechazado por el cliente (<?= format_date($orden['presupuesto_respuesta_en'], 'd/m H:i') ?>)</p>
         <?php elseif ($orden['presupuesto_enviado']): ?>
           <p class="mb-1 text-muted">Presupuesto enviado el <?= format_date($orden['presupuesto_enviado'], 'd/m H:i') ?>, sin respuesta</p>
         <?php endif; ?>
@@ -58,7 +57,7 @@ $pagado = (float) $orden['total'] - $saldo;
   </div>
   <div class="col-md-4">
     <div class="card h-100">
-      <div class="card-header bg-light"><strong>Cliente</strong></div>
+      <div class="card-header"><strong>Cliente</strong></div>
       <div class="card-body">
         <p class="mb-1"><a href="<?= url("clientes/{$cliente['id']}") ?>"><?= e("{$cliente['apellido']}, {$cliente['nombre']}") ?></a></p>
         <p class="mb-1">Tel: <?= e($cliente['telefono']) ?></p>
@@ -68,7 +67,7 @@ $pagado = (float) $orden['total'] - $saldo;
   </div>
   <div class="col-md-4">
     <div class="card h-100">
-      <div class="card-header bg-light"><strong>Vehículo</strong></div>
+      <div class="card-header"><strong>Vehículo</strong></div>
       <div class="card-body">
         <p class="mb-1"><a href="<?= url("vehiculos/{$orden['vehiculo_id']}") ?>"><?= e("{$orden['marca']} {$orden['modelo']} ({$orden['anio']})") ?></a></p>
         <p class="mb-1">Patente: <?= e($orden['patente']) ?></p>
@@ -108,7 +107,7 @@ $pagado = (float) $orden['total'] - $saldo;
 <?php endif; ?>
 
 <div class="card mt-3">
-  <div class="card-header bg-light"><strong>Detalle</strong></div>
+  <div class="card-header"><strong>Detalle</strong></div>
   <div class="card-body table-responsive">
     <table class="table table-sm align-middle mb-0">
       <thead>
@@ -119,16 +118,16 @@ $pagado = (float) $orden['total'] - $saldo;
           <tr>
             <td><?= e($item['repuesto_id'] !== null ? 'Repuesto: ' . $item['repuesto_nombre'] : $item['servicio_nombre']) ?></td>
             <td class="text-end"><?= qty($item['cantidad']) ?></td>
-            <td class="text-end">$ <?= money($item['precio_unitario']) ?></td>
-            <td class="text-end">$ <?= money($item['costo']) ?></td>
+            <td class="text-end"><?= importe($item['precio_unitario']) ?></td>
+            <td class="text-end"><?= importe($item['costo']) ?></td>
           </tr>
         <?php endforeach; ?>
       </tbody>
       <tfoot>
-        <tr><th colspan="3" class="text-end">Total</th><th class="text-end">$ <?= money($orden['total']) ?></th></tr>
-        <tr><td colspan="3" class="text-end">Pagado</td><td class="text-end">$ <?= money($pagado) ?></td></tr>
+        <tr><th colspan="3" class="text-end">Total</th><th class="text-end"><?= importe($orden['total']) ?></th></tr>
+        <tr><td colspan="3" class="text-end">Pagado</td><td class="text-end"><?= importe($pagado) ?></td></tr>
         <tr class="<?= $saldo > 0 ? 'table-warning' : 'table-success' ?>">
-          <th colspan="3" class="text-end">Saldo</th><th class="text-end">$ <?= money($saldo) ?></th>
+          <th colspan="3" class="text-end">Saldo</th><th class="text-end"><?= importe($saldo) ?></th>
         </tr>
       </tfoot>
     </table>
@@ -136,30 +135,30 @@ $pagado = (float) $orden['total'] - $saldo;
 </div>
 
 <div class="card mt-3">
-  <div class="card-header bg-light"><strong>Pagos</strong></div>
+  <div class="card-header"><strong>Pagos</strong></div>
   <div class="card-body">
     <?php if ($pagos === []): ?>
-      <p class="text-muted">Todavía no se registraron pagos.</p>
+      <?= $view->partial('componentes/vacio', ['icono' => 'cash-coin', 'texto' => 'Todavía no se registraron pagos.']) ?>
     <?php else: ?>
       <div class="table-responsive">
         <table class="table table-sm align-middle">
           <thead>
-            <tr><th>Fecha</th><th>Forma de pago</th><th>Observación</th><th>Registró</th><th class="text-end">Monto</th><th></th></tr>
+            <tr><th>Fecha</th><th>Forma de pago</th><th class="d-none d-md-table-cell">Observación</th><th class="d-none d-md-table-cell">Registró</th><th class="text-end">Monto</th><th></th></tr>
           </thead>
           <tbody>
             <?php foreach ($pagos as $p): ?>
               <tr>
                 <td><?= format_date($p['fecha']) ?></td>
                 <td><?= e($p['forma_pago']) ?></td>
-                <td><?= e($p['observacion'] ?? '') ?></td>
-                <td><?= e($p['usuario'] ?? '—') ?></td>
-                <td class="text-end">$ <?= money($p['monto']) ?></td>
+                <td class="d-none d-md-table-cell"><?= e($p['observacion'] ?? '') ?></td>
+                <td class="d-none d-md-table-cell"><?= e($p['usuario'] ?? '—') ?></td>
+                <td class="text-end"><?= importe($p['monto']) ?></td>
                 <td class="text-end">
                   <?php if (auth()->esAdministrador()): ?>
                     <?= $view->partial('partials/delete_button', [
                       'action' => "pagos/{$p['id']}/anular",
                       'label' => 'Anular',
-                      'class' => 'btn-outline-danger',
+                      'icono' => 'x-circle',
                       'confirm' => '¿Anular el pago de $ ' . money($p['monto']) . '?',
                     ]) ?>
                   <?php endif; ?>
@@ -200,7 +199,7 @@ $pagado = (float) $orden['total'] - $saldo;
           <input type="text" class="form-control" id="observacion" name="observacion" maxlength="255" value="<?= e(old('observacion')) ?>">
         </div>
         <div class="col-12">
-          <button type="submit" class="btn btn-success">Registrar pago</button>
+          <button type="submit" class="btn btn-seccion"><?= icono('check-lg') ?> Registrar pago</button>
         </div>
       </form>
     <?php endif; ?>
@@ -208,10 +207,10 @@ $pagado = (float) $orden['total'] - $saldo;
 </div>
 
 <div class="card mt-3">
-  <div class="card-header bg-light"><strong>Historial</strong></div>
+  <div class="card-header"><strong>Historial</strong></div>
   <div class="card-body">
     <?php if ($historial === []): ?>
-      <p class="text-muted mb-0">Sin movimientos registrados.</p>
+      <?= $view->partial('componentes/vacio', ['icono' => 'clock-history', 'texto' => 'Sin movimientos registrados.']) ?>
     <?php else: ?>
       <ul class="list-unstyled mb-0 small">
         <?php foreach ($historial as $h): ?>

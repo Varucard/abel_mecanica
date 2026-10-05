@@ -55,7 +55,7 @@ $orden = array_keys($pasos);
     <div class="card-header"><strong>Tus trabajos</strong></div>
     <div class="card-body">
       <?php if ($resultado['ordenes'] === []): ?>
-        <p class="text-muted mb-0">Todavía no hay trabajos registrados.</p>
+        <?= $view->partial('componentes/vacio', ['icono' => 'tools', 'texto' => 'Todavía no hay trabajos registrados.']) ?>
       <?php endif; ?>
       <?php foreach ($resultado['ordenes'] as $o): ?>
         <?php $estado = EstadoOrden::from($o['estado']); ?>
@@ -80,8 +80,8 @@ $orden = array_keys($pasos);
 
           <?php if ($resultado['mostrarMontos'] && $estado !== EstadoOrden::Cancelado): ?>
             <div class="small mt-2">
-              Total: $ <?= money($o['total']) ?>
-              <?php if ((float) $o['saldo'] > 0): ?> · <span class="text-danger">Saldo pendiente: $ <?= money($o['saldo']) ?></span>
+              Total: <?= importe($o['total']) ?>
+              <?php if ((float) $o['saldo'] > 0): ?> · <span class="text-danger">Saldo pendiente: <?= importe($o['saldo']) ?></span>
               <?php else: ?> · <span class="text-success">Pagado</span><?php endif; ?>
             </div>
           <?php endif; ?>

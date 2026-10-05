@@ -1,13 +1,13 @@
 <?php /** @var list<array<string, mixed>> $combos */ ?>
 <div class="card mt-3">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+  <div class="card-header d-flex justify-content-between align-items-center">
     <h4 class="mb-0">Combos de servicios</h4>
-    <a href="<?= url('combos/crear') ?>" class="btn btn-primary">+ Nuevo combo</a>
+    <a href="<?= url('combos/crear') ?>" class="btn btn-seccion"><?= icono('plus-lg') ?> Nuevo combo</a>
   </div>
   <div class="card-body">
     <p class="text-muted small">Un combo agrupa servicios y repuestos (por ejemplo "Service 10.000 km") para cargarlos de una vez en una orden.</p>
     <?php if ($combos === []): ?>
-      <p class="text-muted mb-0">Todavía no hay combos.</p>
+      <?= $view->partial('componentes/vacio', ['icono' => 'collection', 'texto' => 'Todavía no hay combos.', 'accion' => ['combos/crear', 'Crear el primer combo']]) ?>
     <?php endif; ?>
     <div class="row g-3">
       <?php foreach ($combos as $c): ?>
@@ -22,8 +22,8 @@
                   <li><?= qty($i['cantidad']) ?> × <?= e(($i['repuesto_id'] ? 'Repuesto: ' : '') . $i['nombre']) ?></li>
                 <?php endforeach; ?>
               </ul>
-              <p class="mb-2"><strong>Total a precios actuales: $ <?= money($total) ?></strong></p>
-              <a href="<?= url("combos/{$c['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
+              <p class="mb-2"><strong>Total a precios actuales: <?= importe($total) ?></strong></p>
+              <?= boton_accion("combos/{$c['id']}/editar", 'pencil', 'Editar', 'btn-outline-primary') ?>
               <?= $view->partial('partials/delete_button', ['action' => "combos/{$c['id']}/eliminar", 'label' => 'Eliminar', 'confirm' => "¿Eliminar el combo \"{$c['nombre']}\"?"]) ?>
             </div>
           </div>

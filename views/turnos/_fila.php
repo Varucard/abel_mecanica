@@ -17,11 +17,11 @@ return [
   e($t['cliente']),
   e($t['vehiculo']),
   '<small>' . e($t['descripcion'] ?? '') . '</small>',
-  '<select class="form-select form-select-sm estado-turno-select estado-' . e($t['estado']) . '" data-url="' . e(url("turnos/{$t['id']}/estado")) . '" aria-label="Estado del turno ' . (int) $t['id'] . '">' . $opciones . '</select>',
+  '<select class="form-select form-select-sm select-estado estado-turno-select estado-' . e($t['estado']) . '" data-url="' . e(url("turnos/{$t['id']}/estado")) . '" aria-label="Estado del turno ' . (int) $t['id'] . '">' . $opciones . '</select>',
   ($activo && $t['fecha'] >= date('Y-m-d') ? $view->partial('turnos/_recordatorio', ['turno' => $t, 'avisos' => $avisos, 'volver' => '']) : '')
-    . '<div class="text-nowrap">'
-    . ($activo ? '<a href="' . url('ordenes/crear?turno_id=' . $t['id']) . '" class="btn btn-sm btn-warning">Crear orden</a> ' : '')
-    . '<a href="' . url("turnos/{$t['id']}/editar") . '" class="btn btn-sm btn-primary">Editar</a> '
+    . '<div class="acciones-fila">'
+    . ($activo ? boton_accion('ordenes/crear?turno_id=' . $t['id'], 'clipboard-plus', 'Crear orden') . ' ' : '')
+    . boton_accion("turnos/{$t['id']}/editar", 'pencil', 'Editar', 'btn-outline-primary') . ' '
     . $view->partial('partials/delete_button', [
       'action' => "turnos/{$t['id']}/eliminar",
       'label' => 'Eliminar',

@@ -5,18 +5,17 @@
  */
 ?>
 <div class="card mb-4 mt-3">
-  <div class="card-header bg-light">
+  <div class="card-header">
     <h4 class="mb-0"><?= $servicio ? 'Editar servicio' : 'Nuevo servicio' ?></h4>
   </div>
   <div class="card-body">
     <form action="<?= url($servicio ? "servicios/{$servicio['id']}" : 'servicios') ?>" method="POST">
       <?= csrf_field() ?>
       <div class="row mb-3">
-        <div class="col-md-6">
-          <label for="nombre" class="form-label">Nombre *</label>
-          <input type="text" class="form-control" id="nombre" name="nombre" minlength="2" required
-            value="<?= e(old('nombre', $servicio['nombre'] ?? '')) ?>">
-        </div>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'nombre', 'etiqueta' => 'Nombre *', 'valor' => $servicio['nombre'] ?? '', 'columna' => 'col-md-6',
+          'atributos' => ['minlength' => 2, 'required' => true],
+        ]) ?>
         <div class="col-md-6">
           <label for="precio_base" class="form-label">Precio base *</label>
           <div class="input-group">
@@ -26,24 +25,24 @@
           </div>
         </div>
       </div>
-      <div class="mb-3">
-        <label for="descripcion" class="form-label">Descripción</label>
-        <textarea class="form-control" id="descripcion" name="descripcion" rows="3"><?= e(old('descripcion', $servicio['descripcion'] ?? '')) ?></textarea>
-      </div>
-      <button type="submit" class="btn btn-success"><?= $servicio ? 'Actualizar servicio' : 'Registrar servicio' ?></button>
+      <?= $view->partial('componentes/campo', [
+        'nombre' => 'descripcion', 'etiqueta' => 'Descripción', 'tipo' => 'textarea', 'valor' => $servicio['descripcion'] ?? '', 'columna' => 'mb-3',
+        'atributos' => ['rows' => 3],
+      ]) ?>
+      <button type="submit" class="btn btn-seccion"><?= icono('check-lg') ?> <?= $servicio ? 'Actualizar servicio' : 'Registrar servicio' ?></button>
       <?php if ($servicio): ?>
-        <a href="<?= url('servicios') ?>" class="btn btn-secondary">Cancelar</a>
+        <a href="<?= url('servicios') ?>" class="btn btn-outline-secondary">Cancelar</a>
       <?php endif; ?>
     </form>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-header bg-light">
+  <div class="card-header">
     <h4 class="mb-0">Servicios registrados</h4>
   </div>
   <div class="card-body">
-    <table class="table table-striped table-bordered js-datatable" data-order='[[0, "asc"]]'>
+    <table data-vacio="Todavía no hay servicios cargados." class="table table-striped table-bordered js-datatable" data-order='[[0, "asc"]]'>
       <thead>
         <tr>
           <th>Nombre</th>
@@ -57,9 +56,9 @@
           <tr>
             <td><?= e($row['nombre']) ?></td>
             <td><?= e($row['descripcion'] ?? '') ?></td>
-            <td data-order="<?= (float) $row['precio_base'] ?>">$ <?= money($row['precio_base']) ?></td>
+            <td data-order="<?= (float) $row['precio_base'] ?>"><?= importe($row['precio_base']) ?></td>
             <td class="col-acciones text-nowrap">
-              <a href="<?= url("servicios/{$row['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
+              <?= boton_accion("servicios/{$row['id']}/editar", 'pencil', 'Editar', 'btn-outline-primary') ?>
               <?= $view->partial('partials/delete_button', [
                 'action' => "servicios/{$row['id']}/eliminar",
                 'label' => 'Eliminar',

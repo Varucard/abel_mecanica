@@ -37,12 +37,13 @@ $(function () {
           const previo = cargados[tipo][id] || {};
           const $tr = $('<tr>', { 'data-tipo': tipo, 'data-id': id, 'data-precio-catalogo': $(this).data('precio') });
 
-          $tr.append($('<td>').text((tipo === 'repuesto' ? 'Repuesto: ' : '') + $(this).text().replace(/\s*\(\$.*$/s, '').trim()));
-          $tr.append($('<td>').append(input(`cantidad_${tipo}[${id}]`, previo.cantidad ?? 1, { class: 'form-control form-control-sm js-cantidad', min: '0.01' })));
+          const nombre = $(this).text().replace(/\s*\(\$.*$/s, '').trim();
+          $tr.append($('<td>').text((tipo === 'repuesto' ? 'Repuesto: ' : '') + nombre));
+          $tr.append($('<td>').append(input(`cantidad_${tipo}[${id}]`, previo.cantidad ?? 1, { class: 'form-control form-control-sm js-cantidad', min: '0.01', 'aria-label': `Cantidad de ${nombre}` })));
           if (conPrecio) {
-            $tr.append($('<td>').append(input(`precio_${tipo}[${id}]`, previo.precio ?? $(this).data('precio'), { class: 'form-control form-control-sm js-precio' })));
+            $tr.append($('<td>').append(input(`precio_${tipo}[${id}]`, previo.precio ?? $(this).data('precio'), { class: 'form-control form-control-sm js-precio', 'aria-label': `Precio unitario de ${nombre}` })));
           }
-          $tr.append($('<td>', { class: 'text-end js-subtotal' }));
+          $tr.append($('<td>', { class: 'text-end importe js-subtotal' }));
           $tbody.append($tr);
         });
       });
@@ -56,7 +57,7 @@ $(function () {
       $tbody.find('tr[data-tipo]').each(function () {
         const precio = conPrecio ? numero($(this).find('.js-precio').val()) : numero($(this).data('precio-catalogo'));
         const subtotal = numero($(this).find('.js-cantidad').val()) * precio;
-        $(this).find('.js-subtotal').text('$ ' + moneda.format(subtotal));
+        $(this).find('.js-subtotal').text('$\u00a0' + moneda.format(subtotal));
         total += subtotal;
       });
       $('#total').val(moneda.format(total));
@@ -71,14 +72,16 @@ $(function () {
       }
       filas(); // guarda lo escrito hasta ahora
       combo.forEach((item) => {
-        const $select = $(`.js-item-precio[data-tipo="${item.tipo}"]`);
-        const actuales = $select.val() || [];
+        const select = document.querySelector(`.js-item-precio[data-tipo="${item.tipo}"]`);
+        const actuales = $(select).val() || [];
         if (!actuales.includes(String(item.id))) {
-          $select.val([...actuales, String(item.id)]);
+          // Sin disparar "change": la tabla se rearma una sola vez, al final.
+          select.tomselect
+            ? select.tomselect.setValue([...actuales, String(item.id)], true)
+            : $(select).val([...actuales, String(item.id)]);
         }
         cargados[item.tipo][item.id] = { ...(cargados[item.tipo][item.id] || {}), cantidad: item.cantidad };
       });
-      $('.js-item-precio').trigger('change.select2');
       filas();
       $(this).val('');
     });

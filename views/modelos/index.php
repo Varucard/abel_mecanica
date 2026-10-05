@@ -7,7 +7,7 @@
 $marcaId = (int) old('marca_id', $modelo['marca_id'] ?? 0);
 ?>
 <div class="card mb-4 mt-3">
-  <div class="card-header bg-light">
+  <div class="card-header">
     <h4 class="mb-0"><?= $modelo ? 'Editar modelo' : 'Nuevo modelo' ?></h4>
   </div>
   <div class="card-body">
@@ -16,33 +16,32 @@ $marcaId = (int) old('marca_id', $modelo['marca_id'] ?? 0);
       <div class="row mb-3">
         <div class="col-md-6">
           <label for="marca_id" class="form-label">Marca *</label>
-          <select class="form-select js-select2" id="marca_id" name="marca_id" data-placeholder="Seleccione una marca" required>
+          <select class="form-select js-buscable" id="marca_id" name="marca_id" data-placeholder="Seleccione una marca" required>
             <option value=""></option>
             <?php foreach ($marcas as $m): ?>
               <option value="<?= (int) $m['id'] ?>" <?= selected($marcaId === (int) $m['id']) ?>><?= e($m['nombre']) ?></option>
             <?php endforeach; ?>
           </select>
         </div>
-        <div class="col-md-6">
-          <label for="nombre" class="form-label">Nombre del modelo *</label>
-          <input type="text" class="form-control" id="nombre" name="nombre" maxlength="50" required
-            value="<?= e(old('nombre', $modelo['nombre'] ?? '')) ?>">
-        </div>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'nombre', 'etiqueta' => 'Nombre del modelo *', 'valor' => $modelo['nombre'] ?? '', 'columna' => 'col-md-6',
+          'atributos' => ['maxlength' => 50, 'required' => true],
+        ]) ?>
       </div>
-      <button type="submit" class="btn btn-success"><?= $modelo ? 'Actualizar modelo' : 'Registrar modelo' ?></button>
+      <button type="submit" class="btn btn-seccion"><?= icono('check-lg') ?> <?= $modelo ? 'Actualizar modelo' : 'Registrar modelo' ?></button>
       <?php if ($modelo): ?>
-        <a href="<?= url('modelos') ?>" class="btn btn-secondary">Cancelar</a>
+        <a href="<?= url('modelos') ?>" class="btn btn-outline-secondary">Cancelar</a>
       <?php endif; ?>
     </form>
   </div>
 </div>
 
 <div class="card">
-  <div class="card-header bg-light">
+  <div class="card-header">
     <h4 class="mb-0">Modelos registrados</h4>
   </div>
   <div class="card-body">
-    <table class="table table-striped table-bordered js-datatable" data-order='[[0, "asc"], [1, "asc"]]'>
+    <table data-vacio="Todavía no hay modelos cargados." class="table table-striped table-bordered js-datatable" data-order='[[0, "asc"], [1, "asc"]]'>
       <thead>
         <tr>
           <th>Marca</th>
@@ -56,7 +55,7 @@ $marcaId = (int) old('marca_id', $modelo['marca_id'] ?? 0);
             <td><?= e($mo['marca']) ?></td>
             <td><?= e($mo['nombre']) ?></td>
             <td class="col-acciones text-nowrap">
-              <a href="<?= url("modelos/{$mo['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
+              <?= boton_accion("modelos/{$mo['id']}/editar", 'pencil', 'Editar', 'btn-outline-primary') ?>
               <?= $view->partial('partials/delete_button', [
                 'action' => "modelos/{$mo['id']}/eliminar",
                 'label' => 'Eliminar',

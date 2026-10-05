@@ -7,7 +7,7 @@ foreach ($estados as $e) {
 }
 ?>
 <div class="card mt-3">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+  <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
     <h4 class="mb-0">Turnos registrados</h4>
     <div class="d-flex gap-2 align-items-center flex-wrap">
       <form id="filtro_turnos" class="d-flex gap-2">
@@ -23,12 +23,12 @@ foreach ($estados as $e) {
         </select>
       </form>
       <a href="<?= url('turnos/semana') ?>" class="btn btn-outline-secondary">Agenda semanal</a>
-      <a href="<?= url('turnos/crear') ?>" class="btn btn-warning">+ Nuevo turno</a>
+      <a href="<?= url('turnos/crear') ?>" class="btn btn-seccion"><?= icono('plus-lg') ?> Nuevo turno</a>
     </div>
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table class="table table-striped table-bordered" data-server="<?= e(url('turnos/datos')) ?>" data-filtros="#filtro_turnos" data-order='[[0, "asc"]]'>
+      <table data-vacio="No hay turnos para mostrar." class="table table-striped table-bordered" data-server="<?= e(url('turnos/datos')) ?>" data-filtros="#filtro_turnos" data-order='[[0, "asc"]]'>
         <thead>
           <tr>
             <th>Fecha / Hora</th>

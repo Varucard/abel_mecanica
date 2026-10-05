@@ -10,9 +10,6 @@
  * @var array<string, mixed> $service  configuración de intervalos
  * @var list<array<string, mixed>> $combos
  */
-$valor = fn(string $campo) => old($campo, $orden[$campo] ?? $precarga[$campo] ?? '');
-$vehiculoId = (int) old('vehiculo_id', $orden['vehiculo_id'] ?? $vehiculoSugerido);
-$mecanicoId = (int) old('mecanico_id', $orden['mecanico_id'] ?? 0);
 // Al editar, el mecánico asignado debe figurar aunque hoy esté inactivo.
 if ($orden && $orden['mecanico_id'] && !in_array((int) $orden['mecanico_id'], array_map('intval', array_column($mecanicos, 'id')), true)) {
   $mecanicos[] = ['id' => $orden['mecanico_id'], 'apellido' => $orden['mecanico'], 'nombre' => null, 'puesto' => 'inactivo'];
@@ -20,7 +17,7 @@ if ($orden && $orden['mecanico_id'] && !in_array((int) $orden['mecanico_id'], ar
 $view->script('ordenes.js');
 ?>
 <div class="card mt-3">
-  <div class="card-header bg-light">
+  <div class="card-header">
     <h4 class="mb-0"><?= $orden ? "Editar orden #{$orden['id']}" : 'Nueva orden' ?></h4>
   </div>
   <div class="card-body">
@@ -29,53 +26,39 @@ $view->script('ordenes.js');
       <?= csrf_field() ?>
 
       <div class="row mb-3">
-      <div class="col-md-8">
-        <label for="vehiculo_id" class="form-label">Vehículo *</label>
-        <select class="form-select js-select2" name="vehiculo_id" id="vehiculo_id" data-placeholder="Seleccione un vehículo" required>
-          <option value=""></option>
-          <?php foreach ($vehiculos as $v): ?>
-            <option value="<?= (int) $v['id'] ?>" <?= selected($vehiculoId === (int) $v['id']) ?>>
-              <?= e("{$v['patente']} - {$v['cliente']} ({$v['marca']} {$v['modelo']})") ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
-      <div class="col-md-4">
-        <label for="mecanico_id" class="form-label">Mecánico asignado</label>
-        <select class="form-select js-select2" name="mecanico_id" id="mecanico_id" data-placeholder="Sin asignar">
-          <option value=""></option>
-          <?php foreach ($mecanicos as $m): ?>
-            <option value="<?= (int) $m['id'] ?>" <?= selected($mecanicoId === (int) $m['id']) ?>>
-              <?= e(trim("{$m['apellido']}" . ($m['nombre'] ? ", {$m['nombre']}" : '') . " ({$m['puesto']})")) ?>
-            </option>
-          <?php endforeach; ?>
-        </select>
-      </div>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'vehiculo_id', 'etiqueta' => 'Vehículo *', 'tipo' => 'select', 'buscable' => true, 'columna' => 'col-md-8',
+          'placeholder' => 'Seleccione un vehículo', 'valor' => $orden['vehiculo_id'] ?? $vehiculoSugerido, 'atributos' => ['required' => true],
+          'opciones' => array_column(array_map(fn($v) => [(int) $v['id'], "{$v['patente']} - {$v['cliente']} ({$v['marca']} {$v['modelo']})"], $vehiculos), 1, 0),
+        ]) ?>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'mecanico_id', 'etiqueta' => 'Mecánico asignado', 'tipo' => 'select', 'buscable' => true, 'columna' => 'col-md-4',
+          'placeholder' => 'Sin asignar', 'valor' => $orden['mecanico_id'] ?? '',
+          'opciones' => array_column(array_map(fn($m) => [
+            (int) $m['id'], trim("{$m['apellido']}" . ($m['nombre'] ? ", {$m['nombre']}" : '') . " ({$m['puesto']})"),
+          ], $mecanicos), 1, 0),
+        ]) ?>
       </div>
 
       <div class="row mb-3">
-        <div class="col-md-6">
-          <label for="servicio_id" class="form-label">Servicios *</label>
-          <select class="form-select js-select2 js-item-precio" name="servicio_id[]" id="servicio_id" multiple
-            data-tipo="servicio" data-placeholder="Seleccione uno o más servicios">
-            <?php foreach ($servicios as $s): ?>
-              <option value="<?= (int) $s['id'] ?>" data-precio="<?= (float) $s['precio_base'] ?>" <?= selected(isset($detalle['servicio'][(int) $s['id']])) ?>>
-                <?= e($s['nombre']) ?> ($ <?= money($s['precio_base']) ?>)
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
-        <div class="col-md-6">
-          <label for="repuesto_id" class="form-label">Repuestos</label>
-          <select class="form-select js-select2 js-item-precio" name="repuesto_id[]" id="repuesto_id" multiple
-            data-tipo="repuesto" data-placeholder="Seleccione uno o más repuestos">
-            <?php foreach ($repuestos as $r): ?>
-              <option value="<?= (int) $r['id'] ?>" data-precio="<?= (float) $r['precio'] ?>" <?= selected(isset($detalle['repuesto'][(int) $r['id']])) ?>>
-                <?= e($r['nombre']) ?> ($ <?= money($r['precio']) ?>) · stock <?= qty($r['stock_actual']) ?>
-              </option>
-            <?php endforeach; ?>
-          </select>
-        </div>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'servicio_id[]', 'id' => 'servicio_id', 'etiqueta' => 'Servicios *', 'tipo' => 'select', 'buscable' => true,
+          'columna' => 'col-md-6', 'clase' => 'js-item-precio', 'placeholder' => 'Seleccione uno o más servicios',
+          'atributos' => ['multiple' => true, 'data-tipo' => 'servicio'],
+          'valor' => array_keys($detalle['servicio']), 'usarAnterior' => false,
+          'opciones' => array_column(array_map(fn($s) => [(int) $s['id'], [
+            'texto' => "{$s['nombre']} ($ " . money($s['precio_base']) . ')', 'atributos' => ['data-precio' => (float) $s['precio_base']],
+          ]], $servicios), 1, 0),
+        ]) ?>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'repuesto_id[]', 'id' => 'repuesto_id', 'etiqueta' => 'Repuestos', 'tipo' => 'select', 'buscable' => true,
+          'columna' => 'col-md-6', 'clase' => 'js-item-precio', 'placeholder' => 'Seleccione uno o más repuestos',
+          'atributos' => ['multiple' => true, 'data-tipo' => 'repuesto'],
+          'valor' => array_keys($detalle['repuesto']), 'usarAnterior' => false,
+          'opciones' => array_column(array_map(fn($r) => [(int) $r['id'], [
+            'texto' => "{$r['nombre']} ($ " . money($r['precio']) . ') · stock ' . qty($r['stock_actual']), 'atributos' => ['data-precio' => (float) $r['precio']],
+          ]], $repuestos), 1, 0),
+        ]) ?>
       </div>
 
       <?php if (!empty($precarga['turno_id'])): ?>
@@ -84,21 +67,20 @@ $view->script('ordenes.js');
       <?php endif; ?>
 
       <div class="row mb-3">
-        <div class="col-md-3">
-          <label for="km_ingreso" class="form-label">Km al ingresar</label>
-          <input type="number" class="form-control" id="km_ingreso" name="km_ingreso" min="0" max="9999999"
-            placeholder="<?= $kmVehiculo !== null ? 'Último: ' . number_format((float) $kmVehiculo, 0, ',', '.') : 'Ej: 125000' ?>"
-            value="<?= e($valor('km_ingreso')) ?>">
-        </div>
-        <div class="col-md-9">
-          <label for="diagnostico" class="form-label">Motivo / diagnóstico</label>
-          <textarea class="form-control" id="diagnostico" name="diagnostico" rows="2"
-            placeholder="Lo que reporta el cliente y lo que se detectó"><?= e($valor('diagnostico')) ?></textarea>
-        </div>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'km_ingreso', 'etiqueta' => 'Km al ingresar', 'tipo' => 'number', 'columna' => 'col-md-3',
+          'valor' => $orden['km_ingreso'] ?? $precarga['km_ingreso'] ?? '',
+          'atributos' => ['min' => 0, 'max' => 9999999, 'placeholder' => $kmVehiculo !== null ? 'Último: ' . number_format((float) $kmVehiculo, 0, ',', '.') : 'Ej: 125000'],
+        ]) ?>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'diagnostico', 'etiqueta' => 'Motivo / diagnóstico', 'tipo' => 'textarea', 'columna' => 'col-md-9',
+          'valor' => $orden['diagnostico'] ?? $precarga['diagnostico'] ?? '',
+          'atributos' => ['rows' => 2, 'placeholder' => 'Lo que reporta el cliente y lo que se detectó'],
+        ]) ?>
       </div>
 
       <?php if ($combos !== []): ?>
-        <div class="mb-3" style="max-width: 420px;">
+        <div class="mb-3 ancho-max-420">
           <label for="agregar_combo" class="form-label">Agregar combo</label>
           <select class="form-select" id="agregar_combo">
             <option value="">Elegí un combo para sumar sus ítems…</option>
@@ -118,9 +100,9 @@ $view->script('ordenes.js');
           <thead>
             <tr>
               <th>Ítem</th>
-              <th style="width: 120px;">Cantidad</th>
-              <th style="width: 170px;">Precio unitario</th>
-              <th class="text-end" style="width: 150px;">Subtotal</th>
+              <th class="ancho-120">Cantidad</th>
+              <th class="ancho-170">Precio unitario</th>
+              <th class="text-end ancho-150">Subtotal</th>
             </tr>
           </thead>
           <tbody>
@@ -140,23 +122,23 @@ $view->script('ordenes.js');
         </small>
       </div>
 
-      <div class="mb-3">
-        <label for="trabajo_realizado" class="form-label">Trabajo realizado</label>
-        <textarea class="form-control" id="trabajo_realizado" name="trabajo_realizado" rows="2"
-          placeholder="Se imprime en el comprobante de entrega"><?= e($valor('trabajo_realizado')) ?></textarea>
-      </div>
+      <?= $view->partial('componentes/campo', [
+        'nombre' => 'trabajo_realizado', 'etiqueta' => 'Trabajo realizado', 'tipo' => 'textarea', 'columna' => 'mb-3',
+        'valor' => $orden['trabajo_realizado'] ?? $precarga['trabajo_realizado'] ?? '',
+        'atributos' => ['rows' => 2, 'placeholder' => 'Se imprime en el comprobante de entrega'],
+      ]) ?>
 
       <div class="row mb-3 align-items-end">
-        <div class="col-md-3">
-          <label for="proximo_service_km" class="form-label">Próximo service (km)</label>
-          <input type="number" class="form-control" id="proximo_service_km" name="proximo_service_km" min="1" max="9999999"
-            value="<?= e($valor('proximo_service_km')) ?>">
-        </div>
-        <div class="col-md-3">
-          <label for="proximo_service_fecha" class="form-label">Próximo service (fecha)</label>
-          <input type="date" class="form-control" id="proximo_service_fecha" name="proximo_service_fecha" min="<?= date('Y-m-d', strtotime('+1 day')) ?>"
-            value="<?= e($valor('proximo_service_fecha')) ?>">
-        </div>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'proximo_service_km', 'etiqueta' => 'Próximo service (km)', 'tipo' => 'number', 'columna' => 'col-md-3',
+          'valor' => $orden['proximo_service_km'] ?? $precarga['proximo_service_km'] ?? '',
+          'atributos' => ['min' => 1, 'max' => 9999999],
+        ]) ?>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'proximo_service_fecha', 'etiqueta' => 'Próximo service (fecha)', 'tipo' => 'date', 'columna' => 'col-md-3',
+          'valor' => $orden['proximo_service_fecha'] ?? $precarga['proximo_service_fecha'] ?? '',
+          'atributos' => ['min' => date('Y-m-d', strtotime('+1 day'))],
+        ]) ?>
         <div class="col-md-6">
           <button type="button" class="btn btn-outline-secondary btn-sm" id="sugerir_service"
             data-km="<?= (int) $service['intervalo_km'] ?>" data-meses="<?= (int) $service['intervalo_meses'] ?>">
@@ -166,13 +148,14 @@ $view->script('ordenes.js');
         </div>
       </div>
 
-      <div class="mb-3">
-        <label for="notas_internas" class="form-label">Notas internas <small class="text-muted">(no se imprimen ni las ve el cliente)</small></label>
-        <textarea class="form-control" id="notas_internas" name="notas_internas" rows="2"><?= e($valor('notas_internas')) ?></textarea>
-      </div>
+      <?= $view->partial('componentes/campo', [
+        'nombre' => 'notas_internas', 'etiqueta' => 'Notas internas', 'tipo' => 'textarea', 'columna' => 'mb-3',
+        'etiquetaHtml' => 'Notas internas <small class="text-muted">(no se imprimen ni las ve el cliente)</small>',
+        'valor' => $orden['notas_internas'] ?? $precarga['notas_internas'] ?? '', 'atributos' => ['rows' => 2],
+      ]) ?>
 
-      <button type="submit" class="btn btn-warning"><?= $orden ? 'Actualizar orden' : 'Crear orden' ?></button>
-      <a href="<?= url('ordenes') ?>" class="btn btn-secondary">Volver al listado</a>
+      <button type="submit" class="btn btn-seccion"><?= icono('check-lg') ?> <?= $orden ? 'Actualizar orden' : 'Crear orden' ?></button>
+      <a href="<?= url('ordenes') ?>" class="btn btn-outline-secondary">Volver al listado</a>
     </form>
   </div>
 </div>

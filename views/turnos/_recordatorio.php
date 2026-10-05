@@ -9,9 +9,9 @@
 $canales = ['email' => 'email', 'whatsapp' => 'WhatsApp', 'sin_contacto' => 'sin contacto', 'error' => 'error', 'enviando' => 'enviando…'];
 ?>
 <?php if ($turno['respuesta_cliente'] === 'confirmado'): ?>
-  <div class="small text-success">✔ Confirmado por el cliente <?= format_date($turno['respuesta_en'], 'd/m H:i') ?></div>
+  <div class="small text-success"><?= icono('check-lg') ?> Confirmado por el cliente <?= format_date($turno['respuesta_en'], 'd/m H:i') ?></div>
 <?php elseif ($turno['respuesta_cliente'] === 'cancelado'): ?>
-  <div class="small text-danger">✖ Cancelado por el cliente <?= format_date($turno['respuesta_en'], 'd/m H:i') ?></div>
+  <div class="small text-danger"><?= icono('x-lg') ?> Cancelado por el cliente <?= format_date($turno['respuesta_en'], 'd/m H:i') ?></div>
 <?php elseif ($turno['confirmacion_enviada']): ?>
   <div class="small text-muted">Esperando confirmación (enviada <?= format_date($turno['confirmacion_enviada'], 'd/m H:i') ?>)</div>
 <?php endif; ?>
@@ -21,19 +21,19 @@ $canales = ['email' => 'email', 'whatsapp' => 'WhatsApp', 'sin_contacto' => 'sin
     <form action="<?= url("turnos/{$turno['id']}/recordar") ?>" method="POST" class="d-inline" data-confirm="¿Enviar ahora el recordatorio al cliente?">
       <?= csrf_field() ?>
       <input type="hidden" name="volver" value="<?= e($volver ?? '') ?>">
-      <button type="submit" class="btn btn-sm btn-outline-success" title="Enviar recordatorio por email">Recordar</button>
+      <button type="submit" class="btn btn-sm btn-accion btn-outline-secondary" title="Enviar recordatorio por email"><?= icono('bell') ?><span class="btn-texto"> Recordar</span></button>
     </form>
     <?php if (!$turno['respuesta_cliente'] && ($volver ?? '') === ''): ?>
       <form action="<?= url("turnos/{$turno['id']}/confirmacion") ?>" method="POST" class="d-inline">
         <?= csrf_field() ?>
-        <button type="submit" class="btn btn-sm btn-outline-secondary" title="Reenviar el pedido de confirmación">Pedir confirmación</button>
+        <button type="submit" class="btn btn-sm btn-accion btn-outline-secondary" title="Reenviar el pedido de confirmación"><?= icono('envelope') ?><span class="btn-texto"> Pedir confirmación</span></button>
       </form>
     <?php endif; ?>
   <?php endif; ?>
   <?php if ($avisos['whatsapp']): ?>
     <form action="<?= url("turnos/{$turno['id']}/whatsapp") ?>" method="POST" target="_blank" class="d-inline">
       <?= csrf_field() ?>
-      <button type="submit" class="btn btn-sm btn-success" title="Abrir WhatsApp con el recordatorio armado">WhatsApp</button>
+      <button type="submit" class="btn btn-sm btn-accion btn-outline-success" title="Abrir WhatsApp con el recordatorio armado"><?= icono('whatsapp') ?><span class="btn-texto"> WhatsApp</span></button>
     </form>
   <?php endif; ?>
 </div>

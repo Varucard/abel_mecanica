@@ -33,13 +33,13 @@ $query = http_build_query(['desde' => $desde, 'hasta' => $hasta]);
 <?php foreach ($titulos as $clave => $titulo): ?>
   <?php $filas = $datos[$clave]; ?>
   <div class="card mt-3">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+    <div class="card-header d-flex justify-content-between align-items-center">
       <strong><?= e($titulo) ?></strong>
-      <a href="<?= url("reportes/{$clave}/csv?{$query}") ?>" class="btn btn-sm btn-outline-success">⬇ Excel (CSV)</a>
+      <a href="<?= url("reportes/{$clave}/csv?{$query}") ?>" class="btn btn-sm btn-outline-success"><?= icono('download') ?> Excel (CSV)</a>
     </div>
     <div class="card-body table-responsive">
       <?php if ($filas === []): ?>
-        <p class="text-muted mb-0">Sin datos para el período.</p>
+        <?= $view->partial('componentes/vacio', ['icono' => 'bar-chart', 'texto' => 'Sin datos para el período.']) ?>
       <?php else: ?>
         <table class="table table-sm align-middle mb-0">
           <thead>
@@ -55,7 +55,7 @@ $query = http_build_query(['desde' => $desde, 'hasta' => $hasta]);
                 <?php foreach (array_keys($columnas[$clave]) as $col): ?>
                   <?php $valor = $fila[$col]; ?>
                   <?php if (in_array($col, $monetarias, true)): ?>
-                    <td class="text-end"><?= $valor !== null ? '$ ' . money($valor) : '—' ?></td>
+                    <td class="text-end"><?= $valor !== null ? importe($valor) : '—' ?></td>
                   <?php elseif (is_numeric($valor) && !in_array($col, ['codigo', 'mes'], true)): ?>
                     <td class="text-end"><?= qty($valor) ?></td>
                   <?php else: ?>
@@ -69,7 +69,7 @@ $query = http_build_query(['desde' => $desde, 'hasta' => $hasta]);
           <tfoot>
             <tr>
               <th colspan="<?= count($columnas[$clave]) - 1 ?>" class="text-end">Total</th>
-              <th class="text-end">$ <?= money(array_sum(array_column($filas, $totalCol))) ?></th>
+              <th class="text-end"><?= importe(array_sum(array_column($filas, $totalCol))) ?></th>
             </tr>
           </tfoot>
         </table>

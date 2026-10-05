@@ -1,5 +1,5 @@
-<div class="card mt-3" style="max-width: 640px;">
-  <div class="card-header bg-light">
+<div class="card mt-3 ancho-max-640">
+  <div class="card-header">
     <h4 class="mb-0">Cambiar mi contraseña</h4>
   </div>
   <div class="card-body">
@@ -10,7 +10,7 @@
         <input type="password" class="form-control" id="clave_actual" name="clave_actual" autocomplete="current-password" required>
       </div>
       <?= $view->partial('usuarios/_campos_clave', ['requerida' => true]) ?>
-      <button type="submit" class="btn btn-primary">Actualizar contraseña</button>
+      <button type="submit" class="btn btn-seccion"><?= icono('check-lg') ?> Actualizar contraseña</button>
     </form>
   </div>
 </div>

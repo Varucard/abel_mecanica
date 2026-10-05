@@ -7,7 +7,6 @@
 use App\Enums\EstadoTurno;
 
 $estado = EstadoTurno::from($turno['estado']);
-$colores = ['pendiente' => 'warning', 'confirmado' => 'success', 'realizado' => 'primary', 'cancelado' => 'secondary', 'no_asistio' => 'secondary'];
 ?>
 <div class="card">
   <div class="card-body p-4">
@@ -19,7 +18,7 @@ $colores = ['pendiente' => 'warning', 'confirmado' => 'success', 'realizado' => 
       <dt class="col-sm-3">Hora</dt><dd class="col-sm-9"><?= e(substr($turno['hora'], 0, 5)) ?> hs</dd>
       <dt class="col-sm-3">Vehículo</dt><dd class="col-sm-9"><?= e($turno['vehiculo']) ?></dd>
       <?php if ($turno['descripcion']): ?><dt class="col-sm-3">Motivo</dt><dd class="col-sm-9"><?= e($turno['descripcion']) ?></dd><?php endif; ?>
-      <dt class="col-sm-3">Estado</dt><dd class="col-sm-9"><span class="badge bg-<?= $colores[$estado->value] ?>"><?= e($estado->label()) ?></span></dd>
+      <dt class="col-sm-3">Estado</dt><dd class="col-sm-9"><?= $view->partial('componentes/estado', ['estado' => $estado]) ?></dd>
     </dl>
 
     <?php if ($admiteRespuesta): ?>
@@ -27,12 +26,12 @@ $colores = ['pendiente' => 'warning', 'confirmado' => 'success', 'realizado' => 
         <?php if ($estado !== EstadoTurno::Confirmado): ?>
           <form action="<?= url("turno/{$token}/confirmar") ?>" method="POST">
             <?= csrf_field() ?>
-            <button type="submit" class="btn btn-success btn-lg">✔ Confirmo que voy</button>
+            <button type="submit" class="btn btn-success btn-lg"><?= icono('check-lg') ?> Confirmo que voy</button>
           </form>
         <?php endif; ?>
         <form action="<?= url("turno/{$token}/cancelar") ?>" method="POST" data-confirm="¿Seguro que querés cancelar el turno?">
           <?= csrf_field() ?>
-          <button type="submit" class="btn btn-outline-danger btn-lg">✖ Cancelar turno</button>
+          <button type="submit" class="btn btn-outline-danger btn-lg"><?= icono('x-lg') ?> Cancelar turno</button>
         </form>
       </div>
       <?php if ($estado === EstadoTurno::Confirmado): ?>
@@ -44,10 +43,3 @@ $colores = ['pendiente' => 'warning', 'confirmado' => 'success', 'realizado' => 
     <a href="<?= url('seguimiento') ?>">Consultar el estado de mi vehículo</a>
   </div>
 </div>
-<script>
-  // Confirmación antes de cancelar (sin depender de librerías externas).
-  document.addEventListener('submit', (e) => {
-    const msg = e.target.dataset.confirm;
-    if (msg && !window.confirm(msg)) e.preventDefault();
-  });
-</script>

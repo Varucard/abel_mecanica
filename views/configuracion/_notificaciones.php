@@ -45,9 +45,8 @@ $etiquetas = ['email' => 'Email', 'whatsapp' => 'WhatsApp Business (API)'];
     <?= ($conOld ? old('boton_whatsapp_manual') : $valores['boton_whatsapp_manual']) ? 'checked' : '' ?>>
   <label class="form-check-label" for="boton_whatsapp_manual">Mostrar el botón "WhatsApp" que abre la conversación con el recordatorio escrito</label>
 </div>
-<div class="mb-3">
-  <label for="codigo_pais" class="form-label">Código de país</label>
-  <input type="text" class="form-control" id="codigo_pais" name="codigo_pais" maxlength="3" style="max-width: 100px;"
-    value="<?= e(old('codigo_pais', $valores['codigo_pais'])) ?>">
-  <small class="form-text text-muted">Argentina: 54 (a los celulares se les agrega el 9 automáticamente).</small>
-</div>
+<?= $view->partial('componentes/campo', [
+  'nombre' => 'codigo_pais', 'etiqueta' => 'Código de país', 'columna' => 'mb-3', 'clase' => 'ancho-max-100',
+  'valor' => $valores['codigo_pais'], 'atributos' => ['maxlength' => 3],
+  'ayuda' => 'Argentina: 54 (a los celulares se les agrega el 9 automáticamente).',
+]) ?>

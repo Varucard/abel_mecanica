@@ -1,27 +1,27 @@
-<?php /** @var array<string, mixed> $valores */ $v = fn(string $k) => e(old($k, $valores[$k])); ?>
+<?php /** @var array<string, mixed> $valores */ ?>
 <div class="row">
-  <div class="col-md-6 mb-3">
-    <label for="nombre" class="form-label">Nombre del taller *</label>
-    <input type="text" class="form-control" id="nombre" name="nombre" required value="<?= $v('nombre') ?>">
-  </div>
-  <div class="col-md-6 mb-3">
-    <label for="cuit" class="form-label">CUIT *</label>
-    <input type="text" class="form-control" id="cuit" name="cuit" required pattern="[0-9]{2}-?[0-9]{8}-?[0-9]" title="Formato: 20-12345678-9" value="<?= $v('cuit') ?>">
-  </div>
-  <div class="col-12 mb-3">
-    <label for="direccion" class="form-label">Dirección *</label>
-    <input type="text" class="form-control" id="direccion" name="direccion" required value="<?= $v('direccion') ?>">
-  </div>
-  <div class="col-md-4 mb-3">
-    <label for="telefono" class="form-label">Teléfono *</label>
-    <input type="text" class="form-control" id="telefono" name="telefono" required value="<?= $v('telefono') ?>">
-  </div>
-  <div class="col-md-4 mb-3">
-    <label for="whatsapp" class="form-label">WhatsApp *</label>
-    <input type="text" class="form-control" id="whatsapp" name="whatsapp" required placeholder="+5491136359867" value="<?= $v('whatsapp') ?>">
-  </div>
-  <div class="col-md-4 mb-3">
-    <label for="email" class="form-label">Email *</label>
-    <input type="email" class="form-control" id="email" name="email" required value="<?= $v('email') ?>">
-  </div>
+  <?= $view->partial('componentes/campo', [
+    'nombre' => 'nombre', 'etiqueta' => 'Nombre del taller *', 'valor' => $valores['nombre'], 'columna' => 'col-md-6 mb-3',
+    'atributos' => ['required' => true],
+  ]) ?>
+  <?= $view->partial('componentes/campo', [
+    'nombre' => 'cuit', 'etiqueta' => 'CUIT *', 'valor' => $valores['cuit'], 'columna' => 'col-md-6 mb-3',
+    'atributos' => ['required' => true, 'pattern' => '[0-9]{2}-?[0-9]{8}-?[0-9]', 'title' => 'Formato: 20-12345678-9'],
+  ]) ?>
+  <?= $view->partial('componentes/campo', [
+    'nombre' => 'direccion', 'etiqueta' => 'Dirección *', 'valor' => $valores['direccion'], 'columna' => 'col-12 mb-3',
+    'atributos' => ['required' => true],
+  ]) ?>
+  <?= $view->partial('componentes/campo', [
+    'nombre' => 'telefono', 'etiqueta' => 'Teléfono *', 'valor' => $valores['telefono'], 'columna' => 'col-md-4 mb-3',
+    'atributos' => ['required' => true],
+  ]) ?>
+  <?= $view->partial('componentes/campo', [
+    'nombre' => 'whatsapp', 'etiqueta' => 'WhatsApp *', 'valor' => $valores['whatsapp'], 'columna' => 'col-md-4 mb-3',
+    'atributos' => ['required' => true, 'placeholder' => '+5491136359867'],
+  ]) ?>
+  <?= $view->partial('componentes/campo', [
+    'nombre' => 'email', 'etiqueta' => 'Email *', 'tipo' => 'email', 'valor' => $valores['email'], 'columna' => 'col-md-4 mb-3',
+    'atributos' => ['required' => true],
+  ]) ?>
 </div>

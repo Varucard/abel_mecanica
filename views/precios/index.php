@@ -9,7 +9,7 @@ $p = $vista['parametros'] ?? [];
 $valor = fn(string $k, mixed $def = '') => old($k, $p[$k] ?? $def);
 ?>
 <div class="card mt-3">
-  <div class="card-header bg-light"><h4 class="mb-0">Actualización masiva de precios</h4></div>
+  <div class="card-header"><h4 class="mb-0">Actualización masiva de precios</h4></div>
   <div class="card-body">
     <form action="<?= url('precios/vista-previa') ?>" method="POST" class="row g-3 align-items-end">
       <?= csrf_field() ?>
@@ -56,7 +56,7 @@ $valor = fn(string $k, mixed $def = '') => old($k, $p[$k] ?? $def);
 
 <?php if ($vista !== null): ?>
   <div class="card mt-3">
-    <div class="card-header bg-light d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div class="card-header d-flex justify-content-between align-items-center flex-wrap gap-2">
       <strong>Vista previa: <?= count($vista['items']) ?> precios</strong>
       <span class="small text-muted">Destildá los que no quieras modificar.</span>
     </div>
@@ -66,7 +66,7 @@ $valor = fn(string $k, mixed $def = '') => old($k, $p[$k] ?? $def);
         <?php foreach (['aplicar_a', 'porcentaje', 'redondeo', 'proveedor_id'] as $campo): ?>
           <input type="hidden" name="<?= $campo ?>" value="<?= e((string) ($p[$campo] ?? '')) ?>">
         <?php endforeach; ?>
-        <div class="table-responsive" style="max-height: 60vh;">
+        <div class="table-responsive alto-max-60vh">
           <table class="table table-sm align-middle">
             <thead class="sticky-top bg-body">
               <tr>
@@ -84,15 +84,15 @@ $valor = fn(string $k, mixed $def = '') => old($k, $p[$k] ?? $def);
                   </td>
                   <td><?= $item['tipo'] === 'servicio' ? 'Servicio' : 'Repuesto' ?></td>
                   <td><?= e($item['nombre']) ?></td>
-                  <td class="text-end">$ <?= money($item['actual']) ?></td>
-                  <td class="text-end fw-semibold">$ <?= money($item['nuevo']) ?></td>
-                  <td class="text-end <?= $item['nuevo'] >= $item['actual'] ? 'text-success' : 'text-danger' ?>">$ <?= money($item['nuevo'] - $item['actual']) ?></td>
+                  <td class="text-end"><?= importe($item['actual']) ?></td>
+                  <td class="text-end fw-semibold"><?= importe($item['nuevo']) ?></td>
+                  <td class="text-end <?= $item['nuevo'] >= $item['actual'] ? 'text-success' : 'text-danger' ?>"><?= importe($item['nuevo'] - $item['actual']) ?></td>
                 </tr>
               <?php endforeach; ?>
             </tbody>
           </table>
         </div>
-        <button type="submit" class="btn btn-success mt-2" <?= $vista['items'] === [] ? 'disabled' : '' ?>>Aplicar precios</button>
+        <button type="submit" class="btn btn-seccion mt-2" <?= $vista['items'] === [] ? 'disabled' : '' ?>><?= icono('check-lg') ?> Aplicar precios</button>
       </form>
     </div>
   </div>

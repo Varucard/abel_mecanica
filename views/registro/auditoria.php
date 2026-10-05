@@ -5,7 +5,7 @@
  */
 ?>
 <div class="card mt-3">
-  <div class="card-header bg-light"><h4 class="mb-0">Auditoría: quién hizo qué y cuándo</h4></div>
+  <div class="card-header"><h4 class="mb-0">Auditoría: quién hizo qué y cuándo</h4></div>
   <div class="card-body">
     <form id="filtros_auditoria" class="row g-2 mb-3">
       <div class="col-sm-3">
@@ -36,7 +36,7 @@
       </div>
     </form>
     <div class="table-responsive">
-      <table class="table table-striped table-bordered table-sm" data-server="<?= e(url('auditoria/datos')) ?>" data-filtros="#filtros_auditoria" data-order='[[0, "desc"]]'>
+      <table data-vacio="No hay movimientos para esos filtros." class="table table-striped table-bordered table-sm" data-server="<?= e(url('auditoria/datos')) ?>" data-filtros="#filtros_auditoria" data-order='[[0, "desc"]]'>
         <thead>
           <tr>
             <th>Fecha</th>

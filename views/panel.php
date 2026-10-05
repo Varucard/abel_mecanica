@@ -16,10 +16,11 @@ use App\Enums\EstadoTurno;
 
 $meses = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 $tarjetas = [
-  ['Turnos de hoy', count($turnosHoy), 'turnos', 'warning'],
-  ['Órdenes abiertas', $abiertas['pendiente'] + $abiertas['en_proceso'], 'ordenes', 'primary'],
-  ['Cobrado en ' . $meses[(int) date('n')], '$ ' . money($cobradoMes), 'ordenes', 'success'],
-  ['Saldo adeudado', '$ ' . money($totalAdeudado), 'deudores', 'danger'],
+  // El valor ya es HTML seguro: un número o un importe().
+  ['Turnos de hoy', (string) count($turnosHoy), 'turnos', 'warning'],
+  ['Órdenes abiertas', (string) ($abiertas['pendiente'] + $abiertas['en_proceso']), 'ordenes', 'primary'],
+  ['Cobrado en ' . $meses[(int) date('n')], importe($cobradoMes), 'ordenes', 'success'],
+  ['Saldo adeudado', importe($totalAdeudado), 'deudores', 'danger'],
 ];
 ?>
 <div class="row g-3 mt-1">
@@ -28,7 +29,7 @@ $tarjetas = [
       <a href="<?= url($link) ?>" class="card text-decoration-none border-<?= $color ?> h-100">
         <div class="card-body">
           <div class="small text-muted"><?= e($etiqueta) ?></div>
-          <div class="fs-3 fw-semibold text-<?= $color ?>"><?= e((string) $valor) ?></div>
+          <div class="fs-3 fw-semibold text-<?= $color ?>"><?= $valor ?></div>
         </div>
       </a>
     </div>
@@ -38,13 +39,13 @@ $tarjetas = [
 <div class="row g-3 mt-1">
   <div class="col-lg-7">
     <div class="card h-100">
-      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <div class="card-header d-flex justify-content-between align-items-center">
         <strong>Turnos de hoy</strong>
-        <a href="<?= url('turnos/crear') ?>" class="btn btn-sm btn-warning">+ Agendar</a>
+        <a href="<?= url('turnos/crear') ?>" class="btn btn-sm btn-seccion"><?= icono('plus-lg') ?> Agendar</a>
       </div>
       <div class="card-body">
         <?php if ($turnosHoy === []): ?>
-          <p class="text-muted mb-0">No hay turnos para hoy.</p>
+          <?= $view->partial('componentes/vacio', ['icono' => 'calendar-x', 'texto' => 'No hay turnos para hoy.']) ?>
         <?php else: ?>
           <ul class="list-group list-group-flush">
             <?php foreach ($turnosHoy as $t): ?>
@@ -81,19 +82,19 @@ $tarjetas = [
 
   <div class="col-lg-5">
     <div class="card h-100">
-      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <div class="card-header d-flex justify-content-between align-items-center">
         <strong>Órdenes abiertas</strong>
         <span class="small text-muted"><?= $abiertas['pendiente'] ?> pendientes · <?= $abiertas['en_proceso'] ?> en proceso</span>
       </div>
       <div class="card-body">
         <?php if ($ordenesAbiertas === []): ?>
-          <p class="text-muted mb-0">No hay órdenes abiertas.</p>
+          <?= $view->partial('componentes/vacio', ['icono' => 'clipboard-check', 'texto' => 'No hay órdenes abiertas.']) ?>
         <?php else: ?>
           <ul class="list-group list-group-flush">
             <?php foreach ($ordenesAbiertas as $o): ?>
               <li class="list-group-item px-0">
                 <a href="<?= url("ordenes/{$o['id']}") ?>">#<?= (int) $o['id'] ?></a> · <?= e($o['vehiculo']) ?>
-                <div class="small text-muted"><?= e($o['cliente']) ?><?= $o['mecanico'] ? ' · 🔧 ' . e($o['mecanico']) : '' ?></div>
+                <div class="small text-muted"><?= e($o['cliente']) ?><?= $o['mecanico'] ? ' · ' . icono('wrench') . ' ' . e($o['mecanico']) : '' ?></div>
               </li>
             <?php endforeach; ?>
           </ul>
@@ -107,19 +108,19 @@ $tarjetas = [
 <div class="row g-3 mt-1">
   <div class="col-lg-6">
     <div class="card h-100">
-      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <div class="card-header d-flex justify-content-between align-items-center">
         <strong>Mayores saldos pendientes</strong>
         <a href="<?= url('deudores') ?>" class="small">Ver todos</a>
       </div>
       <div class="card-body">
         <?php if ($deudores === []): ?>
-          <p class="text-muted mb-0">No hay clientes con deuda. 🎉</p>
+          <?= $view->partial('componentes/vacio', ['icono' => 'emoji-smile', 'texto' => 'No hay clientes con deuda.']) ?>
         <?php else: ?>
           <ul class="list-group list-group-flush">
             <?php foreach ($deudores as $d): ?>
               <li class="list-group-item px-0 d-flex justify-content-between">
                 <a href="<?= url("clientes/{$d['id']}") ?>"><?= e($d['cliente']) ?></a>
-                <span class="text-danger">$ <?= money($d['saldo']) ?></span>
+                <span class="text-danger"><?= importe($d['saldo']) ?></span>
               </li>
             <?php endforeach; ?>
           </ul>
@@ -129,7 +130,7 @@ $tarjetas = [
   </div>
   <div class="col-lg-6">
     <div class="card h-100">
-      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <div class="card-header d-flex justify-content-between align-items-center">
         <strong>Stock bajo mínimo</strong>
         <a href="<?= url('repuestos') ?>" class="small">Ver repuestos</a>
       </div>
@@ -153,7 +154,7 @@ $tarjetas = [
 
 <?php if ($services !== []): ?>
   <div class="card mt-3">
-    <div class="card-header bg-light"><strong>Services a vencer en los próximos 30 días</strong></div>
+    <div class="card-header"><strong>Services a vencer en los próximos 30 días</strong></div>
     <ul class="list-group list-group-flush">
       <?php foreach ($services as $sv): ?>
         <li class="list-group-item d-flex justify-content-between flex-wrap gap-2">
@@ -163,7 +164,7 @@ $tarjetas = [
             <?= $sv['proximo_service_km'] ? '· ' . number_format((float) $sv['proximo_service_km'], 0, ',', '.') . ' km' : '' ?>
           </span>
           <span class="small <?= $sv['proximo_service_avisado'] ? 'text-success' : 'text-muted' ?>">
-            <?= $sv['proximo_service_avisado'] ? '✔ avisado el ' . format_date($sv['proximo_service_avisado']) : 'sin avisar' ?>
+            <?= $sv['proximo_service_avisado'] ? icono('check-lg') . ' avisado el ' . format_date($sv['proximo_service_avisado']) : 'sin avisar' ?>
           </span>
         </li>
       <?php endforeach; ?>

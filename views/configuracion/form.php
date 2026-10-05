@@ -20,7 +20,7 @@
       <?= csrf_field() ?>
       <?= $view->partial("configuracion/_{$seccion}", ['valores' => $config[$seccion], 'config' => $config, ...$extra]) ?>
       <div class="text-end mt-3">
-        <button type="submit" class="btn btn-success">💾 Guardar</button>
+        <button type="submit" class="btn btn-seccion"><?= icono('save') ?> Guardar</button>
       </div>
     </form>
   </div>
@@ -31,11 +31,11 @@
     <div class="card-body d-flex flex-wrap align-items-end gap-2">
       <form action="<?= url('configuracion/feriados/importar') ?>" method="POST" class="d-flex align-items-end gap-2">
         <?= csrf_field() ?>
-        <div>
-          <label for="anio" class="form-label">Importar feriados nacionales de Argentina</label>
-          <input type="number" class="form-control" id="anio" name="anio" min="2020" max="2100" value="<?= date('Y') ?>" style="width: 120px;">
-        </div>
-        <button type="submit" class="btn btn-outline-primary">Importar</button>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'anio', 'etiqueta' => 'Importar feriados nacionales de Argentina', 'tipo' => 'number', 'columna' => 'mb-0',
+          'clase' => 'ancho-120', 'valor' => date('Y'), 'usarAnterior' => false, 'atributos' => ['min' => 2020, 'max' => 2100],
+        ]) ?>
+        <button type="submit" class="btn btn-outline-primary"><?= icono('cloud-download') ?> Importar</button>
       </form>
       <small class="text-muted">Fuente: ArgentinaDatos. Se agregan a la lista de feriados sin borrar los que ya cargaste.</small>
     </div>
@@ -47,7 +47,7 @@
     <div class="card-body">
       <form action="<?= url('configuracion/backups/generar') ?>" method="POST" class="d-inline">
         <?= csrf_field() ?>
-        <button type="submit" class="btn btn-outline-primary">Generar backup ahora</button>
+        <button type="submit" class="btn btn-outline-primary"><?= icono('archive') ?> Generar backup ahora</button>
       </form>
     </div>
   </div>
@@ -55,10 +55,10 @@
 
 <?php if ($seccion === 'notificaciones'): ?>
   <div class="card mt-3">
-    <div class="card-header bg-light"><strong>Últimos avisos enviados</strong></div>
+    <div class="card-header"><strong>Últimos avisos enviados</strong></div>
     <div class="card-body table-responsive">
       <?php if ($extra['registro'] === []): ?>
-        <p class="text-muted mb-0">Todavía no se envió ningún aviso.</p>
+        <?= $view->partial('componentes/vacio', ['icono' => 'envelope', 'texto' => 'Todavía no se envió ningún aviso.']) ?>
       <?php else: ?>
         <table class="table table-sm align-middle">
           <thead><tr><th>Fecha</th><th>Cliente</th><th>Turno</th><th>Tipo</th><th>Canal</th><th>Destino</th><th>Resultado</th></tr></thead>

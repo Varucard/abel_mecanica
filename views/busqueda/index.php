@@ -16,12 +16,12 @@ use App\Enums\EstadoOrden;
 
 <?php if ($resultados['ordenes'] !== []): ?>
   <div class="card mt-3">
-    <div class="card-header bg-light"><strong>Órdenes</strong></div>
+    <div class="card-header"><strong>Órdenes</strong></div>
     <ul class="list-group list-group-flush">
       <?php foreach ($resultados['ordenes'] as $o): ?>
         <li class="list-group-item">
           <a href="<?= url("ordenes/{$o['id']}") ?>">Orden #<?= (int) $o['id'] ?></a> · <?= e($o['patente']) ?> · <?= e($o['cliente']) ?>
-          · <?= e(EstadoOrden::from($o['estado'])->label()) ?> · $ <?= money($o['total']) ?>
+          · <?= e(EstadoOrden::from($o['estado'])->label()) ?> · <?= importe($o['total']) ?>
         </li>
       <?php endforeach; ?>
     </ul>
@@ -30,7 +30,7 @@ use App\Enums\EstadoOrden;
 
 <?php if ($resultados['vehiculos'] !== []): ?>
   <div class="card mt-3">
-    <div class="card-header bg-light"><strong>Vehículos</strong></div>
+    <div class="card-header"><strong>Vehículos</strong></div>
     <ul class="list-group list-group-flush">
       <?php foreach ($resultados['vehiculos'] as $v): ?>
         <li class="list-group-item">
@@ -44,7 +44,7 @@ use App\Enums\EstadoOrden;
 
 <?php if ($resultados['clientes'] !== []): ?>
   <div class="card mt-3">
-    <div class="card-header bg-light"><strong>Clientes</strong></div>
+    <div class="card-header"><strong>Clientes</strong></div>
     <ul class="list-group list-group-flush">
       <?php foreach ($resultados['clientes'] as $c): ?>
         <li class="list-group-item">

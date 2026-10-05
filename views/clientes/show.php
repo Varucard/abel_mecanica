@@ -13,16 +13,16 @@ $activo = $cliente['estado'] === 'activo';
     <div class="card h-100">
       <div class="card-body text-center">
         <?php if ($cliente['foto']): ?>
-          <img src="<?= url("clientes/{$cliente['id']}/foto") ?>" alt="Foto de <?= e($cliente['nombre']) ?>" class="rounded-circle mb-3" style="width: 160px; height: 160px; object-fit: cover;">
+          <img src="<?= url("clientes/{$cliente['id']}/foto") ?>" alt="Foto de <?= e($cliente['nombre']) ?>" class="rounded-circle mb-3 foto-cliente">
         <?php else: ?>
-          <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center mb-3" style="width: 160px; height: 160px; font-size: 3.5rem;">
+          <div class="rounded-circle bg-secondary text-white d-inline-flex align-items-center justify-content-center mb-3 foto-cliente foto-cliente-vacia">
             <?= e(mb_substr($cliente['nombre'], 0, 1) . mb_substr($cliente['apellido'], 0, 1)) ?>
           </div>
         <?php endif; ?>
         <h4 class="mb-1"><?= e("{$cliente['apellido']}, {$cliente['nombre']}") ?></h4>
         <span class="badge bg-<?= $activo ? 'success' : 'secondary' ?>"><?= e($cliente['estado']) ?></span>
         <?php if ($saldo > 0): ?>
-          <span class="badge bg-danger">Debe $ <?= money($saldo) ?></span>
+          <span class="badge bg-danger">Debe <?= importe($saldo) ?></span>
         <?php else: ?>
           <span class="badge bg-light text-dark">Sin deuda</span>
         <?php endif; ?>
@@ -48,9 +48,9 @@ $activo = $cliente['estado'] === 'activo';
 
   <div class="col-md-8">
     <div class="card h-100">
-      <div class="card-header bg-light d-flex justify-content-between align-items-center">
+      <div class="card-header d-flex justify-content-between align-items-center">
         <strong>Datos</strong>
-        <a href="<?= url("clientes/{$cliente['id']}/editar") ?>" class="btn btn-sm btn-primary">Editar</a>
+        <?= boton_accion("clientes/{$cliente['id']}/editar", 'pencil', 'Editar', 'btn-outline-primary') ?>
       </div>
       <div class="card-body">
         <dl class="row mb-0">
@@ -58,7 +58,7 @@ $activo = $cliente['estado'] === 'activo';
           <dt class="col-sm-3">Teléfono</dt>
           <dd class="col-sm-9">
             <?= e($cliente['telefono']) ?>
-            <a href="<?= e(whatsapp_url($cliente['telefono'])) ?>" target="_blank" rel="noopener" class="btn btn-sm btn-success ms-2">WhatsApp</a>
+            <a href="<?= e(whatsapp_url($cliente['telefono'])) ?>" target="_blank" rel="noopener" class="btn btn-sm btn-accion btn-outline-success ms-2" title="WhatsApp"><?= icono('whatsapp') ?><span class="btn-texto"> WhatsApp</span></a>
           </dd>
           <dt class="col-sm-3">Email</dt>
           <dd class="col-sm-9"><?= $cliente['email'] ? '<a href="mailto:' . e($cliente['email']) . '">' . e($cliente['email']) . '</a>' : '—' ?></dd>
@@ -70,13 +70,13 @@ $activo = $cliente['estado'] === 'activo';
 </div>
 
 <div class="card mt-3">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+  <div class="card-header d-flex justify-content-between align-items-center">
     <strong>Vehículos</strong>
-    <a href="<?= url('vehiculos/crear?cliente_id=' . $cliente['id']) ?>" class="btn btn-sm btn-info">+ Agregar vehículo</a>
+    <a href="<?= url('vehiculos/crear?cliente_id=' . $cliente['id']) ?>" class="btn btn-sm btn-seccion"><?= icono('plus-lg') ?> Agregar vehículo</a>
   </div>
   <div class="card-body">
     <?php if ($vehiculos === []): ?>
-      <p class="text-muted mb-0">Sin vehículos registrados.</p>
+      <?= $view->partial('componentes/vacio', ['icono' => 'car-front', 'texto' => 'Sin vehículos registrados.']) ?>
     <?php else: ?>
       <div class="row g-2">
         <?php foreach ($vehiculos as $v): ?>
@@ -95,14 +95,14 @@ $activo = $cliente['estado'] === 'activo';
 </div>
 
 <div class="card mt-3">
-  <div class="card-header bg-light"><strong>Historial de órdenes</strong></div>
+  <div class="card-header"><strong>Historial de órdenes</strong></div>
   <div class="card-body"><?= $view->partial('partials/historial_ordenes', ['ordenes' => $ordenes]) ?></div>
 </div>
 
 <div class="card mt-3">
-  <div class="card-header bg-light d-flex justify-content-between align-items-center">
+  <div class="card-header d-flex justify-content-between align-items-center">
     <strong>Historial de turnos</strong>
-    <a href="<?= url('turnos/crear?cliente_id=' . $cliente['id']) ?>" class="btn btn-sm btn-warning">+ Agendar turno</a>
+    <a href="<?= url('turnos/crear?cliente_id=' . $cliente['id']) ?>" class="btn btn-sm btn-seccion"><?= icono('plus-lg') ?> Agendar turno</a>
   </div>
   <div class="card-body"><?= $view->partial('partials/historial_turnos', ['turnos' => $turnos]) ?></div>
 </div>

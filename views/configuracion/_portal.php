@@ -20,8 +20,7 @@ $check = fn(string $k) => ($conOld ? old($k) : $valores[$k]) ? 'checked' : '';
   <input class="form-check-input" type="checkbox" role="switch" id="mostrar_montos" name="mostrar_montos" value="1" <?= $check('mostrar_montos') ?>>
   <label class="form-check-label" for="mostrar_montos">Mostrar totales y saldos</label>
 </div>
-<div class="mb-3">
-  <label for="cantidad_ordenes" class="form-label">Cantidad de trabajos a mostrar</label>
-  <input type="number" class="form-control" id="cantidad_ordenes" name="cantidad_ordenes" min="1" max="50" style="max-width: 120px;"
-    value="<?= e(old('cantidad_ordenes', $valores['cantidad_ordenes'])) ?>">
-</div>
+<?= $view->partial('componentes/campo', [
+  'nombre' => 'cantidad_ordenes', 'etiqueta' => 'Cantidad de trabajos a mostrar', 'tipo' => 'number', 'columna' => 'mb-3',
+  'clase' => 'ancho-max-120', 'valor' => $valores['cantidad_ordenes'], 'atributos' => ['min' => 1, 'max' => 50],
+]) ?>

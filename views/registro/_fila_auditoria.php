@@ -9,5 +9,5 @@ return [
   '<code>' . e($a['accion']) . '</code>',
   $enlace ? '<a href="' . e($enlace) . '">' . e($a['entidad']) . ' #' . (int) $a['entidad_id'] . '</a>' : e($a['entidad']),
   e($a['descripcion']),
-  $datos ? '<pre class="small mb-0" style="white-space: pre-wrap;">' . e(json_encode($datos, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) . '</pre>' : '',
+  $datos ? '<pre class="small mb-0 pre-ajustado">' . e(json_encode($datos, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) . '</pre>' : '',
 ];

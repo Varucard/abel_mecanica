@@ -11,7 +11,7 @@ use App\Core\Logger;
 $colores = ['debug' => 'secondary', 'info' => 'info', 'notice' => 'primary', 'warning' => 'warning', 'error' => 'danger', 'critical' => 'danger'];
 ?>
 <div class="card mt-3">
-  <div class="card-header bg-light"><h4 class="mb-0">Registro técnico del sistema</h4></div>
+  <div class="card-header"><h4 class="mb-0">Registro técnico del sistema</h4></div>
   <div class="card-body">
     <form method="GET" action="<?= url('logs') ?>" class="row g-2 mb-3 align-items-end">
       <div class="col-sm-3">
@@ -40,7 +40,7 @@ $colores = ['debug' => 'secondary', 'info' => 'info', 'notice' => 'primary', 'wa
     </form>
 
     <?php if ($eventos === []): ?>
-      <p class="text-muted mb-0">No hay eventos para esos filtros.</p>
+      <?= $view->partial('componentes/vacio', ['icono' => 'journal-x', 'texto' => 'No hay eventos para esos filtros.']) ?>
     <?php else: ?>
       <p class="small text-muted">Mostrando los últimos <?= count($eventos) ?> eventos (máximo 500).</p>
       <div class="table-responsive">
@@ -54,10 +54,10 @@ $colores = ['debug' => 'secondary', 'info' => 'info', 'notice' => 'primary', 'wa
                 <td>
                   <?= e($ev['mensaje']) ?>
                   <?php if (!empty($ev['excepcion'])): ?>
-                    <details class="small"><summary><?= e($ev['excepcion']['clase']) ?> en <?= e($ev['excepcion']['archivo']) ?></summary><pre class="mb-0" style="white-space: pre-wrap;"><?= e($ev['excepcion']['traza']) ?></pre></details>
+                    <details class="small"><summary><?= e($ev['excepcion']['clase']) ?> en <?= e($ev['excepcion']['archivo']) ?></summary><pre class="mb-0 pre-ajustado"><?= e($ev['excepcion']['traza']) ?></pre></details>
                   <?php endif; ?>
                   <?php if (!empty($ev['contexto'])): ?>
-                    <details class="small"><summary>contexto</summary><pre class="mb-0" style="white-space: pre-wrap;"><?= e(json_encode($ev['contexto'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?></pre></details>
+                    <details class="small"><summary>contexto</summary><pre class="mb-0 pre-ajustado"><?= e(json_encode($ev['contexto'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) ?></pre></details>
                   <?php endif; ?>
                 </td>
                 <td class="small text-muted">

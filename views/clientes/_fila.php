@@ -10,14 +10,15 @@ return [
   e($c['telefono']),
   e($c['email'] ?? ''),
   e($c['direccion'] ?? ''),
-  $saldo ? '<span class="text-danger">$ ' . money($saldo) . '</span>' : '—',
+  $saldo ? '<span class="text-danger">' . importe($saldo) . '</span>' : '—',
   '<span class="badge bg-' . ($activo ? 'success' : 'secondary') . '">' . e($c['estado']) . '</span>',
-  '<div class="text-nowrap"><a href="' . url("clientes/{$c['id']}") . '" class="btn btn-sm btn-info">Ver</a> '
-    . '<a href="' . url("clientes/{$c['id']}/editar") . '" class="btn btn-sm btn-primary">Editar</a> '
+  '<div class="acciones-fila">' . boton_accion("clientes/{$c['id']}", 'eye', 'Ver') . ' '
+    . boton_accion("clientes/{$c['id']}/editar", 'pencil', 'Editar', 'btn-outline-primary') . ' '
     . $view->partial('partials/delete_button', [
       'action' => "clientes/{$c['id']}/estado",
       'label' => $activo ? 'Desactivar' : 'Activar',
-      'class' => $activo ? 'btn-warning' : 'btn-success',
+      'class' => $activo ? 'btn-outline-warning' : 'btn-outline-success',
+      'icono' => $activo ? 'pause-circle' : 'play-circle',
       'confirm' => '¿' . ($activo ? 'Desactivar' : 'Activar') . " al cliente {$c['nombre']} {$c['apellido']}?",
     ])
     . $view->partial('partials/delete_button', [

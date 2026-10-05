@@ -1,50 +1,46 @@
-<?php
-/** @var array<string, mixed>|null $empleado */
-$campo = fn(string $k) => e(old($k, $empleado[$k] ?? ''));
-?>
+<?php /** @var array<string, mixed>|null $empleado */ ?>
 <div class="card mt-3">
-  <div class="card-header bg-light">
+  <div class="card-header">
     <h4 class="mb-0"><?= $empleado ? 'Editar empleado' : 'Nuevo empleado' ?></h4>
   </div>
   <div class="card-body">
     <form action="<?= url($empleado ? "empleados/{$empleado['id']}" : 'empleados') ?>" method="POST">
       <?= csrf_field() ?>
       <div class="row">
-        <div class="col-md-4 mb-3">
-          <label for="nombre" class="form-label">Nombre *</label>
-          <input type="text" class="form-control" id="nombre" name="nombre" maxlength="50" required value="<?= $campo('nombre') ?>">
-        </div>
-        <div class="col-md-4 mb-3">
-          <label for="apellido" class="form-label">Apellido *</label>
-          <input type="text" class="form-control" id="apellido" name="apellido" maxlength="50" required value="<?= $campo('apellido') ?>">
-        </div>
-        <div class="col-md-4 mb-3">
-          <label for="dni" class="form-label">DNI *</label>
-          <input type="text" class="form-control" id="dni" name="dni" inputmode="numeric" pattern="[0-9]{6,8}" maxlength="8" required
-            <?= $empleado ? 'readonly' : '' ?> value="<?= $campo('dni') ?>">
-        </div>
-        <div class="col-md-4 mb-3">
-          <label for="puesto" class="form-label">Puesto *</label>
-          <input type="text" class="form-control" id="puesto" name="puesto" maxlength="50" required list="puestos" value="<?= $campo('puesto') ?>">
-          <datalist id="puestos">
-            <option value="Mecánico"><option value="Ayudante"><option value="Electricista"><option value="Administrativo">
-          </datalist>
-        </div>
-        <div class="col-md-4 mb-3">
-          <label for="telefono" class="form-label">Teléfono</label>
-          <input type="tel" class="form-control" id="telefono" name="telefono" inputmode="numeric" maxlength="10" value="<?= $campo('telefono') ?>">
-        </div>
-        <div class="col-md-4 mb-3">
-          <label for="fecha_ingreso" class="form-label">Fecha de ingreso</label>
-          <input type="date" class="form-control" id="fecha_ingreso" name="fecha_ingreso" max="<?= date('Y-m-d') ?>" value="<?= $campo('fecha_ingreso') ?>">
-        </div>
-        <div class="col-md-6 mb-3">
-          <label for="email" class="form-label">Email</label>
-          <input type="email" class="form-control" id="email" name="email" maxlength="255" value="<?= $campo('email') ?>">
-        </div>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'nombre', 'etiqueta' => 'Nombre *', 'valor' => $empleado['nombre'] ?? '', 'columna' => 'col-md-4 mb-3',
+          'atributos' => ['maxlength' => 50, 'required' => true],
+        ]) ?>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'apellido', 'etiqueta' => 'Apellido *', 'valor' => $empleado['apellido'] ?? '', 'columna' => 'col-md-4 mb-3',
+          'atributos' => ['maxlength' => 50, 'required' => true],
+        ]) ?>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'dni', 'etiqueta' => 'DNI *', 'valor' => $empleado['dni'] ?? '', 'columna' => 'col-md-4 mb-3',
+          'atributos' => ['inputmode' => 'numeric', 'pattern' => '[0-9]{6,8}', 'maxlength' => 8, 'required' => true, 'readonly' => $empleado !== null],
+        ]) ?>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'puesto', 'etiqueta' => 'Puesto *', 'valor' => $empleado['puesto'] ?? '', 'columna' => 'col-md-4 mb-3',
+          'atributos' => ['maxlength' => 50, 'required' => true, 'list' => 'puestos'],
+        ]) ?>
+        <datalist id="puestos">
+          <option value="Mecánico"><option value="Ayudante"><option value="Electricista"><option value="Administrativo">
+        </datalist>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'telefono', 'etiqueta' => 'Teléfono', 'tipo' => 'tel', 'valor' => $empleado['telefono'] ?? '', 'columna' => 'col-md-4 mb-3',
+          'atributos' => ['inputmode' => 'numeric', 'maxlength' => 10],
+        ]) ?>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'fecha_ingreso', 'etiqueta' => 'Fecha de ingreso', 'tipo' => 'date', 'valor' => $empleado['fecha_ingreso'] ?? '', 'columna' => 'col-md-4 mb-3',
+          'atributos' => ['max' => date('Y-m-d')],
+        ]) ?>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'email', 'etiqueta' => 'Email', 'tipo' => 'email', 'valor' => $empleado['email'] ?? '', 'columna' => 'col-md-6 mb-3',
+          'atributos' => ['maxlength' => 255],
+        ]) ?>
       </div>
-      <button type="submit" class="btn btn-primary"><?= $empleado ? 'Guardar cambios' : 'Registrar empleado' ?></button>
-      <a href="<?= url('empleados') ?>" class="btn btn-secondary">Volver</a>
+      <button type="submit" class="btn btn-seccion"><?= icono('check-lg') ?> <?= $empleado ? 'Guardar cambios' : 'Registrar empleado' ?></button>
+      <a href="<?= url('empleados') ?>" class="btn btn-outline-secondary">Volver</a>
     </form>
   </div>
 </div>
