@@ -9,6 +9,7 @@
  * @var string $token
  * @var bool $admiteRespuesta
  * @var bool $vigente
+ * @var bool $portal
  */
 ?>
 <div class="card">
@@ -74,8 +75,10 @@
     <?php endif; ?>
 
     <hr>
-    <a href="<?= url("presupuesto/{$token}/pdf") ?>" target="_blank" rel="noopener">Ver en PDF</a> ·
-    <a href="<?= url('seguimiento') ?>">Consultar el estado de mi vehículo</a>
+    <a href="<?= url("presupuesto/{$token}/pdf") ?>" target="_blank" rel="noopener">Ver en PDF</a>
+    <?php if ($portal): ?>
+      · <a href="<?= url("presupuesto/{$token}/seguimiento") ?>">Ver el estado de mi vehículo</a>
+    <?php endif; ?>
   </div>
 </div>
 <script>

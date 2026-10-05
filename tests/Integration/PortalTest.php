@@ -93,6 +93,21 @@ final class PortalTest extends IntegrationTestCase
     $portal->consultar('30111222', 'AB123CD', '10.0.0.4');
   }
 
+  public function testDesdeElPresupuestoEntraSinDniNiPatente(): void
+  {
+    $vehiculo = $this->crearVehiculo($this->crearCliente('30111222'), 'AB123CD');
+    $id = $this->make(OrdenService::class)->guardar($vehiculo, [$this->crearServicio('Frenos', 1000)], []);
+    $portal = $this->make(PortalService::class);
+
+    $resultado = $portal->consultarPorOrden($id);
+    $this->assertSame('Juan', $resultado['nombre']);
+    $this->assertSame($id, (int) $resultado['ordenes'][0]['id']);
+
+    $this->configurar('portal', ['habilitado' => false]);
+    $this->expectException(NotFoundException::class);
+    $this->make(PortalService::class)->consultarPorOrden($id);
+  }
+
   public function testDeshabilitado(): void
   {
     $this->configurar('portal', ['habilitado' => false]);

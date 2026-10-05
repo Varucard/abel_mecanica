@@ -89,6 +89,50 @@ final class PresupuestoServiceTest extends IntegrationTestCase
     $this->assertSame('aceptado', $ordenes->responderPresupuesto($repo->token($id), 'aceptar')['presupuesto_respuesta']);
   }
 
+  public function testSiCambiaUnPresupuestoAceptadoSeAvisaYSePuedeVolverAAceptar(): void
+  {
+    $id = $this->orden();
+    $repo = $this->make(OrdenRepository::class);
+    $ordenes = $this->make(OrdenService::class);
+    $token = $repo->token($id);
+    $ordenes->responderPresupuesto($token, 'aceptar');
+    $this->assertSame('en_proceso', $repo->find($id)['estado']);
+
+    $ordenes->guardar($this->vehiculo, [$this->servicio => ['cantidad' => '1', 'precio' => '18000']], [], $id);
+    $this->assertSame('email', $this->notificaciones->enviarPresupuestoModificado($id));
+
+    $mensaje = $this->canal->enviados[0]['mensaje'];
+    $this->assertStringContainsString('Cambió el presupuesto', $mensaje->asunto);
+    $this->assertStringContainsString('$ 18.000,00', $mensaje->texto);
+    $this->assertStringContainsString("/presupuesto/{$token}", $mensaje->texto);
+    $this->assertStringStartsWith('%PDF', $mensaje->adjuntos[0]['contenido']);
+
+    // Aunque la orden siga en proceso, el cliente puede aceptar el presupuesto nuevo.
+    $this->assertSame('aceptado', $ordenes->responderPresupuesto($token, 'aceptar')['presupuesto_respuesta']);
+
+    $ordenes->cambiarEstado($id, 'finalizado');
+    $repo->anularRespuestaPresupuesto($id);
+    $this->assertValidationError(fn() => $ordenes->responderPresupuesto($token, 'aceptar'), 'finalizado o cancelado');
+  }
+
+  public function testAvisoDeVehiculoListoConSaldoYUnaSolaVez(): void
+  {
+    $id = $this->orden();
+    $this->make(\App\Services\PagoService::class)->registrar($id, ['monto' => '5000', 'forma_pago' => 'Contado'], null);
+
+    $this->assertTrue($this->notificaciones->avisoListoActivo());
+    $this->assertFalse($this->notificaciones->vehiculoListoAvisado($id));
+    $this->assertSame('email', $this->notificaciones->avisarVehiculoListo($id));
+
+    $mensaje = $this->canal->enviados[0]['mensaje'];
+    $this->assertStringContainsString('está listo', $mensaje->asunto);
+    $this->assertStringContainsString('Saldo a abonar: $ 10.000,00', $mensaje->texto);
+    $this->assertTrue($this->notificaciones->vehiculoListoAvisado($id), 'Queda registrado: no se repite si la orden se vuelve a finalizar');
+
+    $this->configurar('notificaciones', ['avisar_listo' => false]);
+    $this->assertFalse($this->make(NotificacionService::class)->avisoListoActivo());
+  }
+
   public function testReenviarConservaLaAceptacionYSoloSeEnviaConLaOrdenAbierta(): void
   {
     $this->configurar('trabajo', ['aceptar_inicia_trabajo' => false]);

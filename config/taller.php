@@ -9,7 +9,7 @@
  * Variables disponibles en las plantillas de mensajes:
  *   Generales: {cliente} {vehiculo} {patente} {taller} {direccion} {telefono} {link_seguimiento}
  *   Turnos:    {fecha} {hora} {link_turno}
- *   Órdenes:   {numero} {total} {link_presupuesto} {km_proximo} {fecha_proximo}
+ *   Órdenes:   {numero} {total} {saldo} {link_presupuesto} {km_proximo} {fecha_proximo}
  */
 return [
   'taller' => [
@@ -76,6 +76,8 @@ return [
     'codigo_pais' => '54',
     // Avisar por email al taller cuando un cliente acepta o rechaza un presupuesto.
     'avisar_taller' => true,
+    // Avisarle al cliente que el vehículo está listo cuando la orden pasa a "Finalizado".
+    'avisar_listo' => true,
   ],
 
   'mensajes' => [
@@ -95,11 +97,22 @@ return [
     'email_presupuesto' => "Hola {cliente}:\n\nTe enviamos el presupuesto N° {numero} para tu {vehiculo} por un total de $ {total}. "
       . "Lo tenés adjunto en PDF.\n\nPodés aceptarlo o rechazarlo desde este link:\n{link_presupuesto}\n\n"
       . "Ante cualquier consulta, escribinos o llamanos al {telefono}.\n\n¡Gracias!",
+    'email_presupuesto_modificado_asunto' => 'Cambió el presupuesto N° {numero} de tu {vehiculo}',
+    'email_presupuesto_modificado' => "Hola {cliente}:\n\nTuvimos que modificar el presupuesto N° {numero} que habías aceptado para tu {vehiculo}. "
+      . "El nuevo total es de $ {total}; lo tenés adjunto en PDF.\n\nPara seguir con el trabajo necesitamos que lo revises y lo vuelvas a aceptar desde este link:\n{link_presupuesto}\n\n"
+      . "Ante cualquier consulta, escribinos o llamanos al {telefono}.\n\n¡Gracias!",
+    'email_listo_asunto' => '¡Tu {vehiculo} está listo! - {taller}',
+    'email_listo' => "Hola {cliente}:\n\nTerminamos el trabajo de la orden N° {numero} en tu {vehiculo}: ya podés pasar a retirarlo.\n\n"
+      . "Total: $ {total}\nSaldo a abonar: $ {saldo}\n\nTe esperamos en {direccion}. Ante cualquier consulta, llamanos al {telefono}.\n\n"
+      . "¡Gracias por confiar en {taller}!",
     'email_service_asunto' => 'Se acerca el service de tu {vehiculo}',
     'email_service' => "Hola {cliente}:\n\nTe recordamos que el próximo service de tu {vehiculo} está previsto para el {fecha_proximo}"
       . " o a los {km_proximo} km, lo que ocurra primero.\n\nPedí tu turno llamando al {telefono} o respondiendo este email.\n\n"
       . "{taller}\n{direccion}",
     'whatsapp_presupuesto' => 'Hola {cliente}, te enviamos el presupuesto N° {numero} por $ {total}. Podés aceptarlo desde acá: {link_presupuesto}',
+    'whatsapp_presupuesto_modificado' => 'Hola {cliente}, tuvimos que modificar el presupuesto N° {numero} de tu {vehiculo}. '
+      . 'El nuevo total es $ {total}. Revisalo y volvé a aceptarlo desde acá: {link_presupuesto}',
+    'whatsapp_listo' => 'Hola {cliente}, tu {vehiculo} ya está listo para retirar en {taller} ({direccion}). Saldo a abonar: $ {saldo}. ¡Te esperamos!',
     'whatsapp_service' => 'Hola {cliente}, se acerca el service de tu {vehiculo} ({fecha_proximo} o {km_proximo} km). ¡Pedí tu turno!',
   ],
 

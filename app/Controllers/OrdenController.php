@@ -136,8 +136,35 @@ final class OrdenController extends Controller
   {
     $this->verifyCsrf($request);
 
+    $anterior = $this->service->obtener($id)['estado'];
     $estado = $this->service->cambiarEstado($id, $request->string('estado'), $this->auth->id());
-    $this->json(['status' => 'success', 'message' => "Orden #{$id}: {$estado->label()}."]);
+    $mensaje = "Orden #{$id}: {$estado->label()}.";
+
+    if ($estado === EstadoOrden::Finalizado && $anterior !== EstadoOrden::Finalizado->value) {
+      $mensaje .= $this->avisarVehiculoListo($id);
+    }
+
+    // La pantalla se recarga después del cambio: el mensaje se muestra como aviso.
+    $this->success($mensaje);
+    $this->json(['status' => 'success', 'message' => $mensaje]);
+  }
+
+  /** Aviso "vehículo listo" al finalizar la orden. Devuelve el texto a sumar al mensaje; si falla, deja un error. */
+  private function avisarVehiculoListo(int $id): string
+  {
+    if (!$this->notificaciones->avisoListoActivo() || $this->notificaciones->vehiculoListoAvisado($id)) {
+      return '';
+    }
+
+    try {
+      $canal = $this->notificaciones->avisarVehiculoListo($id);
+
+      return $canal !== null ? " Le avisamos al cliente por {$canal} que el vehículo está listo." : ' El cliente no tiene email para avisarle que está listo.';
+    } catch (\RuntimeException $e) {
+      $this->error("No se pudo avisar al cliente que el vehículo está listo. {$e->getMessage()}");
+
+      return '';
+    }
   }
 
   public function presupuesto(Request $request, int $id): void
@@ -190,6 +217,7 @@ final class OrdenController extends Controller
   private function save(Request $request, ?int $id): void
   {
     $this->verifyCsrf($request);
+    $estabaAceptado = $id !== null && $this->service->obtener($id)['presupuesto_respuesta'] === 'aceptado';
 
     try {
       $nuevoId = $this->service->guardar(
@@ -205,7 +233,34 @@ final class OrdenController extends Controller
     }
 
     $this->success($id ? 'Orden actualizada correctamente.' : 'Orden creada correctamente.');
+
+    // Cambiaron los ítems o los precios de un presupuesto aceptado: la aceptación quedó sin
+    // efecto y el cliente tiene que volver a aprobarlo.
+    if ($estabaAceptado && $this->service->obtener($nuevoId)['presupuesto_respuesta'] === null) {
+      $this->avisarPresupuestoModificado($nuevoId);
+    }
+
     $this->redirect('/ordenes/' . ($id ?? $nuevoId));
+  }
+
+  private function avisarPresupuestoModificado(int $id): void
+  {
+    $pendiente = 'El cliente tiene que volver a aceptar el presupuesto modificado';
+
+    if (!$this->notificaciones->hayCanalDisponible()) {
+      $this->error("{$pendiente}: no hay canal de envío configurado, avisale por otro medio.");
+
+      return;
+    }
+
+    try {
+      $canal = $this->notificaciones->enviarPresupuestoModificado($id);
+      $canal !== null
+        ? $this->success("Orden actualizada. Como el cliente ya había aceptado el presupuesto, le avisamos del cambio por {$canal} para que lo vuelva a aceptar.")
+        : $this->error("{$pendiente}, pero no tiene email cargado: avisale por otro medio.");
+    } catch (\RuntimeException $e) {
+      $this->error("{$pendiente}. {$e->getMessage()}");
+    }
   }
 
   /**

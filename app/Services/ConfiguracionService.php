@@ -23,7 +23,7 @@ final class ConfiguracionService
   /** Variables que se pueden usar en las plantillas de mensajes, según de qué se trate el aviso. */
   public const VARIABLES_GENERALES = ['cliente', 'vehiculo', 'patente', 'taller', 'direccion', 'telefono', 'link_seguimiento'];
   public const VARIABLES_TURNO = ['fecha', 'hora', 'link_turno'];
-  public const VARIABLES_ORDEN = ['numero', 'total', 'link_presupuesto', 'km_proximo', 'fecha_proximo'];
+  public const VARIABLES_ORDEN = ['numero', 'total', 'saldo', 'link_presupuesto', 'km_proximo', 'fecha_proximo'];
 
   /**
    * Variables válidas para una plantilla: las de turnos (confirmación y recordatorio) o las
@@ -266,6 +266,7 @@ final class ConfiguracionService
       'boton_whatsapp_manual' => !empty($input['boton_whatsapp_manual']),
       'codigo_pais' => $codigo,
       'avisar_taller' => !empty($input['avisar_taller']),
+      'avisar_listo' => !empty($input['avisar_listo']),
     ];
   }
 
@@ -293,6 +294,9 @@ final class ConfiguracionService
     $v->check(
       str_contains($mensajes['email_confirmacion'], '{link_turno}'),
       'El email de confirmación debe incluir {link_turno} para que el cliente pueda confirmar.'
+    )->check(
+      str_contains($mensajes['email_presupuesto_modificado'], '{link_presupuesto}'),
+      'El email de presupuesto modificado debe incluir {link_presupuesto} para que el cliente pueda volver a aceptarlo.'
     )->validate();
 
     return $mensajes;

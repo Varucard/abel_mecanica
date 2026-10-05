@@ -14,6 +14,15 @@ final class NotificacionRepository extends Repository
     );
   }
 
+  /** ¿Ya se le envió a la orden un aviso de este tipo? */
+  public function enviadoDeOrden(int $ordenId, string $tipo): bool
+  {
+    return $this->fetchOne(
+      "SELECT 1 FROM notificaciones WHERE orden_id = ? AND tipo = ? AND estado = 'enviado' LIMIT 1",
+      [$ordenId, $tipo]
+    ) !== null;
+  }
+
   public function erroresRecientesDeOrden(int $ordenId, string $tipo, int $horas = 24): int
   {
     return (int) $this->fetchOne(

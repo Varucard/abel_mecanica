@@ -71,6 +71,7 @@ final class PublicoController extends Controller
       'token' => $token,
       'admiteRespuesta' => $this->ordenService->admiteRespuestaPresupuesto($datos['orden']),
       'vigente' => $this->ordenService->presupuestoVigente($datos['orden']),
+      'portal' => (bool) $this->portal->opciones()['habilitado'],
     ]);
   }
 
@@ -109,6 +110,19 @@ final class PublicoController extends Controller
     }
 
     $this->redirect("/presupuesto/{$token}");
+  }
+
+  /** Estado del trabajo desde el link del presupuesto, sin pedir DNI ni patente. */
+  public function seguimientoPresupuesto(Request $request, string $token): void
+  {
+    $id = $this->ordenes->idPorToken($token) ?? throw new NotFoundException('El link no es válido, venció o la orden ya no existe.');
+
+    $this->publico('publico/seguimiento', [
+      'title' => 'Seguí tu vehículo',
+      'opciones' => $this->portal->opciones(),
+      'resultado' => $this->portal->consultarPorOrden($id),
+      'volver' => url("presupuesto/{$token}"),
+    ]);
   }
 
   public function seguimiento(Request $request): void

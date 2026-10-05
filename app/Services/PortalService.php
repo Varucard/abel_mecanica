@@ -17,6 +17,7 @@ use App\Support\Validator;
  * Portal público "Seguí tu vehículo": el cliente consulta con su DNI (y, según
  * la configuración, la patente de uno de sus vehículos) el estado de sus
  * órdenes y sus próximos turnos. Solo se muestran datos no sensibles.
+ * Desde el link de un presupuesto entra directo, sin DNI ni patente.
  */
 final class PortalService
 {
@@ -74,6 +75,40 @@ final class PortalService
     }
 
     $this->intentos->limpiar(self::AMBITO, $dni);
+
+    return $this->resultado($cliente, $vehiculos, $opciones);
+  }
+
+  /**
+   * Acceso directo desde el link del presupuesto: el token ya identifica al cliente (le
+   * llegó a su email), así que no se le pide DNI ni patente.
+   *
+   * @return array<string, mixed> datos para la vista de resultado
+   */
+  public function consultarPorOrden(int $ordenId): array
+  {
+    $opciones = $this->opciones();
+    if (!$opciones['habilitado']) {
+      throw new NotFoundException('La consulta en línea no está disponible.');
+    }
+
+    $orden = $this->ordenes->find($ordenId);
+    $cliente = $orden ? $this->clientes->find((int) $orden['cliente_id']) : null;
+    if ($cliente === null || $cliente['estado'] !== 'activo') {
+      throw new NotFoundException('No encontramos datos para este link. Comunicate con el taller.');
+    }
+
+    return $this->resultado($cliente, $this->vehiculos->porCliente((int) $cliente['id']), $opciones);
+  }
+
+  /**
+   * @param array<string, mixed> $cliente
+   * @param list<array<string, mixed>> $vehiculos
+   * @param array<string, mixed> $opciones
+   * @return array<string, mixed>
+   */
+  private function resultado(array $cliente, array $vehiculos, array $opciones): array
+  {
     $hoy = date('Y-m-d');
 
     return [

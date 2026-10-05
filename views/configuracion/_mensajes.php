@@ -15,6 +15,14 @@ $campos = [
     'email_presupuesto_asunto' => ['Asunto', 1],
     'email_presupuesto' => ['Texto', 7],
   ],
+  'Email de presupuesto modificado (si cambia uno ya aceptado)' => [
+    'email_presupuesto_modificado_asunto' => ['Asunto', 1],
+    'email_presupuesto_modificado' => ['Texto (debe incluir {link_presupuesto})', 8],
+  ],
+  'Email de vehículo listo (al finalizar la orden)' => [
+    'email_listo_asunto' => ['Asunto', 1],
+    'email_listo' => ['Texto', 8],
+  ],
   'Email de aviso de próximo service' => [
     'email_service_asunto' => ['Asunto', 1],
     'email_service' => ['Texto', 7],
@@ -23,6 +31,8 @@ $campos = [
     'whatsapp_recordatorio' => ['Recordatorio (botón manual)', 3],
     'whatsapp_confirmacion' => ['Confirmación (para cuando se active WhatsApp Business)', 3],
     'whatsapp_presupuesto' => ['Presupuesto (para cuando se active WhatsApp Business)', 3],
+    'whatsapp_presupuesto_modificado' => ['Presupuesto modificado (para cuando se active WhatsApp Business)', 3],
+    'whatsapp_listo' => ['Vehículo listo (para cuando se active WhatsApp Business)', 3],
     'whatsapp_service' => ['Próximo service (para cuando se active WhatsApp Business)', 3],
   ],
 ];
@@ -30,7 +40,7 @@ $campos = [
 <?php $codigos = fn(array $variables) => implode(' ', array_map(fn($v) => '<code>{' . e($v) . '}</code>', $variables)); ?>
 <p class="text-muted mb-1">Variables en todos los mensajes: <?= $codigos(ConfiguracionService::VARIABLES_GENERALES) ?></p>
 <p class="text-muted mb-1">Solo en confirmación y recordatorio de turnos: <?= $codigos(ConfiguracionService::VARIABLES_TURNO) ?></p>
-<p class="text-muted">Solo en presupuesto y próximo service: <?= $codigos(ConfiguracionService::VARIABLES_ORDEN) ?></p>
+<p class="text-muted">Solo en presupuesto, vehículo listo y próximo service: <?= $codigos(ConfiguracionService::VARIABLES_ORDEN) ?></p>
 <?php foreach ($campos as $titulo => $grupo): ?>
   <h5 class="mt-3"><?= e($titulo) ?></h5>
   <?php foreach ($grupo as $campo => [$etiqueta, $filas]): ?>

@@ -2,6 +2,7 @@
 /**
  * @var array<string, mixed> $opciones
  * @var array<string, mixed>|null $resultado
+ * @var string|null $volver link de regreso (si se entró desde un presupuesto)
  */
 use App\Enums\EstadoOrden;
 use App\Enums\EstadoTurno;
@@ -89,5 +90,9 @@ $orden = array_keys($pasos);
     </div>
   </div>
 
-  <a href="<?= url('seguimiento') ?>" class="btn btn-outline-secondary">Nueva consulta</a>
+  <?php if (isset($volver)): ?>
+    <a href="<?= e($volver) ?>" class="btn btn-outline-secondary">Volver al presupuesto</a>
+  <?php else: ?>
+    <a href="<?= url('seguimiento') ?>" class="btn btn-outline-secondary">Nueva consulta</a>
+  <?php endif; ?>
 <?php endif; ?>

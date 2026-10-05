@@ -40,6 +40,7 @@ return function (Router $r): void {
   $r->get('/presupuesto/{token:token}', [PublicoController::class, 'presupuesto'], $publico);
   $r->get('/presupuesto/{token:token}/pdf', [PublicoController::class, 'presupuestoPdf'], $publico);
   $r->post('/presupuesto/{token:token}', [PublicoController::class, 'responderPresupuesto'], $publico);
+  $r->get('/presupuesto/{token:token}/seguimiento', [PublicoController::class, 'seguimientoPresupuesto'], $publico);
   $r->get('/seguimiento', [PublicoController::class, 'seguimiento'], $publico);
   $r->post('/seguimiento', [PublicoController::class, 'consultar'], $publico);
 

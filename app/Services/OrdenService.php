@@ -278,10 +278,14 @@ final class OrdenService
     return date('Y-m-d', strtotime("{$desde} +{$validez} days")) >= date('Y-m-d');
   }
 
-  /** ¿El cliente puede responder el presupuesto desde el link? */
+  /**
+   * ¿El cliente puede responder el presupuesto desde el link? También con la orden en
+   * proceso: si se modifica un presupuesto ya aceptado (y el trabajo arrancó al aceptarlo),
+   * la respuesta se anula y el cliente tiene que poder aceptar el nuevo.
+   */
   public function admiteRespuestaPresupuesto(array $orden): bool
   {
-    return $orden['estado'] === EstadoOrden::Pendiente->value
+    return self::editable(EstadoOrden::from($orden['estado']))
       && $orden['presupuesto_respuesta'] !== 'aceptado'
       && $this->presupuestoVigente($orden);
   }
@@ -300,7 +304,7 @@ final class OrdenService
       ->check(in_array($accion, ['aceptar', 'rechazar'], true), 'Acción inválida.')
       ->check($this->admiteRespuestaPresupuesto($orden), match (true) {
         $orden['presupuesto_respuesta'] === 'aceptado' => 'Este presupuesto ya fue aceptado.',
-        $orden['estado'] !== EstadoOrden::Pendiente->value => 'El trabajo ya está en curso o finalizado; comunicate con el taller.',
+        !self::editable(EstadoOrden::from($orden['estado'])) => 'El trabajo ya está finalizado o cancelado; comunicate con el taller.',
         default => 'El presupuesto venció; comunicate con el taller para actualizarlo.',
       })
       ->validate();

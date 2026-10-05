@@ -22,7 +22,7 @@ use Throwable;
 
 /**
  * Avisos a clientes: confirmación y recordatorio de turnos, envío del
- * presupuesto y aviso de próximo service.
+ * presupuesto (y de su modificación), vehículo listo y aviso de próximo service.
  *
  * El canal se elige según "notificaciones.canales" de la configuración: se usa
  * el primero que esté disponible y para el que el cliente tenga datos de
@@ -35,6 +35,8 @@ final class NotificacionService
   public const CONFIRMACION = 'confirmacion';
   public const RECORDATORIO = 'recordatorio';
   public const PRESUPUESTO = 'presupuesto';
+  public const PRESUPUESTO_MODIFICADO = 'presupuesto_modificado';
+  public const LISTO = 'listo';
   public const SERVICE = 'service';
 
   /** Reintentos de los avisos automáticos si el envío falla. */
@@ -46,6 +48,7 @@ final class NotificacionService
   public function __construct(
     private readonly TurnoRepository $turnos,
     private readonly OrdenRepository $ordenes,
+    private readonly \App\Repositories\PagoRepository $pagos,
     private readonly NotificacionRepository $registro,
     private readonly ConfiguracionService $configuracion,
     private readonly DocumentoService $documentos,
@@ -164,6 +167,22 @@ final class NotificacionService
    */
   public function enviarPresupuesto(int $ordenId): ?string
   {
+    return $this->enviarDocumentoPresupuesto(self::PRESUPUESTO, $ordenId);
+  }
+
+  /**
+   * Avisa que cambió un presupuesto que el cliente ya había aceptado: va el PDF nuevo y el
+   * link para volver a aceptarlo. Cuenta como un envío, así que renueva la vigencia.
+   *
+   * @return string|null canal usado, o null si el cliente no tiene contacto
+   */
+  public function enviarPresupuestoModificado(int $ordenId): ?string
+  {
+    return $this->enviarDocumentoPresupuesto(self::PRESUPUESTO_MODIFICADO, $ordenId);
+  }
+
+  private function enviarDocumentoPresupuesto(string $tipo, int $ordenId): ?string
+  {
     $orden = $this->orden($ordenId);
     (new Validator())
       ->check(OrdenService::editable(EstadoOrden::from($orden['estado'])), 'Solo se puede enviar el presupuesto de órdenes pendientes o en proceso.')
@@ -171,7 +190,7 @@ final class NotificacionService
     $pdf = $this->documentos->pdf($ordenId);
 
     $canal = $this->enviarMensaje(
-      self::PRESUPUESTO,
+      $tipo,
       $this->destinatario($orden),
       $this->variablesOrden($orden),
       ordenId: $ordenId,
@@ -183,6 +202,30 @@ final class NotificacionService
     }
 
     return $canal;
+  }
+
+  /** ¿Corresponde avisar "vehículo listo"? Activado en la configuración y con un canal para enviarlo. */
+  public function avisoListoActivo(): bool
+  {
+    return (bool) $this->configuracion->seccion('notificaciones')['avisar_listo'] && $this->hayCanalDisponible();
+  }
+
+  /** ¿Ya se le avisó al cliente que esta orden está lista? (Si la orden vuelve atrás y se finaliza de nuevo, no se repite.) */
+  public function vehiculoListoAvisado(int $ordenId): bool
+  {
+    return $this->registro->enviadoDeOrden($ordenId, self::LISTO);
+  }
+
+  /**
+   * Le avisa al cliente que el vehículo está listo para retirar, con el saldo a abonar.
+   *
+   * @return string|null canal usado, o null si el cliente no tiene contacto
+   */
+  public function avisarVehiculoListo(int $ordenId): ?string
+  {
+    $orden = $this->orden($ordenId);
+
+    return $this->enviarMensaje(self::LISTO, $this->destinatario($orden), $this->variablesOrden($orden), ordenId: $ordenId);
   }
 
   /**
@@ -270,6 +313,7 @@ final class NotificacionService
       ...$this->variablesGenerales($orden),
       'numero' => str_pad((string) $orden['id'], 4, '0', STR_PAD_LEFT),
       'total' => money($orden['total']),
+      'saldo' => money(max(0, (float) $orden['total'] - $this->pagos->totalPagado((int) $orden['id']))),
       'link_presupuesto' => absolute_url('presupuesto/' . $this->ordenes->token((int) $orden['id'])),
       'km_proximo' => $orden['proximo_service_km'] ? number_format((float) $orden['proximo_service_km'], 0, ',', '.') : '—',
       'fecha_proximo' => $orden['proximo_service_fecha'] ? format_date($orden['proximo_service_fecha']) : '—',
