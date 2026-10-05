@@ -4,7 +4,7 @@ services:
     restart: unless-stopped
     # Solo accesible desde el propio servidor (DB_BIND=0.0.0.0 para abrirlo a la red).
     ports:
-      - "${DB_BIND:-127.0.0.1}:${DB_HOST_PORT:-3309}:3306"
+      - "${DB_BIND:-127.0.0.1}:${DB_HOST_PORT:-8807}:3306"
     environment:
       TZ: ${TZ}
       MYSQL_DATABASE: ${DB_DATABASE}
@@ -43,8 +43,10 @@ services:
       args:
         ENTORNO: ${ENTORNO:-produccion}
     restart: unless-stopped
+    # Solo accesible desde el propio servidor, detrás del proxy con HTTPS
+    # (APP_BIND=0.0.0.0 para abrirlo a la red, p. ej. en una PC del taller sin proxy).
     ports:
-      - "${APP_PORT:-8050}:80"
+      - "${APP_BIND:-127.0.0.1}:${APP_PORT:-8050}:80"
     env_file: .env
     environment:
       XDEBUG_MODE: ${XDEBUG_MODE:-off}
