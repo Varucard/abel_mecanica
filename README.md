@@ -8,7 +8,9 @@ Aplicación web en PHP para administrar un taller mecánico.
 - **Vehículos** con motor, combustible, color, VIN, observaciones, galería de imágenes e historial.
 - **Órdenes de servicio** con cantidades y precios por ítem, combos, mecánico asignado, km de ingreso,
   diagnóstico, trabajo realizado, notas internas y próximo service; presupuesto y comprobante de entrega
-  (HTML imprimible y PDF). El presupuesto se **envía por email** y el cliente lo **acepta online**.
+  (HTML imprimible y PDF). El presupuesto se **envía por email** y el cliente lo **acepta online**; si se
+  modifica uno ya aceptado, se le avisa para que lo vuelva a aceptar. Al finalizar la orden, el cliente
+  recibe el aviso de **vehículo listo** con el saldo a abonar.
 - **Pagos** parciales por orden, saldos y listado de **deudores**.
 - **Stock de repuestos**: precio de costo y margen, ingresos por proveedor, ajustes por conteo, descuento
   automático al finalizar órdenes, historial de movimientos y alerta de stock mínimo. **Proveedores**.
@@ -17,7 +19,8 @@ Aplicación web en PHP para administrar un taller mecánico.
   Al agendar, el cliente recibe un **email para confirmar o cancelar** y, el día hábil anterior,
   un **recordatorio automático**.
 - **Portal "Seguí tu vehículo"** (`/seguimiento`): el cliente consulta con DNI y patente el estado
-  de sus trabajos y sus próximos turnos, sin necesidad de usuario.
+  de sus trabajos y sus próximos turnos, sin necesidad de usuario. Desde el link del presupuesto
+  entra directo, sin DNI ni patente.
 - **Todo configurable** desde *Configuración > Sistema*: datos del taller, presupuestos, horario,
   feriados, textos de los mensajes, canales de aviso, stock y portal.
 - **Panel de inicio** con la actividad del día, **agenda semanal** con cupos libres y **búsqueda rápida**.
@@ -26,6 +29,8 @@ Aplicación web en PHP para administrar un taller mecánico.
 - **Auditoría** (quién hizo qué y cuándo) y **registro técnico** (logs) con visor.
 - **Backup automático diario** de la base y las imágenes.
 - **Usuarios** con roles (administrador / empleado) y **empleados** del taller.
+- **App instalable (PWA)** en el celular o la PC, con barra de navegación inferior en pantallas chicas,
+  tablas que pliegan sus columnas y aviso de "Sin conexión".
 
 ## Stack
 
@@ -35,7 +40,7 @@ Aplicación web en PHP para administrar un taller mecánico.
 | MySQL | 8.4 LTS |
 | phpMyAdmin | 5 |
 | Dompdf (vía Composer) | 3.1 |
-| Bootstrap · jQuery · DataTables · Select2 | 5.3.8 · 3.7.1 · 1.13.11 · 4.1.0 |
+| Bootstrap · jQuery · DataTables (+ Responsive) · Tom Select | 5.3.8 · 3.7.1 · 2.3.8 (3.0.8) · 2.6.2 |
 | Symfony Mailer | 7.4 |
 | PHPUnit | 11.5 |
 
@@ -129,8 +134,9 @@ bin/                migrate.php (migraciones), tareas.php (recordatorios) y usua
 config/
 ├── routes.php      Todas las rutas de la aplicación y su nivel de acceso.
 └── taller.php      Valores por defecto de la configuración (y variables de los mensajes).
-views/              Templates PHP (layout, parciales y una carpeta por módulo).
-public/             Única carpeta expuesta por Apache: index.php + assets.
+views/              Templates PHP: layouts/, partials/, componentes/ (campo, estado) y una carpeta por módulo.
+public/             Única carpeta expuesta por Apache: index.php, sw.js, offline.html y assets/
+                    (css/ por capas, js/, vendor/ con las librerías servidas localmente).
 database/
 ├── migrations/     NNNN_*.sql, se aplican en orden y quedan registradas en `migraciones`.
 └── legacy/         Script único para bases de la versión anterior.
@@ -166,6 +172,32 @@ Para cambiar la base de datos se agrega un archivo nuevo en `database/migrations
 
 Todas las acciones que modifican datos (alta, edición, baja, cambio de estado)
 son `POST` con token CSRF.
+
+### Interfaz
+
+- **Colores en un solo lugar**: `public/assets/css/tokens.css` define cada color con su versión
+  clara y oscura. Bootstrap y las librerías leen de ahí, así que el modo oscuro (nativo de
+  Bootstrap, `data-bs-theme` en `<html>`) funciona en cualquier componente sin reglas extra.
+- **CSS por capas** (`app.css`): vendor → tokens → base → componentes → librerías → páginas →
+  utilidades. Una capa posterior siempre le gana a una anterior: no hace falta `!important`.
+  Nada de `style="…"` en las vistas: para un ancho puntual hay clases en `utilidades.css`.
+- **Componentes de vista**: `componentes/campo` (etiqueta + control + ayuda, con `old()`;
+  admite prefijo `$`, desplegable con buscador y múltiple), `componentes/estado` (badge de
+  orden o turno) y `componentes/vacio` (estado vacío). Helpers: `importe()` para montos,
+  `icono()` (Bootstrap Icons) y `boton_accion()` para las acciones de fila. El menú vive en
+  `App\Support\MenuPrincipal` y se dibuja como botones en la PC y como barra inferior +
+  menú lateral en el celular.
+- **Botones según su función**: la acción principal de la pantalla va en el color de la
+  sección (`btn-seccion`); ver y editar, con contorno; lo destructivo, en rojo. Dentro de
+  las tablas y en el celular, las acciones de fila muestran solo el ícono.
+- **Confirmaciones y avisos**: `data-confirm="¿…?"` en un formulario abre un modal (rojo si
+  borra, anula o desactiva); desde JS, `window.confirmar()` y `window.avisar()`. Los
+  mensajes de éxito son avisos flotantes; los errores quedan en la página.
+- **Contraste**: cada color de fondo tiene su color de texto en `tokens.css`, elegido para
+  llegar a 4.5:1.
+- **Librerías locales** en `public/assets/vendor/` (sin CDN): la app instalada abre aunque la
+  conexión sea mala. `asset()` agrega la fecha del archivo a la URL, así un cambio nunca queda
+  tapado por el caché. Al cambiar `public/sw.js`, subir su `VERSION`.
 
 ## Reglas de negocio
 

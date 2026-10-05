@@ -66,9 +66,22 @@ Correcciones surgidas de una revisión completa del código, todas con tests:
 - **Precios**: el aumento masivo sin selección no modifica nada, no se aplica dos veces si se reenvía el formulario, una rebaja nunca sube un precio por el redondeo y se rechazan importes fuera de rango.
 - **Presupuestos**: editar la orden anula la respuesta del cliente; la vigencia se cuenta desde el envío; solo se envía con la orden abierta.
 - **Concurrencia**: stock, pagos y cupos de turnos a salvo de pedidos simultáneos.
-- **Seguridad**: sesión revalidada en cada pedido (usuarios desactivados o con otro rol), CSV sin fórmulas, bloqueos por intentos que no permiten bloquear a otro usuario, IP real detrás de un proxy, links públicos que vencen y sin caché, SRI en el CDN, imágenes de resolución exagerada rechazadas, phpMyAdmin y MySQL solo en el servidor e imagen de producción sin Xdebug.
+- **Seguridad**: sesión revalidada en cada pedido (usuarios desactivados o con otro rol), CSV sin fórmulas, bloqueos por intentos que no permiten bloquear a otro usuario, IP real detrás de un proxy, links públicos que vencen y sin caché, SRI en el CDN (hoy las librerías se sirven localmente), imágenes de resolución exagerada rechazadas, phpMyAdmin y MySQL solo en el servidor e imagen de producción sin Xdebug.
 - **Datos**: cada orden guarda su cliente (el historial no pasa al nuevo dueño de un vehículo); lo cobrado no incluye órdenes canceladas.
 - **Operación**: backup consistente con copia opcional fuera del servidor, tareas periódicas independientes, migraciones retomables y `bin/usuario.php` funcionando de nuevo.
+
+## Cuarta etapa (interfaz y app instalable)
+
+| # | Ítem | Estado |
+| --- | --- | --- |
+| 38 | **Presupuesto modificado**: si cambia uno ya aceptado, se le avisa al cliente para que lo vuelva a aceptar (también con la orden en proceso). | ✅ |
+| 39 | **Del presupuesto al seguimiento** sin pedir DNI ni patente (el link del email ya identifica al cliente). | ✅ |
+| 40 | **Aviso de vehículo listo** al finalizar la orden, con el saldo a abonar; una sola vez por orden. | ✅ |
+| 41 | **Sistema visual**: colores en tokens, CSS por capas sin `!important`, modo oscuro nativo de Bootstrap y contraste mínimo 4.5:1. | ✅ |
+| 42 | **Componentes de vista** (campo, estado, vacío, acciones de fila) y botones según su función. | ✅ |
+| 43 | **Librerías locales** (sin CDN): DataTables 2 con Responsive, Tom Select y Bootstrap Icons. | ✅ |
+| 44 | **App instalable (PWA)**: barra inferior y menú plegable en el celular, tablas que pliegan columnas, aviso "Sin conexión". | ✅ |
+| 45 | **Confirmaciones y avisos propios**: modal en vez de `confirm()`/`alert()`, avisos flotantes de éxito. | ✅ |
 
 ## A futuro
 
