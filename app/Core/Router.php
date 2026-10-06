@@ -77,10 +77,16 @@ final class Router
     ];
   }
 
+  /**
+   * Un HEAD se atiende con la ruta GET (los monitores de disponibilidad lo usan);
+   * PHP descarta el cuerpo de la respuesta y quedan solo los encabezados.
+   */
   public function dispatch(Request $request): void
   {
+    $method = $request->method === 'HEAD' ? 'GET' : $request->method;
+
     foreach ($this->routes as $route) {
-      if ($route['method'] !== $request->method || !preg_match($route['regex'], $request->path, $matches)) {
+      if ($route['method'] !== $method || !preg_match($route['regex'], $request->path, $matches)) {
         continue;
       }
 

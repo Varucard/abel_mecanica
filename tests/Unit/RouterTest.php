@@ -34,6 +34,26 @@ final class RouterTest extends TestCase
     $router->dispatch(new Request('GET', '/clientes/1/eliminar', [], []));
   }
 
+  public function testHeadSeAtiendeConLaRutaGet(): void
+  {
+    $container = new Container();
+    $router = new Router($container);
+    $router->get('/clientes/{id}/editar', [FakeController::class, 'show']);
+
+    $router->dispatch(new Request('HEAD', '/clientes/7/editar', [], []));
+
+    $this->assertSame(7, $container->get(FakeController::class)->recibido);
+  }
+
+  public function testHeadNoAlcanzaRutasPost(): void
+  {
+    $router = new Router(new Container());
+    $router->post('/clientes/{id}/eliminar', [FakeController::class, 'show']);
+
+    $this->expectException(NotFoundException::class);
+    $router->dispatch(new Request('HEAD', '/clientes/1/eliminar', [], []));
+  }
+
   public function testLosParametrosSoloAceptanDigitos(): void
   {
     $router = new Router(new Container());

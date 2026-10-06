@@ -17,3 +17,6 @@
 .phpunit.cache/
 .idea/
 /backups/
+
+# Notas locales (pendientes con datos sensibles del servidor)
+*.local.md
