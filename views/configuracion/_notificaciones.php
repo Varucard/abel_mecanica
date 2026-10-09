@@ -36,7 +36,7 @@ $etiquetas = ['email' => 'Email', 'whatsapp' => 'WhatsApp Business (API)'];
 <div class="form-check form-switch mt-2">
   <input class="form-check-input" type="checkbox" role="switch" id="avisar_listo" name="avisar_listo" value="1"
     <?= ($conOld ? old('avisar_listo') : $valores['avisar_listo']) ? 'checked' : '' ?>>
-  <label class="form-check-label" for="avisar_listo">Avisarle al cliente que el vehículo está listo cuando la orden pasa a "Finalizado" (una sola vez por orden)</label>
+  <label class="form-check-label" for="avisar_listo">Avisarle al cliente que el vehículo está listo cuando la orden pasa a "Listo" (una sola vez por orden)</label>
 </div>
 
 <h5 class="mt-4">WhatsApp manual</h5>

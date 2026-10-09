@@ -42,6 +42,12 @@ function importe(mixed $amount): string
   return '<span class="importe">$&nbsp;' . money($amount) . '</span>';
 }
 
+/** Versión del sistema que se muestra en el pie (APP_VERSION en .env; subirla en cada entrega). */
+function version_app(): string
+{
+  return (string) \App\Core\Env::get('APP_VERSION', '1.5.0');
+}
+
 /** Ícono de Bootstrap Icons (https://icons.getbootstrap.com), decorativo: icono('check-lg'). */
 function icono(string $nombre): string
 {

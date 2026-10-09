@@ -45,11 +45,11 @@ final class StockService
     bool $actualizarPrecio = false,
   ): float {
     $repuesto = $this->repuesto($repuestoId);
-    $valor = Validator::importe($cantidad);
+    $valor = Validator::cantidad($cantidad);
     $costo = trim($costoUnitario) === '' ? null : Validator::importe($costoUnitario);
 
     (new Validator())
-      ->check($valor !== null && $valor > 0, 'La cantidad a ingresar debe ser mayor a 0.')
+      ->check($valor !== null && $valor > 0, 'La cantidad a ingresar debe ser mayor a 0 (para mil doscientos escribí 1200; para uno y cuarto, 1,25).')
       ->check(trim($costoUnitario) === '' || $costo !== null, 'El costo unitario no es válido.')
       ->check(!$actualizarPrecio || $costo !== null, 'Para actualizar el precio de venta hay que indicar el costo.')
       ->check($proveedorId === null || $this->proveedores->find($proveedorId) !== null, 'El proveedor seleccionado no existe.')
@@ -78,7 +78,7 @@ final class StockService
   public function ajustar(int $repuestoId, string $stockReal, ?string $motivo, ?int $usuarioId): float
   {
     $repuesto = $this->repuesto($repuestoId);
-    $valor = Validator::importe($stockReal);
+    $valor = Validator::cantidad($stockReal);
     $motivo = Validator::nullable((string) $motivo);
 
     (new Validator())

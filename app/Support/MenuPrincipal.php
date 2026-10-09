@@ -12,14 +12,31 @@ namespace App\Support;
 final class MenuPrincipal
 {
   /**
-   * Secciones con sus páginas: [ícono de Bootstrap Icons, título, color del botón, [ruta => etiqueta]].
+   * Secciones con sus páginas, en el orden en que se usan: lo de todos los días primero y
+   * la configuración al final. Cada sección tiene una página principal (el clic directo en
+   * el botón) y un submenú con el resto.
    *
-   * @return list<array{0: string, 1: string, 2: string, 3: array<string, string>}>
+   * Formato: [ícono de Bootstrap Icons, título, color (clase btn-menu-*, ver tokens.css), ruta principal, [ruta => etiqueta]].
+   *
+   * @return list<array{0: string, 1: string, 2: string, 3: string, 4: array<string, string>}>
    */
   public static function secciones(bool $admin): array
   {
     return [
-      ['gear', 'Configuración', 'primary', array_filter([
+      ['clipboard-check', 'Órdenes', 'ordenes', 'ordenes', array_filter([
+        'recepcion' => 'Llegó un auto',
+        'ordenes' => 'Ver órdenes',
+        'reportes' => $admin ? 'Reportes' : null,
+      ])],
+      ['calendar3', 'Turnos', 'turnos', 'turnos', ['turnos/crear' => 'Nuevo turno', 'turnos/semana' => 'Agenda semanal', 'turnos' => 'Ver turnos']],
+      ['people', 'Clientes', 'clientes', 'clientes', ['clientes/crear' => 'Nuevo cliente', 'clientes' => 'Ver clientes', 'deudores' => 'Deudores']],
+      ['car-front', 'Vehículos', 'vehiculos', 'vehiculos', ['vehiculos/crear' => 'Nuevo vehículo', 'vehiculos' => 'Ver vehículos']],
+      ['box-seam', 'Stock', 'stock', 'repuestos', array_filter([
+        'repuestos' => 'Repuestos',
+        'proveedores' => 'Proveedores',
+        'precios' => $admin ? 'Actualizar precios' : null,
+      ])],
+      ['gear', 'Configuración', 'config', $admin ? 'configuracion' : 'servicios', array_filter([
         'servicios' => 'Servicios',
         'combos' => 'Combos de servicios',
         'marcas' => 'Marcas',
@@ -30,24 +47,25 @@ final class MenuPrincipal
         'auditoria' => $admin ? 'Auditoría' : null,
         'logs' => $admin ? 'Registro del sistema' : null,
       ])],
-      ['people', 'Clientes', 'success', ['clientes/crear' => 'Registrar cliente', 'clientes' => 'Ver clientes', 'deudores' => 'Deudores']],
-      ['car-front', 'Vehículos', 'info', ['vehiculos/crear' => 'Registrar vehículo', 'vehiculos' => 'Ver vehículos']],
-      ['clipboard-check', 'Órdenes', 'warning', array_filter([
-        'ordenes/crear' => 'Registrar orden',
-        'ordenes' => 'Ver órdenes',
-        'reportes' => $admin ? 'Reportes' : null,
-      ])],
-      ['box-seam', 'Stock', 'dark', array_filter([
-        'repuestos' => 'Repuestos',
-        'proveedores' => 'Proveedores',
-        'precios' => $admin ? 'Actualizar precios' : null,
-      ])],
-      ['calendar3', 'Turnos', 'secondary', ['turnos/crear' => 'Registrar turno', 'turnos/semana' => 'Agenda semanal', 'turnos' => 'Ver turnos']],
     ];
   }
 
   /**
+   * ¿La sección actual (primer tramo de la URL) pertenece a esta parte del menú?
+   *
+   * @param array<string, string> $items
+   */
+  public static function contiene(array $items, string $principal, string $seccion): bool
+  {
+    $rutas = [...array_keys($items), $principal];
+
+    return $seccion !== '' && in_array($seccion, array_map(fn($ruta) => explode('/', $ruta)[0], $rutas), true);
+  }
+
+  /**
    * Barra inferior del celular: lo que se usa todo el día. El resto va en "Menú".
+   * Son cuatro accesos más "Menú", con "Llegó un auto" exactamente en el medio.
+   * Los clientes se encuentran con el buscador o desde "Menú".
    *
    * @return list<array{0: string, 1: string, 2: string}> [ruta, ícono de Bootstrap Icons, etiqueta]
    */
@@ -56,8 +74,8 @@ final class MenuPrincipal
     return [
       ['', 'house-door', 'Inicio'],
       ['ordenes', 'clipboard-check', 'Órdenes'],
+      ['recepcion', 'car-front-fill', 'Llegó un auto'],
       ['turnos', 'calendar3', 'Turnos'],
-      ['clientes', 'people', 'Clientes'],
     ];
   }
 }

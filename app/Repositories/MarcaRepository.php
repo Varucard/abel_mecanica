@@ -20,6 +20,12 @@ final class MarcaRepository extends Repository
     return $this->fetchOne('SELECT id, nombre FROM marcas WHERE id = ?', [$id]);
   }
 
+  /** @return array<string, mixed>|null la marca con ese nombre (sin distinguir mayúsculas) */
+  public function porNombre(string $nombre): ?array
+  {
+    return $this->fetchOne('SELECT id, nombre FROM marcas WHERE nombre = ?', [$nombre]);
+  }
+
   public function save(Marca $marca): int
   {
     if ($marca->id === null) {

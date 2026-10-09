@@ -77,6 +77,11 @@ final class OrdenRepository extends Repository
     return $this->listado('WHERE o.vehiculo_id = ?', [$vehiculoId]);
   }
 
+  public function existeConTurno(int $turnoId): bool
+  {
+    return $this->fetchOne('SELECT 1 FROM ordenes WHERE turno_id = ?', [$turnoId]) !== null;
+  }
+
   /** @return list<array<string, mixed>> */
   private function listado(string $where, array $params): array
   {

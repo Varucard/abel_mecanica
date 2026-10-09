@@ -15,49 +15,41 @@ if ($orden && $orden['mecanico_id'] && !in_array((int) $orden['mecanico_id'], ar
   $mecanicos[] = ['id' => $orden['mecanico_id'], 'apellido' => $orden['mecanico'], 'nombre' => null, 'puesto' => 'inactivo'];
 }
 $view->script('ordenes.js');
+// "Al terminar el trabajo" se abre solo si ya tiene algo cargado.
+$cierre = ['trabajo_realizado', 'proximo_service_km', 'proximo_service_fecha', 'notas_internas'];
+$abrirCierre = array_filter($cierre, fn($campo) => (string) old($campo, $orden[$campo] ?? $precarga[$campo] ?? '') !== '') !== [];
 ?>
 <div class="card mt-3">
   <div class="card-header">
     <h4 class="mb-0"><?= $orden ? "Editar orden #{$orden['id']}" : 'Nueva orden' ?></h4>
   </div>
   <div class="card-body">
-    <form action="<?= url($orden ? "ordenes/{$orden['id']}" : 'ordenes') ?>" method="POST" id="form_orden"
+    <form action="<?= url($orden ? "ordenes/{$orden['id']}" : 'ordenes') ?>" method="POST" id="form_orden" data-borrador
       data-detalle="<?= e(json_encode($detalle, JSON_FORCE_OBJECT)) ?>">
       <?= csrf_field() ?>
 
       <div class="row mb-3">
+        <?php if ($orden): ?>
+          <?php // Al editar, el vehículo no se cambia: la orden, sus pagos y su historial son de ese auto. ?>
+          <div class="col-md-8">
+            <span class="form-label d-block">Vehículo</span>
+            <p class="form-control-plaintext fw-semibold mb-0"><?= e("{$orden['patente']} - {$orden['marca']} {$orden['modelo']}") ?></p>
+            <input type="hidden" name="vehiculo_id" value="<?= (int) $orden['vehiculo_id'] ?>">
+          </div>
+        <?php else: ?>
         <?= $view->partial('componentes/campo', [
           'nombre' => 'vehiculo_id', 'etiqueta' => 'Vehículo *', 'tipo' => 'select', 'buscable' => true, 'columna' => 'col-md-8',
-          'placeholder' => 'Seleccione un vehículo', 'valor' => $orden['vehiculo_id'] ?? $vehiculoSugerido, 'atributos' => ['required' => true],
+          'placeholder' => 'Escribí la patente o el apellido', 'valor' => $orden['vehiculo_id'] ?? $vehiculoSugerido, 'atributos' => ['required' => true],
           'opciones' => array_column(array_map(fn($v) => [(int) $v['id'], "{$v['patente']} - {$v['cliente']} ({$v['marca']} {$v['modelo']})"], $vehiculos), 1, 0),
+          'ayuda' => '¿El auto no está en la lista? Usá «Llegó un auto» y lo cargás ahí mismo.',
         ]) ?>
+        <?php endif; ?>
         <?= $view->partial('componentes/campo', [
           'nombre' => 'mecanico_id', 'etiqueta' => 'Mecánico asignado', 'tipo' => 'select', 'buscable' => true, 'columna' => 'col-md-4',
           'placeholder' => 'Sin asignar', 'valor' => $orden['mecanico_id'] ?? '',
           'opciones' => array_column(array_map(fn($m) => [
             (int) $m['id'], trim("{$m['apellido']}" . ($m['nombre'] ? ", {$m['nombre']}" : '') . " ({$m['puesto']})"),
           ], $mecanicos), 1, 0),
-        ]) ?>
-      </div>
-
-      <div class="row mb-3">
-        <?= $view->partial('componentes/campo', [
-          'nombre' => 'servicio_id[]', 'id' => 'servicio_id', 'etiqueta' => 'Servicios *', 'tipo' => 'select', 'buscable' => true,
-          'columna' => 'col-md-6', 'clase' => 'js-item-precio', 'placeholder' => 'Seleccione uno o más servicios',
-          'atributos' => ['multiple' => true, 'data-tipo' => 'servicio'],
-          'valor' => array_keys($detalle['servicio']), 'usarAnterior' => false,
-          'opciones' => array_column(array_map(fn($s) => [(int) $s['id'], [
-            'texto' => "{$s['nombre']} ($ " . money($s['precio_base']) . ')', 'atributos' => ['data-precio' => (float) $s['precio_base']],
-          ]], $servicios), 1, 0),
-        ]) ?>
-        <?= $view->partial('componentes/campo', [
-          'nombre' => 'repuesto_id[]', 'id' => 'repuesto_id', 'etiqueta' => 'Repuestos', 'tipo' => 'select', 'buscable' => true,
-          'columna' => 'col-md-6', 'clase' => 'js-item-precio', 'placeholder' => 'Seleccione uno o más repuestos',
-          'atributos' => ['multiple' => true, 'data-tipo' => 'repuesto'],
-          'valor' => array_keys($detalle['repuesto']), 'usarAnterior' => false,
-          'opciones' => array_column(array_map(fn($r) => [(int) $r['id'], [
-            'texto' => "{$r['nombre']} ($ " . money($r['precio']) . ') · stock ' . qty($r['stock_actual']), 'atributos' => ['data-precio' => (float) $r['precio']],
-          ]], $repuestos), 1, 0),
         ]) ?>
       </div>
 
@@ -68,22 +60,46 @@ $view->script('ordenes.js');
 
       <div class="row mb-3">
         <?= $view->partial('componentes/campo', [
-          'nombre' => 'km_ingreso', 'etiqueta' => 'Km al ingresar', 'tipo' => 'number', 'columna' => 'col-md-3',
+          'nombre' => 'km_ingreso', 'etiqueta' => 'Kilómetros al ingresar', 'tipo' => 'number', 'columna' => 'col-md-3',
           'valor' => $orden['km_ingreso'] ?? $precarga['km_ingreso'] ?? '',
           'atributos' => ['min' => 0, 'max' => 9999999, 'placeholder' => $kmVehiculo !== null ? 'Último: ' . number_format((float) $kmVehiculo, 0, ',', '.') : 'Ej: 125000'],
         ]) ?>
         <?= $view->partial('componentes/campo', [
-          'nombre' => 'diagnostico', 'etiqueta' => 'Motivo / diagnóstico', 'tipo' => 'textarea', 'columna' => 'col-md-9',
+          'nombre' => 'diagnostico', 'etiqueta' => '¿Qué le pasa? (motivo / diagnóstico)', 'tipo' => 'textarea', 'columna' => 'col-md-9',
           'valor' => $orden['diagnostico'] ?? $precarga['diagnostico'] ?? '',
-          'atributos' => ['rows' => 2, 'placeholder' => 'Lo que reporta el cliente y lo que se detectó'],
+          'atributos' => ['rows' => 2, 'placeholder' => 'Lo que cuenta el cliente y lo que se detectó'],
+        ]) ?>
+      </div>
+
+      <h5 class="mt-4 mb-1">Trabajos y repuestos</h5>
+      <p class="small text-muted mb-3">Si todavía no sabés qué hay que hacer, podés guardar la orden sin cargarlos y completarlos después.</p>
+
+      <div class="row mb-3">
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'servicio_id[]', 'id' => 'servicio_id', 'etiqueta' => 'Servicios', 'tipo' => 'select', 'buscable' => true,
+          'columna' => 'col-md-6', 'clase' => 'js-item-precio', 'placeholder' => 'Escribí para buscar (ej: aceite)',
+          'atributos' => ['multiple' => true, 'data-tipo' => 'servicio', 'data-chip-corto' => true],
+          'valor' => array_keys($detalle['servicio']), 'usarAnterior' => false,
+          'opciones' => array_column(array_map(fn($s) => [(int) $s['id'], [
+            'texto' => "{$s['nombre']} ($ " . money($s['precio_base']) . ')', 'atributos' => ['data-precio' => (float) $s['precio_base']],
+          ]], $servicios), 1, 0),
+        ]) ?>
+        <?= $view->partial('componentes/campo', [
+          'nombre' => 'repuesto_id[]', 'id' => 'repuesto_id', 'etiqueta' => 'Repuestos', 'tipo' => 'select', 'buscable' => true,
+          'columna' => 'col-md-6', 'clase' => 'js-item-precio', 'placeholder' => 'Escribí para buscar (ej: filtro)',
+          'atributos' => ['multiple' => true, 'data-tipo' => 'repuesto', 'data-chip-corto' => true],
+          'valor' => array_keys($detalle['repuesto']), 'usarAnterior' => false,
+          'opciones' => array_column(array_map(fn($r) => [(int) $r['id'], [
+            'texto' => "{$r['nombre']} ($ " . money($r['precio']) . ') · stock ' . qty($r['stock_actual']), 'atributos' => ['data-precio' => (float) $r['precio']],
+          ]], $repuestos), 1, 0),
         ]) ?>
       </div>
 
       <?php if ($combos !== []): ?>
         <div class="mb-3 ancho-max-420">
-          <label for="agregar_combo" class="form-label">Agregar combo</label>
+          <label for="agregar_combo" class="form-label">O sumá un combo armado</label>
           <select class="form-select" id="agregar_combo">
-            <option value="">Elegí un combo para sumar sus ítems…</option>
+            <option value="">Elegí un combo (ej: service completo)…</option>
             <?php foreach ($combos as $c): ?>
               <option value="<?= (int) $c['id'] ?>" data-items="<?= e(json_encode(array_map(fn($i) => [
                 'tipo' => $i['repuesto_id'] !== null ? 'repuesto' : 'servicio',
@@ -103,10 +119,11 @@ $view->script('ordenes.js');
               <th class="ancho-120">Cantidad</th>
               <th class="ancho-170">Precio unitario</th>
               <th class="text-end ancho-150">Subtotal</th>
+              <th><span class="visually-hidden">Quitar</span></th>
             </tr>
           </thead>
           <tbody>
-            <tr class="js-sin-items"><td colspan="4" class="text-muted">Seleccioná servicios y repuestos para ver el detalle.</td></tr>
+            <tr class="js-sin-items"><td colspan="5" class="text-muted">Todavía no hay trabajos ni repuestos. Elegilos arriba y acá aparecen con su precio.</td></tr>
           </tbody>
         </table>
       </div>
@@ -122,6 +139,9 @@ $view->script('ordenes.js');
         </small>
       </div>
 
+      <details class="mas-datos mb-4" <?= $abrirCierre ? 'open' : '' ?>>
+        <summary>Al terminar el trabajo <span class="small text-muted">(trabajo realizado, próximo service, notas internas)</span></summary>
+        <div class="pt-3">
       <?= $view->partial('componentes/campo', [
         'nombre' => 'trabajo_realizado', 'etiqueta' => 'Trabajo realizado', 'tipo' => 'textarea', 'columna' => 'mb-3',
         'valor' => $orden['trabajo_realizado'] ?? $precarga['trabajo_realizado'] ?? '',
@@ -153,9 +173,11 @@ $view->script('ordenes.js');
         'etiquetaHtml' => 'Notas internas <small class="text-muted">(no se imprimen ni las ve el cliente)</small>',
         'valor' => $orden['notas_internas'] ?? $precarga['notas_internas'] ?? '', 'atributos' => ['rows' => 2],
       ]) ?>
+        </div>
+      </details>
 
-      <button type="submit" class="btn btn-seccion"><?= icono('check-lg') ?> <?= $orden ? 'Actualizar orden' : 'Crear orden' ?></button>
-      <a href="<?= url('ordenes') ?>" class="btn btn-outline-secondary">Volver al listado</a>
+      <button type="submit" class="btn btn-seccion"><?= icono('check-lg') ?> <?= $orden ? 'Guardar cambios' : 'Guardar orden' ?></button>
+      <a href="<?= url($orden ? "ordenes/{$orden['id']}" : 'ordenes') ?>" class="btn btn-outline-secondary">Cancelar</a>
     </form>
   </div>
 </div>

@@ -7,12 +7,24 @@
 use App\Enums\EstadoOrden;
 ?>
 <h4 class="mt-3">
-  <?php if (mb_strlen($texto) < 2): ?>
+  <?php if (mb_strlen($texto) < 2 && !ctype_digit($texto)): ?>
     Escribí al menos 2 caracteres para buscar.
   <?php else: ?>
     <?= $total ?> resultado<?= $total === 1 ? '' : 's' ?> para “<?= e($texto) ?>”
   <?php endif; ?>
 </h4>
+
+<?php // Sin resultados no es un callejón sin salida: se ofrece lo que probablemente se quería hacer. ?>
+<?php if ($total === 0 && mb_strlen($texto) >= 2): ?>
+  <?php $patente = \App\Services\VehiculoService::normalizarPatente($texto); ?>
+  <div class="d-flex flex-wrap gap-2 mt-2">
+    <?php if (\App\Services\VehiculoService::patenteValida($patente)): ?>
+      <a href="<?= url('recepcion?patente=' . urlencode($patente)) ?>" class="btn btn-primary"><?= icono('car-front-fill') ?> Recibir el auto <?= e($patente) ?></a>
+    <?php endif; ?>
+    <a href="<?= url('clientes/crear') ?>" class="btn btn-outline-secondary"><?= icono('person-plus') ?> Nuevo cliente</a>
+  </div>
+  <p class="small text-muted mt-2">Se busca por patente, DNI, apellido, nombre o número de orden (por ejemplo, #12).</p>
+<?php endif; ?>
 
 <?php if ($resultados['ordenes'] !== []): ?>
   <div class="card mt-3">

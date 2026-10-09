@@ -19,8 +19,8 @@
     <form action="<?= url("configuracion/{$seccion}") ?>" method="POST">
       <?= csrf_field() ?>
       <?= $view->partial("configuracion/_{$seccion}", ['valores' => $config[$seccion], 'config' => $config, ...$extra]) ?>
-      <div class="text-end mt-3">
-        <button type="submit" class="btn btn-seccion"><?= icono('save') ?> Guardar</button>
+      <div class="mt-3">
+        <button type="submit" class="btn btn-seccion"><?= icono('check-lg') ?> Guardar cambios</button>
       </div>
     </form>
   </div>

@@ -27,21 +27,25 @@ $activo = $cliente['estado'] === 'activo';
           <span class="badge bg-light text-dark">Sin deuda</span>
         <?php endif; ?>
 
-        <form action="<?= url("clientes/{$cliente['id']}/foto") ?>" method="POST" enctype="multipart/form-data" class="mt-3">
-          <?= csrf_field() ?>
-          <div class="input-group input-group-sm">
-            <input type="file" class="form-control" name="foto" accept="image/jpeg,image/png,image/webp" required aria-label="Foto del cliente">
-            <button type="submit" class="btn btn-outline-primary">Subir foto</button>
-          </div>
-        </form>
-        <?php if ($cliente['foto']): ?>
-          <div class="mt-2">
-            <?= $view->partial('partials/delete_button', [
-              'action' => "clientes/{$cliente['id']}/foto/eliminar", 'label' => 'Quitar foto',
-              'class' => 'btn-outline-danger', 'confirm' => '¿Quitar la foto del cliente?',
-            ]) ?>
-          </div>
-        <?php endif; ?>
+        <?php // La foto es lo que menos se usa de la ficha: queda plegada. ?>
+        <details class="mt-3 small text-start">
+          <summary class="text-muted text-center"><?= $cliente['foto'] ? 'Cambiar o quitar la foto' : 'Agregar una foto' ?></summary>
+          <form action="<?= url("clientes/{$cliente['id']}/foto") ?>" method="POST" enctype="multipart/form-data" class="mt-2">
+            <?= csrf_field() ?>
+            <div class="input-group input-group-sm">
+              <input type="file" class="form-control" name="foto" accept="image/jpeg,image/png,image/webp" required aria-label="Foto del cliente">
+              <button type="submit" class="btn btn-outline-primary">Subir foto</button>
+            </div>
+          </form>
+          <?php if ($cliente['foto']): ?>
+            <div class="mt-2">
+              <?= $view->partial('partials/delete_button', [
+                'action' => "clientes/{$cliente['id']}/foto/eliminar", 'label' => 'Quitar foto',
+                'class' => 'btn-outline-danger', 'confirm' => '¿Quitar la foto del cliente?',
+              ]) ?>
+            </div>
+          <?php endif; ?>
+        </details>
       </div>
     </div>
   </div>
@@ -72,11 +76,11 @@ $activo = $cliente['estado'] === 'activo';
 <div class="card mt-3">
   <div class="card-header d-flex justify-content-between align-items-center">
     <strong>Vehículos</strong>
-    <a href="<?= url('vehiculos/crear?cliente_id=' . $cliente['id']) ?>" class="btn btn-sm btn-seccion"><?= icono('plus-lg') ?> Agregar vehículo</a>
+    <a href="<?= url('vehiculos/crear?cliente_id=' . $cliente['id']) ?>" class="btn btn-sm btn-seccion"><?= icono('plus-lg') ?> Nuevo vehículo</a>
   </div>
   <div class="card-body">
     <?php if ($vehiculos === []): ?>
-      <?= $view->partial('componentes/vacio', ['icono' => 'car-front', 'texto' => 'Sin vehículos registrados.']) ?>
+      <?= $view->partial('componentes/vacio', ['icono' => 'car-front', 'texto' => 'Todavía no tiene vehículos cargados.', 'accion' => ['vehiculos/crear?cliente_id=' . $cliente['id'], 'Nuevo vehículo']]) ?>
     <?php else: ?>
       <div class="row g-2">
         <?php foreach ($vehiculos as $v): ?>
@@ -102,7 +106,7 @@ $activo = $cliente['estado'] === 'activo';
 <div class="card mt-3">
   <div class="card-header d-flex justify-content-between align-items-center">
     <strong>Historial de turnos</strong>
-    <a href="<?= url('turnos/crear?cliente_id=' . $cliente['id']) ?>" class="btn btn-sm btn-seccion"><?= icono('plus-lg') ?> Agendar turno</a>
+    <a href="<?= url('turnos/crear?cliente_id=' . $cliente['id']) ?>" class="btn btn-sm btn-seccion"><?= icono('plus-lg') ?> Nuevo turno</a>
   </div>
   <div class="card-body"><?= $view->partial('partials/historial_turnos', ['turnos' => $turnos]) ?></div>
 </div>

@@ -185,7 +185,7 @@ final class NotificacionService
   {
     $orden = $this->orden($ordenId);
     (new Validator())
-      ->check(OrdenService::editable(EstadoOrden::from($orden['estado'])), 'Solo se puede enviar el presupuesto de órdenes pendientes o en proceso.')
+      ->check(OrdenService::editable(EstadoOrden::from($orden['estado'])), 'Solo se puede enviar el presupuesto de órdenes recibidas o en reparación.')
       ->validate();
     $pdf = $this->documentos->pdf($ordenId);
 

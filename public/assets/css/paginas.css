@@ -56,6 +56,38 @@ td.col-acciones .btn {
   min-width: 120px;
 }
 
+/* El día de hoy: encabezado resaltado (se lee en claro y en oscuro) y su columna apenas teñida. */
+.agenda-semanal th.agenda-hoy {
+  background-color: var(--agenda-hoy-fondo);
+  color: var(--agenda-hoy-texto);
+  box-shadow: inset 0 3px 0 var(--app-primario);
+}
+
+.agenda-hoy-badge {
+  background-color: var(--app-primario);
+  color: var(--app-sobre-color);
+}
+
+.agenda-semanal td.agenda-hoy-columna {
+  background-color: var(--agenda-hoy-columna);
+}
+
+/* "+ libre": toda la franja libre se puede tocar (antes era un link de 37×15 px). */
+.agenda-libre {
+  display: block;
+  padding: 0.4rem 0.25rem;
+  border-radius: var(--app-radio);
+  color: var(--app-texto-suave);
+  font-size: 0.85rem;
+  text-decoration: none;
+}
+
+.agenda-libre:hover,
+.agenda-libre:focus-visible {
+  background-color: var(--agenda-hoy-fondo);
+  color: var(--agenda-hoy-texto);
+}
+
 /* La columna de la hora queda fija al desplazar la semana hacia los costados. */
 .agenda-semanal th:first-child {
   position: sticky;
@@ -82,7 +114,7 @@ td.col-acciones .btn {
 
 .seguimiento-pasos span.hecho {
   background: var(--app-exito);
-  color: #fff;
+  color: var(--app-sobre-color);
 }
 
 /* --- Pantallas angostas (login, portal) --- */
