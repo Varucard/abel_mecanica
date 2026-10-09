@@ -12,11 +12,34 @@ $(function () {
     // Valores ya cargados (edición o vuelta con errores): { servicio: {id: {cantidad, precio}}, repuesto: {...} }
     const cargados = $form.data('detalle') || { servicio: {}, repuesto: {} };
 
-    const numero = (valor) => parseFloat(String(valor).replace(',', '.')) || 0;
+    // Montos y cantidades se escriben a la argentina ("1.200,50"): ver window.leerImporte (app.js).
+    const numero = (valor) => {
+      const n = typeof valor === 'number' ? valor : window.leerImporte(valor);
+      return Number.isNaN(n) ? 0 : n;
+    };
 
-    function input(nombre, valor, extra) {
-      return $('<input>', { type: 'number', min: '0', step: '0.01', name: nombre, value: valor, class: 'form-control form-control-sm', required: true, ...extra });
+    // Lo que viene del servidor es un número (38000) y se muestra prolijo ("38.000,00");
+    // lo que ya escribió el usuario se deja como está.
+    function input(nombre, valor, extra, cantidad) {
+      const n = typeof valor === 'number' ? valor : window.leerImporte(valor);
+      const texto = Number.isNaN(n) ? (valor ?? '') : window.formatoImporte(n, cantidad);
+      return $('<input>', {
+        type: 'text', inputmode: 'decimal', autocomplete: 'off', name: nombre, value: texto, required: true,
+        'data-min': cantidad ? '0.01' : '0', 'data-formato': cantidad ? 'cantidad' : null, ...extra,
+      });
     }
+
+    // Quitar un ítem desde su fila: lo saca también del buscador de arriba.
+    $tbody.on('click', '.js-quitar-item', function () {
+      const $tr = $(this).closest('tr');
+      const select = document.querySelector(`.js-item-precio[data-tipo="${$tr.data('tipo')}"]`);
+      if (select.tomselect) {
+        select.tomselect.removeItem(String($tr.data('id')));
+      } else {
+        $(select).find(`option[value="${$tr.data('id')}"]`).prop('selected', false);
+        $(select).trigger('change');
+      }
+    });
 
     function filas() {
       // Conserva lo que el usuario ya escribió antes de reconstruir la tabla.
@@ -39,11 +62,16 @@ $(function () {
 
           const nombre = $(this).text().replace(/\s*\(\$.*$/s, '').trim();
           $tr.append($('<td>').text((tipo === 'repuesto' ? 'Repuesto: ' : '') + nombre));
-          $tr.append($('<td>').append(input(`cantidad_${tipo}[${id}]`, previo.cantidad ?? 1, { class: 'form-control form-control-sm js-cantidad', min: '0.01', 'aria-label': `Cantidad de ${nombre}` })));
+          $tr.append($('<td>').append(input(`cantidad_${tipo}[${id}]`, previo.cantidad ?? 1,
+            { class: 'form-control form-control-sm js-importe js-cantidad', 'aria-label': `Cantidad de ${nombre}` }, true)));
           if (conPrecio) {
-            $tr.append($('<td>').append(input(`precio_${tipo}[${id}]`, previo.precio ?? $(this).data('precio'), { class: 'form-control form-control-sm js-precio', 'aria-label': `Precio unitario de ${nombre}` })));
+            $tr.append($('<td>').append(input(`precio_${tipo}[${id}]`, previo.precio ?? $(this).data('precio'),
+              { class: 'form-control form-control-sm js-importe js-precio', 'aria-label': `Precio unitario de ${nombre}` }, false)));
           }
           $tr.append($('<td>', { class: 'text-end importe js-subtotal' }));
+          $tr.append($('<td>', { class: 'text-end' }).append($('<button>', {
+            type: 'button', class: 'btn btn-sm btn-accion btn-outline-danger js-quitar-item', title: `Quitar ${nombre}`, 'aria-label': `Quitar ${nombre}`,
+          }).html('<i class="bi bi-x-lg" aria-hidden="true"></i>')));
           $tbody.append($tr);
         });
       });

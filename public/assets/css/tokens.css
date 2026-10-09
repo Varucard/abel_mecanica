@@ -28,14 +28,23 @@
   --app-fuente: Arial, sans-serif;
   --app-transicion: 0.3s ease;
 
+  /* Textos fijos sobre fondos de color (no cambian con el tema) */
+  --app-sobre-color: #ffffff;            /* sobre verde, azul, terracota, violeta… */
+  --app-sobre-claro: #212529;            /* sobre amarillo, celeste, gris claro */
+  --app-oscurecer: #000000;              /* se mezcla con un color para el "hover" (color-mix) */
+
   /* Colores de acción (botones, badges) */
   --app-primario: #0d6efd;
+  --app-primario-texto: #0a58ca;         /* el azul como texto sobre fondo claro (4.5:1) */
   --app-exito: #198754;
   --app-exito-rgb: 25, 135, 84;
   --app-info: #0dcaf0;
   --app-aviso: #ffc107;
   --app-peligro: #dc3545;
   --app-neutro: #6c757d;
+  --app-foco: #0a58ca;                   /* anillo de foco del teclado */
+  --app-config: #5c636a;                 /* barra de título de Configuración (blanco encima: 6:1) */
+  --app-stock: #a0522d;                  /* barra de título de Stock: terracota (blanco encima: 5.8:1) */
   --app-sobre-info: #000000;
   --app-sobre-aviso: #000000;
   --app-texto-exito-rgb: 20, 108, 67;     /* text-success: un punto más oscuro que el verde de fondo */
@@ -61,6 +70,32 @@
   --estado-texto-claro: #ffffff;          /* sobre los estados oscuros */
   --estado-texto-oscuro: #212529;         /* sobre amarillo y celeste */
 
+  /* Botones del menú principal: el color de cada sección en versión suave, con texto oscuro */
+  --menu-texto: #212529;
+  --menu-inicio: #b6d4fe;     --menu-inicio-borde: #6ea8fe;
+  --menu-ordenes: #ffe08a;    --menu-ordenes-borde: #f5c22b;
+  --menu-turnos: #cdbcec;     --menu-turnos-borde: #a98ad9;
+  --menu-clientes: #a9d8c0;   --menu-clientes-borde: #6fb894;
+  --menu-vehiculos: #a5e6f5;  --menu-vehiculos-borde: #5ccbe6;
+  --menu-stock: #f2cdb8;      --menu-stock-borde: #d68d66;
+
+  /* Botones de acción de las filas (ver, editar, pausar, activar, eliminar): mismo estilo
+     suave que el menú, con el ícono en el tono oscuro de su color */
+  --accion-ver: #ccd2d9;      --accion-ver-borde: #9aa4ae;      --accion-ver-texto: #343a40;
+  --accion-editar: #b6d4fe;   --accion-editar-borde: #6ea8fe;   --accion-editar-texto: #084298;
+  --accion-pausa: #ffe08a;    --accion-pausa-borde: #f5c22b;    --accion-pausa-texto: #664d03;
+  --accion-exito: #a9d8c0;    --accion-exito-borde: #6fb894;    --accion-exito-texto: #0f5132;
+  --accion-peligro: #f5c2c7;  --accion-peligro-borde: #ea868f;  --accion-peligro-texto: #842029;
+
+  /* Fila "Saldo" de la orden: pendiente (amarillo) o pagada (verde), suaves en los dos temas */
+  --saldo-pendiente-fondo: #fff3cd;  --saldo-pendiente-texto: #664d03;
+  --saldo-cero-fondo: #d1e7dd;       --saldo-cero-texto: #0f5132;
+
+  /* Agenda semanal: la columna de hoy */
+  --agenda-hoy-fondo: #e7f1ff;
+  --agenda-hoy-texto: #084298;
+  --agenda-hoy-columna: rgba(13, 110, 253, 0.04);
+
   /* Celular */
   --app-barra-inferior: 64px;
 
@@ -83,11 +118,15 @@
   --app-sombra-hover: rgba(0, 0, 0, 0.9);
 
   --app-primario: #2563eb;
+  --app-primario-texto: #6ea8fe;
   --app-exito: #065f46;
   --app-exito-rgb: 6, 95, 70;
   --app-info: #0ea5e9;
   --app-aviso: #d97706;
   --app-peligro: #dc2626;
+  --app-foco: #93c5fd;
+  --app-config: #4b5563;
+  --app-stock: #8a4526;
   --app-sobre-info: #111827;
   --app-sobre-aviso: #111827;
   --app-texto-exito-rgb: 117, 183, 152;   /* el verde y el rojo de siempre no se leen sobre fondo oscuro */
@@ -105,6 +144,27 @@
   --estado-confirmado: #0ea5e9;
   --estado-no-asistio: #4b5563;
   --estado-texto-oscuro: #111827;
+
+  --menu-texto: #e5e7eb;
+  --menu-inicio: #1c3d6e;     --menu-inicio-borde: #2f62b3;
+  --menu-ordenes: #5a4614;    --menu-ordenes-borde: #8f6f12;
+  --menu-turnos: #3e3168;     --menu-turnos-borde: #6a55a8;
+  --menu-clientes: #1b5241;   --menu-clientes-borde: #2f8564;
+  --menu-vehiculos: #17536a;  --menu-vehiculos-borde: #2386a3;
+  --menu-stock: #4d2e1f;      --menu-stock-borde: #8f5537;
+
+  --accion-ver: #3a424c;      --accion-ver-borde: #67727f;      --accion-ver-texto: #e5e7eb;
+  --accion-editar: #1c3d6e;   --accion-editar-borde: #2f62b3;   --accion-editar-texto: #cfe2ff;
+  --accion-pausa: #5a4614;    --accion-pausa-borde: #8f6f12;    --accion-pausa-texto: #ffe69c;
+  --accion-exito: #1b5241;    --accion-exito-borde: #2f8564;    --accion-exito-texto: #c7eedb;
+  --accion-peligro: #5c1f26;  --accion-peligro-borde: #a1323e;  --accion-peligro-texto: #f5c2c7;
+
+  --saldo-pendiente-fondo: #3b3218;  --saldo-pendiente-texto: #ffe69c;
+  --saldo-cero-fondo: #153a2e;       --saldo-cero-texto: #a3cfbb;
+
+  --agenda-hoy-fondo: #1e3a5f;
+  --agenda-hoy-texto: #cfe2ff;
+  --agenda-hoy-columna: rgba(110, 168, 254, 0.06);
 
   color-scheme: dark;
 }
@@ -141,6 +201,19 @@
 [data-seccion="deudores"]    { --seccion-fondo: var(--app-exito); --seccion-texto: #ffffff; }
 [data-seccion="vehiculos"]   { --seccion-fondo: #0dcaf0; --seccion-texto: #212529; }
 [data-seccion="ordenes"],
-[data-seccion="turnos"]      { --seccion-fondo: #ffc107; --seccion-texto: #212529; }
+[data-seccion="recepcion"]   { --seccion-fondo: #ffc107; --seccion-texto: #212529; }
+/* Configuración (todas las pantallas de su submenú): gris neutro, como su botón en el menú. */
+[data-seccion="servicios"],
+[data-seccion="combos"],
+[data-seccion="marcas"],
+[data-seccion="modelos"],
+[data-seccion="configuracion"],
+[data-seccion="empleados"],
+[data-seccion="usuarios"],
+[data-seccion="auditoria"],
+[data-seccion="logs"]        { --seccion-fondo: var(--app-config); --seccion-texto: #ffffff; }
+/* Turnos: violeta, el mismo tono del lavanda de su botón en el menú (blanco encima: 6.6:1). */
+[data-seccion="turnos"]      { --seccion-fondo: #6f42c1; --seccion-texto: #ffffff; }
 [data-seccion="repuestos"],
-[data-seccion="proveedores"] { --seccion-fondo: #212529; --seccion-texto: #ffffff; }
+[data-seccion="proveedores"],
+[data-seccion="precios"]     { --seccion-fondo: var(--app-stock); --seccion-texto: #ffffff; }

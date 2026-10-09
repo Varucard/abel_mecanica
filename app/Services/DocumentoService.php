@@ -43,6 +43,9 @@ final class DocumentoService
       ->validate();
 
     $items = $this->ordenes->items($ordenId);
+    (new Validator())
+      ->check($items !== [], 'La orden todavía no tiene servicios ni repuestos cargados: editala y agregalos para armar el presupuesto.')
+      ->validate();
     $config = $this->configuracion->obtener();
     $pagado = $this->pagos->totalPagado($ordenId);
     $finalizada = $orden['fecha_realizado'] ?? date('Y-m-d');

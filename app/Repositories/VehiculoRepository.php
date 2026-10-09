@@ -67,6 +67,18 @@ final class VehiculoRepository extends Repository
     return $this->fetchOne(self::SELECT . ' WHERE v.id = ?', [$id]);
   }
 
+  /** @return array<string, mixed>|null patente ya normalizada (mayúsculas, sin espacios ni guiones) */
+  public function porPatente(string $patente): ?array
+  {
+    return $this->fetchOne(self::SELECT . ' WHERE v.patente = ?', [$patente]);
+  }
+
+  /** Bloquea el vehículo de esa patente hasta el fin de la transacción (SELECT … FOR UPDATE). */
+  public function bloquearPorPatente(string $patente): void
+  {
+    $this->fetchOne('SELECT id FROM vehiculos WHERE patente = ? FOR UPDATE', [$patente]);
+  }
+
   public function contarActivosPorCliente(int $clienteId): int
   {
     $row = $this->fetchOne(

@@ -16,7 +16,7 @@ return [
       'action' => "vehiculos/{$v['id']}/estado",
       'label' => $activo ? 'Desactivar' : 'Activar',
       'class' => $activo ? 'btn-outline-warning' : 'btn-outline-success',
-      'icono' => $activo ? 'pause-circle' : 'play-circle',
-      'confirm' => '¿' . ($activo ? 'Desactivar' : 'Activar') . " el vehículo {$v['patente']}?",
+      'icono' => $activo ? 'slash-circle' : 'check-circle',
+      'confirm' => null, // se hace al toque y se ofrece "Deshacer"
     ]) . '</div>',
 ];

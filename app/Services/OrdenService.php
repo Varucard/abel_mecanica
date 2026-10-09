@@ -69,7 +69,7 @@ final class OrdenService
     if ($id !== null) {
       $actual = $this->obtener($id);
       (new Validator())
-        ->check(self::editable(EstadoOrden::from($actual['estado'])), 'Solo se pueden editar órdenes pendientes o en proceso.')
+        ->check(self::editable(EstadoOrden::from($actual['estado'])), 'Solo se pueden editar órdenes recibidas o en reparación.')
         ->validate();
 
       $itemsPrevios = $this->ordenes->items($id);
@@ -92,10 +92,9 @@ final class OrdenService
     (new Validator())
       ->check($vehiculo !== null && ($vehiculo['estado'] === 'activo' || $mantieneVehiculo), 'Seleccioná un vehículo activo.')
       ->check($this->mecanicoValido($mecanicoId, $actual ?? null), 'Seleccioná un mecánico activo.')
-      ->check($servicios !== [], 'Seleccioná al menos un servicio.')
       ->check(count($preciosServicios) === count($servicios), 'Alguno de los servicios seleccionados no existe.')
       ->check(count($preciosRepuestos) === count($repuestos), 'Alguno de los repuestos seleccionados no existe.')
-      ->check($valoresValidos($servicios) && $valoresValidos($repuestos), 'Las cantidades deben ser mayores a 0 y los precios no pueden ser negativos.')
+      ->check($valoresValidos($servicios) && $valoresValidos($repuestos), 'Las cantidades deben ser mayores a 0 (escribilas sin punto, o con coma si llevan decimales: 1,25) y los precios no pueden ser negativos.')
       ->validate();
 
     $items = [];
@@ -217,6 +216,10 @@ final class OrdenService
       ->check($proximoKm === null || !is_int($km) || !is_int($proximoKm) || $proximoKm > $km, 'El próximo service debe ser a más km que el de ingreso.')
       ->check($proximaFecha === null || (Validator::fecha($proximaFecha) && $proximaFecha > date('Y-m-d')), 'La fecha del próximo service debe ser futura.')
       ->check($turnoId === null || ($turno !== null && (int) $turno['vehiculo_id'] === $vehiculoId), 'El turno no corresponde al vehículo de la orden.')
+      // Un turno cancelado, ausente o que ya originó una orden no abre otra.
+      ->check($turno === null || in_array($turno['estado'], [EstadoTurno::Pendiente->value, EstadoTurno::Confirmado->value], true),
+        'Ese turno ya no está pendiente (fue cancelado o ya se recibió el auto). Recibilo sin turno, desde "Llegó un auto".')
+      ->check($turnoId === null || !$this->ordenes->existeConTurno($turnoId), 'Ese turno ya tiene una orden abierta.')
       ->validate();
 
     return [
@@ -255,7 +258,7 @@ final class OrdenService
 
     $normalizados = [];
     foreach ($items as $id => $datos) {
-      $cantidad = Validator::importe((string) ($datos['cantidad'] ?? '1'));
+      $cantidad = Validator::cantidad((string) ($datos['cantidad'] ?? '1'));
       $precioTexto = trim((string) ($datos['precio'] ?? ''));
       $normalizados[(int) $id] = [
         'cantidad' => $cantidad,
@@ -320,13 +323,21 @@ final class OrdenService
     return $this->obtener($id);
   }
 
-  /** Cambia el estado y mueve el stock de repuestos al entrar o salir de "finalizado". */
+  /**
+   * Cambia el estado y mueve el stock de repuestos al entrar o salir de "finalizado".
+   *
+   * Una orden puede abrirse sin ítems (el auto entra a diagnóstico), pero no terminarse:
+   * lo que se entrega y se cobra tiene que figurar en el detalle.
+   */
   public function cambiarEstado(int $id, string $estado, ?int $usuarioId = null): EstadoOrden
   {
     $this->obtener($id);
 
     $nuevo = EstadoOrden::tryFrom($estado);
     (new Validator())->check($nuevo !== null, 'Estado de orden inválido.')->validate();
+    (new Validator())
+      ->check($nuevo !== EstadoOrden::Finalizado || $this->ordenes->items($id) !== [], 'Para terminar el trabajo, primero cargá en la orden los servicios o repuestos que se hicieron.')
+      ->validate();
 
     // La orden se lee bloqueada dentro de la transacción: dos cambios simultáneos (dos
     // pestañas, o el cliente aceptando mientras un empleado finaliza) se ejecutan uno

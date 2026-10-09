@@ -29,6 +29,13 @@ final class VehiculoServiceTest extends TestCase
     ];
   }
 
+  public function testNormalizaLaPatenteComoSeEscriba(): void
+  {
+    $this->assertSame('AB123CD', VehiculoService::normalizarPatente(' ab 123 cd '));
+    $this->assertSame('ABC123', VehiculoService::normalizarPatente('abc-123'));
+    $this->assertSame('AB123CD', VehiculoService::normalizarPatente('AB.123.CD'));
+  }
+
   public function testAnioMaximoAcompaniaAlCalendario(): void
   {
     $this->assertSame((int) date('Y') + 1, VehiculoService::anioMaximo());

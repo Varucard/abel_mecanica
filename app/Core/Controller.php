@@ -70,6 +70,24 @@ abstract class Controller
     $this->session->flash('success', $message);
   }
 
+  /**
+   * Aviso de éxito con botón "Deshacer" (en vez de preguntar "¿Seguro?" antes): la acción ya
+   * se hizo y, por unos segundos, se puede revertir con un POST a $accion con $campos.
+   * Solo para lo que se revierte de verdad (no para lo que avisa al cliente o borra).
+   *
+   * @param array<string, scalar> $campos
+   */
+  protected function hechoConDeshacer(string $mensaje, string $accion, array $campos = []): void
+  {
+    $this->session->flash('deshacer', (string) json_encode(['mensaje' => $mensaje, 'accion' => $accion, 'campos' => $campos + ['deshaciendo' => '1']]));
+  }
+
+  /** Aviso amarillo: lo principal salió bien, pero hay algo que la persona tiene que saber o hacer. */
+  protected function aviso(string $message): void
+  {
+    $this->session->flash('aviso', $message);
+  }
+
   protected function error(string $message): void
   {
     $this->session->flash('error', $message);

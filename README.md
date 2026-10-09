@@ -4,6 +4,10 @@ Aplicación web en PHP para administrar un taller mecánico.
 
 ## Funcionalidades
 
+- **"Llegó un auto"** (`/recepcion`): se escribe la patente y, si el auto es nuevo, en la misma
+  pantalla se cargan el dueño (se lo busca por DNI) y el auto (el modelo se puede escribir si no
+  está en el catálogo). Termina con la orden abierta, sin necesidad de saber todavía qué trabajos
+  hacer. Desde un turno del día, el botón **"Recibir el auto"** lleva directo.
 - **Clientes** con ficha (foto, vehículos, historial de órdenes y turnos, deuda) y acceso directo a WhatsApp.
 - **Vehículos** con motor, combustible, color, VIN, observaciones, galería de imágenes e historial.
 - **Órdenes de servicio** con cantidades y precios por ítem, combos, mecánico asignado, km de ingreso,
@@ -23,7 +27,14 @@ Aplicación web en PHP para administrar un taller mecánico.
   entra directo, sin DNI ni patente.
 - **Todo configurable** desde *Configuración > Sistema*: datos del taller, presupuestos, horario,
   feriados, textos de los mensajes, canales de aviso, stock y portal.
-- **Panel de inicio** con la actividad del día, **agenda semanal** con cupos libres y **búsqueda rápida**.
+- **Panel de inicio** con accesos grandes a lo de todos los días (llegó un auto, nuevo turno, cobrar;
+  en el celular, "Llegó un auto" es el botón del medio de la barra de abajo) y los números del taller
+  (turnos de hoy, autos en el taller, cobrado en el mes, saldo adeudado, stock bajo), cada uno con
+  link a su listado, **agenda semanal** con cupos libres y **búsqueda rápida**.
+- **Ficha de la orden guiada**: muestra en qué etapa está (Recibido → En reparación → Listo, los
+  mismos nombres que ve el cliente en el portal) y un solo botón con el paso que sigue: cargar los
+  trabajos, empezar, terminar (avisando qué se descuenta del stock y si se le avisa al cliente),
+  cobrar o entregar.
 - **Reportes** (cobranzas, más vendidos, por mecánico, stock valorizado) con exportación a Excel.
 - **Aviso automático de próximo service** al cliente.
 - **Auditoría** (quién hizo qué y cuándo) y **registro técnico** (logs) con visor.
@@ -51,7 +62,9 @@ cp .env.example .env        # completar las claves
 docker compose up -d --build
 ```
 
-- Aplicación: <http://localhost:8050> (puertos configurables en `.env`)
+- Aplicación: <http://localhost:8050> (puertos configurables en `.env`). El pie de página muestra el
+  nombre del taller y la versión (`APP_VERSION` en `.env`, por defecto la de `version_app()`):
+  subirla en cada entrega.
 - phpMyAdmin: <http://localhost:8051> (solo desde el propio servidor; MySQL también
   escucha solo en `127.0.0.1`. Para abrirlos a la red: `PMA_BIND` / `DB_BIND` en `.env`)
 
@@ -160,14 +173,14 @@ Para cambiar la base de datos se agrega un archivo nuevo en `database/migrations
 | Órdenes | `/ordenes`, `/ordenes/crear`, `/ordenes/{id}/editar`, `/ordenes/{id}/presupuesto`, `/ordenes/{id}/presupuesto/pdf` |
 | Turnos | `/turnos`, `/turnos/crear`, `/turnos/{id}/editar` |
 | Catálogos | `/marcas`, `/modelos`, `/servicios`, `/repuestos` |
-| Inicio | `/` (panel) |
+| Inicio | `/` (panel), `/recepcion` (llegó un auto) |
 | Clientes | `/clientes/{id}` (ficha), `/deudores` |
 | Vehículos | `/vehiculos/{id}` (ficha con imágenes) |
 | Órdenes | `/ordenes/{id}` (ficha con pagos), `/ordenes/{id}/entrega`, `/ordenes/{id}/entrega/pdf` |
 | Stock | `/repuestos/{id}/stock`, `/proveedores` |
 | Acceso | `/login`, `/perfil/clave` |
 | Públicas (clientes) | `/seguimiento`, `/turno/{token}` (confirmar o cancelar), `/presupuesto/{token}` (aceptar o rechazar) |
-| Búsqueda y agenda | `/buscar?q=`, `/turnos/semana` |
+| Búsqueda y agenda | `/buscar?q=`, `/turnos/semana`, `/turnos/horarios?fecha=` (horarios libres, JSON) |
 | Solo administradores | `/configuracion/{seccion}`, `/usuarios`, `/empleados`, `/precios`, `/reportes`, `/auditoria`, `/logs` |
 
 Todas las acciones que modifican datos (alta, edición, baja, cambio de estado)
@@ -178,15 +191,35 @@ son `POST` con token CSRF.
 - **Colores en un solo lugar**: `public/assets/css/tokens.css` define cada color con su versión
   clara y oscura. Bootstrap y las librerías leen de ahí, así que el modo oscuro (nativo de
   Bootstrap, `data-bs-theme` en `<html>`) funciona en cualquier componente sin reglas extra.
-- **CSS por capas** (`app.css`): vendor → tokens → base → componentes → librerías → páginas →
+- **CSS por capas** (declaradas en `views/partials/head.php`, cada archivo versionado con `asset()`): vendor → tokens → base → componentes → librerías → páginas →
   utilidades. Una capa posterior siempre le gana a una anterior: no hace falta `!important`.
   Nada de `style="…"` en las vistas: para un ancho puntual hay clases en `utilidades.css`.
 - **Componentes de vista**: `componentes/campo` (etiqueta + control + ayuda, con `old()`;
   admite prefijo `$`, desplegable con buscador y múltiple), `componentes/estado` (badge de
   orden o turno) y `componentes/vacio` (estado vacío). Helpers: `importe()` para montos,
   `icono()` (Bootstrap Icons) y `boton_accion()` para las acciones de fila. El menú vive en
-  `App\Support\MenuPrincipal` y se dibuja como botones en la PC y como barra inferior +
-  menú lateral en el celular.
+  `App\Support\MenuPrincipal`, ordenado por uso (lo diario primero, Configuración al final), y
+  se dibuja como botones dobles en la PC (el texto va a la página principal de la sección; la
+  flecha abre el resto) y como barra inferior + menú lateral en el celular.
+- **Pensada para gente con poca práctica**: textos del taller y no de la base de datos, un mismo
+  nombre para cada acción ("Nuevo …", "Guardar …", "Cancelar"), listados vacíos con el botón para
+  empezar, lo que se usa poco plegado (`<details class="mas-datos">`) y letra y botones un poco
+  más grandes que los de Bootstrap (17px de base, puesto en la raíz en `base.css` para que todo
+  escale parejo). El menú usa colores suaves por sección (`--menu-*` en `tokens.css`).
+- **Errores de formulario debajo de cada campo**: `app.js` reemplaza el globito del navegador por
+  un mensaje que queda hasta corregirlo (`data-error="…"` en el campo para un texto propio).
+  Teléfono y patente se aceptan como los dicta la gente (con 0, 15, espacios o guiones) y se
+  normalizan al guardar.
+- **Para el mostrador**: atajos de teclado (`/` buscar, `N` llegó un auto, `T` turno, `O` órdenes,
+  `I` inicio, `?` la lista), sugerencias mientras se escribe en el buscador, "Deshacer" en las
+  acciones reversibles (`Controller::hechoConDeshacer()`) en vez de preguntar antes, letra
+  A− / A+ y borradores de formularios (`data-borrador`: se recuperan si se cierra la pestaña;
+  se borran al guardar, al salir o a las 8 h).
+- **Importes a la argentina**: los campos de plata y cantidades (`tipo => 'importe'` en
+  `componentes/campo`) son de texto, no `number` (el navegador toma "10.000" como diez). Punto de
+  miles y coma decimal; la misma regla en `window.leerImporte()` y `Validator::importe()`.
+- **Opciones que se crean escribiéndolas**: `data-crear="prefijo:"` en un `<select class="js-buscable">`
+  permite agregar una opción que no está; viaja como `prefijo:texto` (así se agregan modelos).
 - **Botones según su función**: la acción principal de la pantalla va en el color de la
   sección (`btn-seccion`); ver y editar, con contorno; lo destructivo, en rojo. Dentro de
   las tablas y en el celular, las acciones de fila muestran solo el ícono.
@@ -205,11 +238,16 @@ son `POST` con token CSRF.
   no se elimina (se desactiva).
 - **Vehículos**: patente Mercosur (`AB123CD`) o anterior (`ABC123`); año entre 1940
   y el año próximo. Se activan/desactivan en lugar de borrarse.
-- **Órdenes**: al menos un servicio. Cada ítem tiene cantidad y precio unitario;
-  el precio sugerido es el del catálogo y queda congelado en la orden. Solo se
-  editan órdenes pendientes o en proceso, y el total no puede quedar por debajo
-  de lo pagado. Al finalizar se registra la fecha y se descuenta el stock de los
-  repuestos (se repone si la orden se reabre o cancela).
+- **Órdenes**: se pueden abrir sin ítems (el auto entra a diagnóstico), pero para
+  terminarlas o armar el presupuesto hace falta al menos un servicio o repuesto.
+  Cada ítem tiene cantidad y precio unitario; el precio sugerido es el del catálogo
+  y queda congelado en la orden. Solo se editan órdenes recibidas o en reparación,
+  y el total no puede quedar por debajo de lo pagado. Al terminar se registra la
+  fecha y se descuenta el stock de los repuestos (se repone si la orden se reabre
+  o cancela).
+- **Llegó un auto**: todo o nada. Si algo no valida (por ejemplo, el año del auto),
+  no queda ni el cliente ni el modelo nuevo a medio cargar. Un vehículo dado de baja
+  no se recibe hasta reactivarlo.
 - **Pagos**: parciales, sin superar el saldo, con las formas de pago configuradas.
   Un cliente es deudor si tiene órdenes finalizadas con saldo. Anular un pago es
   solo para administradores.

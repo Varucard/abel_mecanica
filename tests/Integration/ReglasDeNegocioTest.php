@@ -64,7 +64,7 @@ final class ReglasDeNegocioTest extends IntegrationTestCase
     $id = $ordenes->guardar($vehiculo, [$servicio], []);
     $ordenes->cambiarEstado($id, 'finalizado');
 
-    $this->expectExceptionMessage('Solo se pueden editar órdenes pendientes o en proceso');
+    $this->expectExceptionMessage('Solo se pueden editar órdenes recibidas o en reparación');
     $ordenes->guardar($vehiculo, [$servicio], [], $id);
   }
 

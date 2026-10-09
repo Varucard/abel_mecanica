@@ -62,7 +62,7 @@ final class OrdenController extends Controller
     $turno = ($turnoId = $request->int('turno_id')) ? $this->turnos->find($turnoId) : null;
     $orden = $turno ? ['turno_id' => (int) $turno['id'], 'diagnostico' => $turno['descripcion']] : null;
 
-    $this->form('Nueva orden de servicio', $orden, ['servicio' => [], 'repuesto' => []], $turno ? (int) $turno['vehiculo_id'] : (int) $request->int('vehiculo_id'), true);
+    $this->form('Nueva orden', $orden, ['servicio' => [], 'repuesto' => []], $turno ? (int) $turno['vehiculo_id'] : (int) $request->int('vehiculo_id'), true);
   }
 
   public function store(Request $request): void
@@ -75,7 +75,7 @@ final class OrdenController extends Controller
     $orden = $this->service->obtener($id);
 
     if (!OrdenService::editable(EstadoOrden::from($orden['estado']))) {
-      $this->error('Solo se pueden editar órdenes pendientes o en proceso.');
+      $this->error('Solo se pueden editar órdenes recibidas o en reparación.');
       $this->redirect('/ordenes');
     }
 
@@ -102,11 +102,16 @@ final class OrdenController extends Controller
     $orden = $this->service->obtener($id);
     $pagos = $this->pagos->porOrden($id);
 
+    $cliente = $this->clientes->find((int) $orden['cliente_id']);
+
     $this->render('ordenes/show', [
       'title' => "Orden #{$id}",
       'orden' => $orden,
-      'cliente' => $this->clientes->find((int) $orden['cliente_id']),
+      'cliente' => $cliente,
+      'turno' => $orden['turno_id'] ? $this->turnos->find((int) $orden['turno_id']) : null,
       'items' => $this->ordenes->items($id),
+      // Para que el botón "Terminar el trabajo" diga qué va a pasar.
+      'avisaListo' => $this->notificaciones->avisoListoActivo() && !$this->notificaciones->vehiculoListoAvisado($id) && !empty($cliente['email']),
       'pagos' => $pagos,
       'saldo' => round((float) $orden['total'] - array_sum(array_column($pagos, 'monto')), 2),
       'formasPago' => $this->configuracion->obtener()['trabajo']['forma_pago'],
@@ -144,8 +149,18 @@ final class OrdenController extends Controller
       $mensaje .= $this->avisarVehiculoListo($id);
     }
 
-    // La pantalla se recarga después del cambio: el mensaje se muestra como aviso.
-    $this->success($mensaje);
+    // La pantalla se recarga después del cambio: el mensaje se muestra como aviso. Desde los
+    // botones de la ficha, lo que se revierte sin efectos afuera (no "terminar": avisa al
+    // cliente y mueve stock) se hace sin preguntar y se ofrece "Deshacer".
+    $revertible = !$request->isAjax() && $request->string('deshaciendo') !== '1'
+      && $estado !== EstadoOrden::Finalizado && $anterior !== EstadoOrden::Finalizado->value && $anterior !== $estado->value;
+    $revertible
+      ? $this->hechoConDeshacer($mensaje, "ordenes/{$id}/estado", ['estado' => $anterior])
+      : $this->success($mensaje);
+    if (!$request->isAjax()) {
+      // Botones de la ficha ("Empezar el trabajo", "Terminar el trabajo"): vuelve a la orden.
+      $this->redirect("/ordenes/{$id}");
+    }
     $this->json(['status' => 'success', 'message' => $mensaje]);
   }
 
@@ -161,7 +176,7 @@ final class OrdenController extends Controller
 
       return $canal !== null ? " Le avisamos al cliente por {$canal} que el vehículo está listo." : ' El cliente no tiene email para avisarle que está listo.';
     } catch (\RuntimeException $e) {
-      $this->error("No se pudo avisar al cliente que el vehículo está listo. {$e->getMessage()}");
+      $this->aviso("El trabajo quedó terminado, pero no se pudo avisar al cliente que el vehículo está listo. {$e->getMessage()}");
 
       return '';
     }
@@ -248,7 +263,7 @@ final class OrdenController extends Controller
     $pendiente = 'El cliente tiene que volver a aceptar el presupuesto modificado';
 
     if (!$this->notificaciones->hayCanalDisponible()) {
-      $this->error("{$pendiente}: no hay canal de envío configurado, avisale por otro medio.");
+      $this->aviso("{$pendiente}: no hay canal de envío configurado, avisale por otro medio.");
 
       return;
     }
@@ -257,9 +272,10 @@ final class OrdenController extends Controller
       $canal = $this->notificaciones->enviarPresupuestoModificado($id);
       $canal !== null
         ? $this->success("Orden actualizada. Como el cliente ya había aceptado el presupuesto, le avisamos del cambio por {$canal} para que lo vuelva a aceptar.")
-        : $this->error("{$pendiente}, pero no tiene email cargado: avisale por otro medio.");
+        : $this->aviso("{$pendiente}, pero no tiene email cargado: avisale por otro medio.");
     } catch (\RuntimeException $e) {
-      $this->error("{$pendiente}. {$e->getMessage()}");
+      // También una ValidationException: p. ej., se quitaron todos los ítems y no hay presupuesto que mandar.
+      $this->aviso("{$pendiente}. {$e->getMessage()}");
     }
   }
 

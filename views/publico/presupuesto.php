@@ -63,7 +63,7 @@
           <button type="submit" class="btn btn-success btn-lg"><?= icono('check-lg') ?> Acepto el presupuesto</button>
         </form>
         <?php if ($orden['presupuesto_respuesta'] !== 'rechazado'): ?>
-          <form action="<?= url("presupuesto/{$token}") ?>" method="POST" data-confirm="¿Seguro que no aceptás el presupuesto?">
+          <form action="<?= url("presupuesto/{$token}") ?>" method="POST" data-confirm="¿Seguro que no aceptás el presupuesto?" data-confirm-aceptar="No acepto el presupuesto">
             <?= csrf_field() ?>
             <input type="hidden" name="accion" value="rechazar">
             <button type="submit" class="btn btn-outline-danger btn-lg">No lo acepto</button>

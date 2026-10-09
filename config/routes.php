@@ -17,6 +17,7 @@ use App\Controllers\PrecioController;
 use App\Controllers\ProveedorController;
 use App\Controllers\PublicoController;
 use App\Controllers\PwaController;
+use App\Controllers\RecepcionController;
 use App\Controllers\RegistroController;
 use App\Controllers\ReporteController;
 use App\Controllers\RepuestoController;
@@ -53,6 +54,13 @@ return function (Router $r): void {
 
   $r->get('/', [HomeController::class, 'index']);
   $r->get('/buscar', [BusquedaController::class, 'index']);
+  $r->get('/buscar/sugerencias', [BusquedaController::class, 'sugerencias']);
+
+  // Llegó un auto: recepción en un solo paso
+  $r->get('/recepcion', [RecepcionController::class, 'create']);
+  $r->post('/recepcion', [RecepcionController::class, 'store']);
+  $r->get('/recepcion/patente', [RecepcionController::class, 'patente']);
+  $r->get('/recepcion/cliente', [RecepcionController::class, 'cliente']);
 
   // Clientes
   $r->get('/clientes', [ClienteController::class, 'index']);
@@ -132,6 +140,7 @@ return function (Router $r): void {
   $r->get('/turnos/datos', [TurnoController::class, 'datos']);
   $r->get('/turnos/crear', [TurnoController::class, 'create']);
   $r->get('/turnos/semana', [TurnoController::class, 'semana']);
+  $r->get('/turnos/horarios', [TurnoController::class, 'horarios']);
   $r->post('/turnos', [TurnoController::class, 'store']);
   $r->get('/turnos/{id}/editar', [TurnoController::class, 'edit']);
   $r->post('/turnos/{id}', [TurnoController::class, 'update']);

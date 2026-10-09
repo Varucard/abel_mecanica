@@ -38,7 +38,7 @@ final class RepuestoService
     $precio = Validator::importe((string) ($input['precio'] ?? ''));
     $costoTexto = trim((string) ($input['precio_costo'] ?? ''));
     $costo = $costoTexto === '' ? null : Validator::importe($costoTexto);
-    $minimo = Validator::importe((string) ($input['stock_minimo'] ?? '0') ?: '0');
+    $minimo = Validator::cantidad((string) ($input['stock_minimo'] ?? '0') ?: '0');
     $proveedorId = (int) ($input['proveedor_id'] ?? 0) ?: null;
     $descripcion = Validator::nullable((string) ($input['descripcion'] ?? ''));
 

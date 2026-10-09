@@ -27,8 +27,13 @@ final class VehiculoService
     private readonly ClienteRepository $clientes,
     private readonly ModeloRepository $modelos,
     private readonly Auditor $auditor,
+    private readonly ModeloService $modeloService,
+    private readonly MarcaService $marcaService,
   ) {
   }
+
+  /** Prefijo del modelo escrito a mano en el formulario (no está en el catálogo todavía). */
+  public const MODELO_NUEVO = 'nuevo:';
 
   public static function anioMaximo(): int
   {
@@ -51,20 +56,56 @@ final class VehiculoService
   /** @param array<string, mixed> $input */
   public function crear(array $input): int
   {
-    $vehiculo = $this->construir($input);
-    $id = $this->persistir($vehiculo);
-    $this->auditor->registrar('crear', 'vehiculo', $id, "Vehículo registrado: {$vehiculo->patente}");
+    // Si el modelo es nuevo y algo del vehículo no valida, el modelo tampoco queda creado.
+    return $this->vehiculos->transaction(function () use ($input) {
+      $vehiculo = $this->construir($this->conModelo($input));
+      $id = $this->persistir($vehiculo);
+      $this->auditor->registrar('crear', 'vehiculo', $id, "Vehículo registrado: {$vehiculo->patente}");
 
-    return $id;
+      return $id;
+    });
+  }
+
+  /** Normaliza una patente como se guarda: mayúsculas, sin espacios ni guiones. */
+  public static function normalizarPatente(string $patente): string
+  {
+    return strtoupper(preg_replace('/[\s.-]/', '', $patente));
+  }
+
+  /**
+   * Resuelve la marca y el modelo escritos a mano ("nuevo:Peugeot", "nuevo:208"): los busca
+   * en el catálogo o los agrega, y deja sus ids en marca_id y modelo_id. Va dentro de la
+   * transacción de crear()/actualizar(): si el vehículo no valida, tampoco quedan creados.
+   *
+   * @param array<string, mixed> $input
+   * @return array<string, mixed>
+   */
+  private function conModelo(array $input): array
+  {
+    $marca = (string) ($input['marca_id'] ?? '');
+    if (str_starts_with($marca, self::MODELO_NUEVO)) {
+      $input['marca_id'] = $this->marcaService->obtenerOCrear(substr($marca, strlen(self::MODELO_NUEVO)));
+    }
+
+    $modelo = (string) ($input['modelo_id'] ?? '');
+    if (!str_starts_with($modelo, self::MODELO_NUEVO)) {
+      return $input;
+    }
+
+    $input['modelo_id'] = $this->modeloService->obtenerOCrear((int) ($input['marca_id'] ?? 0), substr($modelo, strlen(self::MODELO_NUEVO)));
+
+    return $input;
   }
 
   /** @param array<string, mixed> $input */
   public function actualizar(int $id, array $input): void
   {
     $this->obtener($id);
-    $vehiculo = $this->construir($input, $id);
-    $this->persistir($vehiculo);
-    $this->auditor->registrar('editar', 'vehiculo', $id, "Vehículo editado: {$vehiculo->patente}");
+    $this->vehiculos->transaction(function () use ($id, $input) {
+      $vehiculo = $this->construir($this->conModelo($input), $id);
+      $this->persistir($vehiculo);
+      $this->auditor->registrar('editar', 'vehiculo', $id, "Vehículo editado: {$vehiculo->patente}");
+    });
   }
 
   /** @param array<string, mixed> $archivo elemento de $_FILES */
@@ -130,7 +171,7 @@ final class VehiculoService
     $marcaId = (int) ($input['marca_id'] ?? 0);
     $modeloId = (int) ($input['modelo_id'] ?? 0);
     $anio = (int) ($input['anio'] ?? 0);
-    $patente = strtoupper(preg_replace('/[\s-]/', '', (string) ($input['patente'] ?? '')));
+    $patente = self::normalizarPatente((string) ($input['patente'] ?? ''));
     $kmRaw = trim((string) ($input['kilometraje'] ?? ''));
     $km = $kmRaw === '' ? null : filter_var($kmRaw, FILTER_VALIDATE_INT);
     $combustibleRaw = trim((string) ($input['combustible'] ?? ''));

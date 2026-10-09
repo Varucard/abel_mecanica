@@ -1,4 +1,27 @@
 /* Elementos sueltos. Los colores salen de los tokens. */
+
+/*
+ * Letra un punto más grande que la de Bootstrap (17px en vez de 16px), se lee mejor en el
+ * taller. Va en la raíz y no en el texto: así textos, botones, campos y títulos crecen
+ * parejo y no quedan dos tamaños mezclados.
+ */
+html {
+  font-size: 106.25%;
+}
+
+/* Tamaño de letra a elección (botones A− / A+, se guarda por navegador): todo escala parejo. */
+html[data-letra="-1"] { font-size: 93.75%; }
+html[data-letra="1"]  { font-size: 118.75%; }
+html[data-letra="2"]  { font-size: 131.25%; }
+
+/*
+ * Foco del teclado bien visible en todo lo que se puede usar (Tab): un anillo grueso que se
+ * ve sobre cualquier color de botón. Solo con teclado (:focus-visible), no al hacer clic.
+ */
+:where(a, button, .btn, summary, input, select, textarea, [tabindex]):focus-visible {
+  outline: 3px solid var(--app-foco);
+  outline-offset: 2px;
+}
 body {
   background-color: var(--app-fondo);
   color: var(--app-texto);

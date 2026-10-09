@@ -16,25 +16,32 @@
   <meta name="csrf-token" content="<?= e(session()->csrfToken()) ?>">
 </head>
 
-<body class="con-barra-inferior" data-seccion="<?= e(current_section()) ?>">
+<?php // Atajos de teclado (app.js): tecla => [destino, descripción]. "?" muestra la lista. ?>
+<?php $atajos = ['n' => [url('recepcion'), 'Llegó un auto'], 't' => [url('turnos/crear'), 'Nuevo turno'], 'o' => [url('ordenes'), 'Ver órdenes'], 'i' => [url('/'), 'Ir al inicio']]; ?>
+<body class="con-barra-inferior" data-seccion="<?= e(current_section()) ?>" data-atajos="<?= e(json_encode($atajos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>"
+  data-volvio-con-errores="<?= session()->hasOldInput() ? '1' : '0' ?>">
+  <?php // Con teclado, el primer Tab ofrece saltar el menú y el buscador. ?>
+  <a href="#contenido" class="visually-hidden-focusable saltar-al-contenido">Saltar al contenido</a>
   <div class="container app-marco my-md-3">
     <div class="card">
-      <header class="card-header app-encabezado">
-        <h1 class="mb-0 d-flex align-items-center gap-3 flex-wrap">
-          <?= e($title ?? '') ?>
-          <img src="<?= asset('img/logo.png') ?>" alt="Logo del taller" class="rounded-circle" width="80" height="80">
-          <span class="ms-auto d-none d-md-flex align-items-center gap-2 flex-wrap fs-6">
-            <?= $view->partial('partials/acciones_usuario', ['clase' => 'btn btn-sm btn-encabezado']) ?>
-          </span>
-        </h1>
+      <header class="card-header app-encabezado d-flex align-items-center gap-3 flex-wrap">
+        <a href="<?= url('/') ?>" class="app-logo" title="Ir al inicio"><img src="<?= asset('img/logo.png') ?>" alt="Inicio" class="rounded-circle" width="48" height="48"></a>
+        <?php // El título es solo el nombre de la pantalla: el logo y los botones van al lado, no adentro. ?>
+        <h1 class="mb-0"><?= e($title ?? '') ?></h1>
+        <div class="ms-auto d-none d-md-flex align-items-center gap-2 flex-wrap">
+          <?= $view->partial('partials/acciones_usuario', ['clase' => 'btn btn-sm btn-encabezado']) ?>
+        </div>
       </header>
 
       <div class="card-body">
         <?= $view->partial('partials/navbar') ?>
-        <?= $view->partial('partials/alerts') ?>
-        <?= $content ?>
+        <main id="contenido" tabindex="-1">
+          <?= $view->partial('partials/alerts') ?>
+          <?= $content ?>
+        </main>
       </div>
     </div>
+    <?= $view->partial('partials/pie') ?>
   </div>
 
   <?= $view->partial('partials/menu_movil') ?>

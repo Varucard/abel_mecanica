@@ -18,6 +18,7 @@
         <?= $content ?>
       </div>
     </div>
+    <?= $view->partial('partials/pie') ?>
   </main>
   <script src="<?= asset('vendor/bootstrap.bundle.min.js') ?>"></script>
   <script src="<?= asset('js/app.js') ?>"></script>

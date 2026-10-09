@@ -18,7 +18,7 @@
 <div class="form-check form-switch mb-3">
   <input class="form-check-input" type="checkbox" role="switch" id="aceptar_inicia_trabajo" name="aceptar_inicia_trabajo" value="1"
     <?= (session()->hasOldInput() ? old('aceptar_inicia_trabajo') : $valores['aceptar_inicia_trabajo']) ? 'checked' : '' ?>>
-  <label class="form-check-label" for="aceptar_inicia_trabajo">Cuando el cliente acepta el presupuesto desde el link, pasar la orden a <em>En proceso</em></label>
+  <label class="form-check-label" for="aceptar_inicia_trabajo">Cuando el cliente acepta el presupuesto desde el link, pasar la orden a <em>En reparación</em></label>
 </div>
 <?= $view->partial('componentes/campo', [
   'nombre' => 'mensaje_legal', 'etiqueta' => 'Mensaje legal', 'tipo' => 'textarea', 'columna' => 'mb-3',

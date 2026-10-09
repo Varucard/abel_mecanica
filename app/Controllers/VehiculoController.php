@@ -91,20 +91,26 @@ final class VehiculoController extends Controller
 
   public function create(Request $request): void
   {
-    // Permite llegar desde la ficha del cliente con el cliente ya elegido.
-    $this->form('Registrar vehículo', ($c = $request->int('cliente_id')) ? ['cliente_id' => $c] : null, true);
+    // Permite llegar desde la ficha del cliente con el cliente ya elegido; con ?para=turno,
+    // es el paso 2 de "turno para un cliente nuevo" y al guardar vuelve al turno.
+    $this->form('Nuevo vehículo', ($c = $request->int('cliente_id')) ? ['cliente_id' => $c] : null, true, $request->query('para') === 'turno');
   }
 
   public function store(Request $request): void
   {
     $this->verifyCsrf($request);
+    $paraTurno = $request->string('para') === 'turno';
 
     try {
       $id = $this->service->crear($request->all());
     } catch (ValidationException $e) {
-      $this->backWithErrors('/vehiculos/crear', $e, $request);
+      $this->backWithErrors('/vehiculos/crear' . ($paraTurno ? '?para=turno' : ''), $e, $request);
     }
 
+    if ($paraTurno) {
+      $this->success('Cliente y vehículo cargados. Ahora elegí el día y la hora del turno.');
+      $this->redirect('/turnos/crear?cliente_id=' . (int) $request->int('cliente_id'));
+    }
     $this->success('Vehículo registrado correctamente.');
     $this->redirect("/vehiculos/{$id}");
   }
@@ -133,7 +139,9 @@ final class VehiculoController extends Controller
     $this->verifyCsrf($request);
 
     $estado = $this->service->alternarEstado($id);
-    $this->success($estado === Estado::Activo ? 'Vehículo activado.' : 'Vehículo desactivado.');
+    // Se hace sin preguntar y se ofrece deshacer (el mismo POST vuelve al estado anterior).
+    $mensaje = $estado === Estado::Activo ? 'Vehículo activado.' : 'Vehículo desactivado: ya no aparece al dar turnos ni al abrir órdenes. No se borró nada.';
+    $request->string('deshaciendo') === '1' ? $this->success($mensaje) : $this->hechoConDeshacer($mensaje, "vehiculos/{$id}/estado");
     $this->redirect('/vehiculos');
   }
 
@@ -155,7 +163,7 @@ final class VehiculoController extends Controller
   }
 
   /** @param array<string, mixed>|null $vehiculo */
-  private function form(string $title, ?array $vehiculo, bool $nuevo = false): void
+  private function form(string $title, ?array $vehiculo, bool $nuevo = false, bool $paraTurno = false): void
   {
     $marcaId = (int) old('marca_id', $vehiculo['marca_id'] ?? 0);
 
@@ -169,6 +177,7 @@ final class VehiculoController extends Controller
       'anioMinimo' => VehiculoService::ANIO_MINIMO,
       'anioMaximo' => VehiculoService::anioMaximo(),
       'combustibles' => \App\Enums\Combustible::cases(),
+      'paraTurno' => $paraTurno,
     ]);
   }
 }

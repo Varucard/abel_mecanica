@@ -16,7 +16,8 @@ $dato = fn(?string $v) => $v !== null && $v !== '' ? e($v) : '—';
       <?php if ($vehiculo['estado'] !== 'activo'): ?><span class="badge bg-secondary fs-6">inactivo</span><?php endif; ?>
     </h4>
     <div class="d-flex gap-2">
-      <a href="<?= url('ordenes/crear?vehiculo_id=' . $vehiculo['id']) ?>" class="btn btn-sm btn-seccion"><?= icono('plus-lg') ?> Nueva orden</a>
+      <?php // Por "Llegó un auto": avisa si ya tiene una orden abierta, el formulario completo no. ?>
+      <a href="<?= url('recepcion?patente=' . urlencode($vehiculo['patente'])) ?>" class="btn btn-sm btn-seccion"><?= icono('car-front') ?> Recibir este auto</a>
       <?= boton_accion("vehiculos/{$vehiculo['id']}/editar", 'pencil', 'Editar', 'btn-outline-primary') ?>
     </div>
   </div>
@@ -37,6 +38,8 @@ $dato = fn(?string $v) => $v !== null && $v !== '' ? e($v) : '—';
           <a class="small" href="<?= url("ordenes/{$proximoService['orden_id']}") ?>">(orden #<?= (int) $proximoService['orden_id'] ?>)</a>
         <?php else: ?>—<?php endif; ?>
       </dd>
+      <?php // Observaciones ocupa su propio renglón: a la derecha de "Próximo service" quedaba partido. ?>
+      <div class="w-100" aria-hidden="true"></div>
       <dt class="col-sm-2">Observaciones</dt><dd class="col-sm-10"><?= nl2br($dato($vehiculo['detalle'])) ?></dd>
     </dl>
   </div>
