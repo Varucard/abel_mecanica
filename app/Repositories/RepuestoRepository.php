@@ -47,6 +47,24 @@ final class RepuestoRepository extends Repository
     return array_map('floatval', $this->fetchPairs("SELECT id, precio FROM repuestos WHERE id IN ({$placeholders})", $ids));
   }
 
+  /**
+   * @param list<int> $ids
+   * @return array<int, ?float> precio de costo indexado por id (null si no tiene costo cargado)
+   */
+  public function costos(array $ids): array
+  {
+    if ($ids === []) {
+      return [];
+    }
+
+    $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+    return array_map(
+      fn($costo) => $costo === null ? null : (float) $costo,
+      $this->fetchPairs("SELECT id, precio_costo FROM repuestos WHERE id IN ({$placeholders})", $ids),
+    );
+  }
+
   public function save(Repuesto $r): int
   {
     $params = [$r->codigo, $r->nombre, $r->descripcion, $r->precio, $r->precioCosto, $r->stockMinimo, $r->proveedorId];

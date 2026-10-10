@@ -10,7 +10,7 @@ use App\Support\ConsultaPaginada;
 
 final class OrdenRepository extends Repository
 {
-  /** Listado con cliente, vehículo y resumen de ítems. */
+  /** Listado con cliente, vehículo y resumen de ítems (los repuestos que trajo el cliente, aparte). */
   public function all(): array
   {
     return $this->listado('', []);
@@ -33,7 +33,11 @@ final class OrdenRepository extends Repository
               (SELECT GROUP_CONCAT(s.nombre ORDER BY s.nombre SEPARATOR ', ')
                  FROM ordenes_servicios os INNER JOIN servicios s ON s.id = os.servicio_id WHERE os.orden_id = o.id) AS servicios,
               (SELECT GROUP_CONCAT(r.nombre ORDER BY r.nombre SEPARATOR ', ')
-                 FROM ordenes_servicios os INNER JOIN repuestos r ON r.id = os.repuesto_id WHERE os.orden_id = o.id) AS repuestos
+                 FROM ordenes_servicios os INNER JOIN repuestos r ON r.id = os.repuesto_id
+                WHERE os.orden_id = o.id AND os.provisto_cliente = 0) AS repuestos,
+              (SELECT GROUP_CONCAT(COALESCE(r.nombre, os.descripcion) ORDER BY COALESCE(r.nombre, os.descripcion) SEPARATOR ', ')
+                 FROM ordenes_servicios os LEFT JOIN repuestos r ON r.id = os.repuesto_id
+                WHERE os.orden_id = o.id AND os.provisto_cliente = 1) AS repuestos_cliente
          FROM ordenes o
          INNER JOIN vehiculos v ON v.id = o.vehiculo_id
          INNER JOIN clientes c ON c.id = o.cliente_id
@@ -97,7 +101,10 @@ final class OrdenRepository extends Repository
                 WHERE os.orden_id = o.id) AS servicios,
               (SELECT GROUP_CONCAT(r.nombre ORDER BY r.nombre SEPARATOR ', ')
                  FROM ordenes_servicios os INNER JOIN repuestos r ON r.id = os.repuesto_id
-                WHERE os.orden_id = o.id) AS repuestos
+                WHERE os.orden_id = o.id AND os.provisto_cliente = 0) AS repuestos,
+              (SELECT GROUP_CONCAT(COALESCE(r.nombre, os.descripcion) ORDER BY COALESCE(r.nombre, os.descripcion) SEPARATOR ', ')
+                 FROM ordenes_servicios os LEFT JOIN repuestos r ON r.id = os.repuesto_id
+                WHERE os.orden_id = o.id AND os.provisto_cliente = 1) AS repuestos_cliente
          FROM ordenes o
          INNER JOIN vehiculos v ON v.id = o.vehiculo_id
          INNER JOIN clientes c ON c.id = o.cliente_id
@@ -128,17 +135,17 @@ final class OrdenRepository extends Repository
     );
   }
 
-  /** Ítems de la orden con su descripción. */
+  /** Ítems de la orden con su descripción: primero los servicios y, al final, lo que trajo el cliente. */
   public function items(int $ordenId): array
   {
     return $this->fetchAll(
-      'SELECT os.servicio_id, os.repuesto_id, os.cantidad, os.precio_unitario, os.costo,
-              s.nombre AS servicio_nombre, r.nombre AS repuesto_nombre
+      'SELECT os.servicio_id, os.repuesto_id, os.descripcion, os.cantidad, os.precio_unitario, os.costo,
+              os.a_costo, os.provisto_cliente, s.nombre AS servicio_nombre, r.nombre AS repuesto_nombre
          FROM ordenes_servicios os
          LEFT JOIN servicios s ON s.id = os.servicio_id
          LEFT JOIN repuestos r ON r.id = os.repuesto_id
         WHERE os.orden_id = ?
-        ORDER BY os.repuesto_id IS NOT NULL, s.nombre, r.nombre',
+        ORDER BY os.servicio_id IS NULL, os.provisto_cliente, s.nombre, COALESCE(r.nombre, os.descripcion)',
       [$ordenId]
     );
   }
@@ -176,11 +183,14 @@ final class OrdenRepository extends Repository
       }
 
       $stmt = $this->db->prepare(
-        'INSERT INTO ordenes_servicios (orden_id, servicio_id, repuesto_id, cantidad, precio_unitario, costo)
-         VALUES (?, ?, ?, ?, ?, ?)'
+        'INSERT INTO ordenes_servicios (orden_id, servicio_id, repuesto_id, descripcion, cantidad, precio_unitario, costo, a_costo, provisto_cliente)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       );
       foreach ($orden->items as $item) {
-        $stmt->execute([$id, $item->servicioId, $item->repuestoId, $item->cantidad, $item->precioUnitario, $item->subtotal()]);
+        $stmt->execute([
+          $id, $item->servicioId, $item->repuestoId, $item->descripcion, $item->cantidad, $item->precioUnitario, $item->subtotal(),
+          (int) $item->aCosto, (int) $item->provistoCliente,
+        ]);
       }
 
       return $id;

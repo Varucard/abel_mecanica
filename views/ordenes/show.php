@@ -19,7 +19,8 @@ $pagado = (float) $orden['total'] - $saldo;
 $id = (int) $orden['id'];
 $editable = OrdenService::editable($estado);
 $sinItems = $items === [];
-$repuestos = count(array_filter($items, fn($i) => $i['repuesto_id'] !== null));
+// Solo los repuestos que salen del stock (no los que trajo el cliente).
+$repuestos = count(array_filter($items, [\App\Services\StockService::class, 'mueveStock']));
 
 /** Botón que cambia el estado de la orden (POST a ordenes/{id}/estado), con su confirmación. */
 // Sin $confirmacion se hace al toque y después se ofrece "Deshacer" (OrdenController::cambiarEstado).
@@ -235,10 +236,13 @@ $actual = array_search($estado, $pasos, true);
         <?php endif; ?>
         <?php foreach ($items as $item): ?>
           <tr>
-            <td><?= e($item['repuesto_id'] !== null ? 'Repuesto: ' . $item['repuesto_nombre'] : $item['servicio_nombre']) ?></td>
+            <td>
+              <?= e(item_orden($item)) ?>
+              <?php if ($item['a_costo']): ?><span class="badge text-bg-light border" title="Se cobra al precio de costo. El cliente no ve esta marca.">a costo</span><?php endif; ?>
+            </td>
             <td class="text-end"><?= qty($item['cantidad']) ?></td>
-            <td class="text-end"><?= importe($item['precio_unitario']) ?></td>
-            <td class="text-end"><?= importe($item['costo']) ?></td>
+            <td class="text-end"><?= $item['provisto_cliente'] ? '<span class="text-muted">—</span>' : importe($item['precio_unitario']) ?></td>
+            <td class="text-end"><?= $item['provisto_cliente'] ? '<span class="text-muted">—</span>' : importe($item['costo']) ?></td>
           </tr>
         <?php endforeach; ?>
       </tbody>

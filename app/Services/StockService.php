@@ -16,7 +16,8 @@ use App\Support\Validator;
  *
  * Regla: una orden descuenta sus repuestos al pasar a "finalizado" y los
  * repone si deja de estar finalizada. La bandera `stock_descontado` de la
- * orden evita descontar dos veces.
+ * orden evita descontar dos veces. Los repuestos que trajo el cliente no
+ * salen del stock del taller.
  */
 final class StockService
 {
@@ -102,7 +103,7 @@ final class StockService
     if (!$this->configuracion->seccion('stock')['permitir_negativo']) {
       $faltantes = [];
       foreach ($this->ordenes->items($ordenId) as $item) {
-        if ($item['repuesto_id'] === null) {
+        if (!self::mueveStock($item)) {
           continue;
         }
         $repuesto = $this->repuesto((int) $item['repuesto_id']);
@@ -125,7 +126,7 @@ final class StockService
   {
     $this->ordenes->transaction(function () use ($ordenId, $signo, $usuarioId, $motivo) {
       foreach ($this->ordenes->items($ordenId) as $item) {
-        if ($item['repuesto_id'] !== null) {
+        if (self::mueveStock($item)) {
           $this->stock->registrar(
             (int) $item['repuesto_id'],
             $signo < 0 ? 'egreso' : 'ingreso',
@@ -139,6 +140,12 @@ final class StockService
       }
       $this->ordenes->setStockDescontado($ordenId, $signo < 0);
     });
+  }
+
+  /** ¿El ítem de la orden sale del stock? Solo los repuestos del taller (no los que trajo el cliente). */
+  public static function mueveStock(array $item): bool
+  {
+    return $item['repuesto_id'] !== null && !$item['provisto_cliente'];
   }
 
   /** @return array<string, mixed> */

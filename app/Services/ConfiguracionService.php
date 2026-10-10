@@ -168,6 +168,7 @@ final class ConfiguracionService
       'forma_pago' => self::lineas($input['forma_pago'] ?? ''),
       'observaciones' => self::lineas($input['observaciones'] ?? ''),
       'mensaje_legal' => trim((string) ($input['mensaje_legal'] ?? '')),
+      'garantia_repuestos_cliente' => trim((string) ($input['garantia_repuestos_cliente'] ?? '')),
       'aceptar_inicia_trabajo' => !empty($input['aceptar_inicia_trabajo']),
     ];
 

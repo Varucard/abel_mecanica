@@ -23,7 +23,7 @@ use App\Enums\EstadoOrden;
             <td><a href="<?= url("ordenes/{$o['id']}") ?>" class="fw-semibold">#<?= (int) $o['id'] ?></a></td>
             <td class="d-none d-sm-table-cell"><?= format_date($o['created_at']) ?></td>
             <td><?= e($o['vehiculo']) ?></td>
-            <td class="small d-none d-md-table-cell"><?= e(trim(($o['servicios'] ?? '') . ($o['repuestos'] ? ' · ' . $o['repuestos'] : ''), ' ·')) ?></td>
+            <td class="small d-none d-md-table-cell"><?= e(trim(($o['servicios'] ?? '') . ($o['repuestos'] ? ' · ' . $o['repuestos'] : '') . ($o['repuestos_cliente'] ? ' · Trajo el cliente: ' . $o['repuestos_cliente'] : ''), ' ·')) ?></td>
             <td><?= $view->partial('componentes/estado', ['estado' => $estado]) ?></td>
             <td class="text-end"><?= importe($o['total']) ?></td>
             <td class="text-end d-none d-md-table-cell <?= (float) $o['saldo'] > 0 && $estado !== EstadoOrden::Cancelado ? 'text-danger' : '' ?>">

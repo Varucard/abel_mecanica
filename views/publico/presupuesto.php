@@ -10,6 +10,7 @@
  * @var bool $admiteRespuesta
  * @var bool $vigente
  * @var bool $portal
+ * @var bool $provistosCliente  ¿hay repuestos que trajo el cliente? (se muestra el aviso de garantía)
  */
 ?>
 <div class="card">
@@ -35,16 +36,27 @@
         <tbody>
           <?php foreach ($items as $item): ?>
             <tr>
-              <td><?= e($item['repuesto_id'] !== null ? 'Repuesto: ' . $item['repuesto_nombre'] : $item['servicio_nombre']) ?></td>
+              <td><?= e(item_orden($item)) ?></td>
               <td class="text-end"><?= qty($item['cantidad']) ?></td>
-              <td class="text-end"><?= importe($item['precio_unitario']) ?></td>
-              <td class="text-end"><?= importe($item['costo']) ?></td>
+              <td class="text-end"><?= $item['provisto_cliente'] ? '—' : importe($item['precio_unitario']) ?></td>
+              <td class="text-end"><?= $item['provisto_cliente'] ? '—' : importe($item['costo']) ?></td>
             </tr>
           <?php endforeach; ?>
         </tbody>
         <tfoot><tr><th colspan="3" class="text-end">Total</th><th class="text-end"><?= importe($total) ?></th></tr></tfoot>
       </table>
     </div>
+    <?php if ($provistosCliente): ?>
+      <div class="alert alert-light border small">
+        <?= icono('box-seam') ?> <strong>Repuestos que trajiste:</strong>
+        <?= e(implode(', ', array_map(
+          fn($i) => ($i['repuesto_nombre'] ?? $i['descripcion']) . ((float) $i['cantidad'] != 1 ? ' (×' . qty($i['cantidad']) . ')' : ''),
+          array_filter($items, fn($i) => (bool) $i['provisto_cliente']),
+        ))) ?>.
+        No se cobran en este presupuesto.
+        <?php if ($trabajo['garantia_repuestos_cliente'] !== ''): ?><div class="mt-1 text-muted"><?= e($trabajo['garantia_repuestos_cliente']) ?></div><?php endif; ?>
+      </div>
+    <?php endif; ?>
 
     <?php if ($orden['presupuesto_respuesta'] === 'aceptado'): ?>
       <p class="text-success fs-5"><?= icono('check-circle-fill') ?> Aceptaste este presupuesto el <?= format_date($orden['presupuesto_respuesta_en']) ?>.</p>

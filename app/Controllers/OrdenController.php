@@ -62,7 +62,7 @@ final class OrdenController extends Controller
     $turno = ($turnoId = $request->int('turno_id')) ? $this->turnos->find($turnoId) : null;
     $orden = $turno ? ['turno_id' => (int) $turno['id'], 'diagnostico' => $turno['descripcion']] : null;
 
-    $this->form('Nueva orden', $orden, ['servicio' => [], 'repuesto' => []], $turno ? (int) $turno['vehiculo_id'] : (int) $request->int('vehiculo_id'), true);
+    $this->form('Nueva orden', $orden, ['servicio' => [], 'repuesto' => [], 'pieza' => []], $turno ? (int) $turno['vehiculo_id'] : (int) $request->int('vehiculo_id'), true);
   }
 
   public function store(Request $request): void
@@ -79,12 +79,17 @@ final class OrdenController extends Controller
       $this->redirect('/ordenes');
     }
 
-    $detalle = ['servicio' => [], 'repuesto' => []];
+    $detalle = ['servicio' => [], 'repuesto' => [], 'pieza' => []];
     foreach ($this->ordenes->items($id) as $item) {
+      if ($item['descripcion'] !== null) {
+        $detalle['pieza'][] = ['descripcion' => $item['descripcion'], 'cantidad' => (float) $item['cantidad']];
+        continue;
+      }
       $tipo = $item['repuesto_id'] !== null ? 'repuesto' : 'servicio';
       $detalle[$tipo][(int) $item["{$tipo}_id"]] = [
         'cantidad' => (float) $item['cantidad'],
         'precio' => (float) $item['precio_unitario'],
+        'modo' => OrdenService::modo($item),
       ];
     }
 
@@ -242,6 +247,7 @@ final class OrdenController extends Controller
         $id,
         $request->int('mecanico_id') ?: null,
         $request->all(),
+        self::piezasCliente((array) $request->input('pieza_descripcion', []), (array) $request->input('pieza_cantidad', [])),
       );
     } catch (ValidationException $e) {
       $this->backWithErrors($id ? "/ordenes/{$id}/editar" : '/ordenes/crear', $e, $request);
@@ -280,15 +286,16 @@ final class OrdenController extends Controller
   }
 
   /**
-   * Arma el mapa id => [cantidad, precio] a partir de los campos del formulario
-   * (servicio_id[], cantidad_servicio[id], precio_servicio[id]).
+   * Arma el mapa id => [cantidad, precio, modo] a partir de los campos del formulario
+   * (servicio_id[], cantidad_servicio[id], precio_servicio[id], modo_repuesto[id]).
    *
-   * @return array<int, array{cantidad: string, precio: string}>
+   * @return array<int, array{cantidad: string, precio: string, modo?: string}>
    */
   private function items(Request $request, string $tipo): array
   {
     $cantidades = (array) $request->input("cantidad_{$tipo}", []);
     $precios = (array) $request->input("precio_{$tipo}", []);
+    $modos = (array) $request->input("modo_{$tipo}", []);
 
     $items = [];
     foreach ($request->intList("{$tipo}_id") as $id) {
@@ -296,14 +303,39 @@ final class OrdenController extends Controller
         'cantidad' => (string) ($cantidades[$id] ?? '1'),
         'precio' => (string) ($precios[$id] ?? ''),
       ];
+      if ($tipo === 'repuesto') {
+        $items[$id]['modo'] = (string) ($modos[$id] ?? 'taller');
+      }
     }
 
     return $items;
   }
 
   /**
+   * Piezas que trae el cliente y no están en el catálogo (pieza_descripcion[], pieza_cantidad[]).
+   * Las filas que quedaron en blanco se ignoran.
+   *
+   * @param array<mixed> $descripciones
+   * @param array<mixed> $cantidades
+   * @return list<array{descripcion: string, cantidad: string}>
+   */
+  private static function piezasCliente(array $descripciones, array $cantidades): array
+  {
+    $piezas = [];
+    foreach (array_values($descripciones) as $i => $descripcion) {
+      $cantidad = (string) (array_values($cantidades)[$i] ?? '1');
+      if (trim((string) $descripcion) === '' && in_array(trim($cantidad), ['', '1'], true)) {
+        continue;
+      }
+      $piezas[] = ['descripcion' => (string) $descripcion, 'cantidad' => $cantidad];
+    }
+
+    return $piezas;
+  }
+
+  /**
    * @param array<string, mixed>|null $orden
-   * @param array{servicio: array<int, array<string, mixed>>, repuesto: array<int, array<string, mixed>>} $detalle
+   * @param array{servicio: array<int, array<string, mixed>>, repuesto: array<int, array<string, mixed>>, pieza: list<array<string, mixed>>} $detalle
    */
   private function form(string $title, ?array $orden, array $detalle, int $vehiculoSugerido = 0, bool $nueva = false): void
   {
@@ -323,10 +355,12 @@ final class OrdenController extends Controller
         $detalle[$tipo] = [];
         $cantidades = (array) old("cantidad_{$tipo}", []);
         $precios = (array) old("precio_{$tipo}", []);
+        $modos = (array) old("modo_{$tipo}", []);
         foreach ((array) old("{$tipo}_id", []) as $itemId) {
-          $detalle[$tipo][(int) $itemId] = ['cantidad' => $cantidades[$itemId] ?? 1, 'precio' => $precios[$itemId] ?? ''];
+          $detalle[$tipo][(int) $itemId] = ['cantidad' => $cantidades[$itemId] ?? 1, 'precio' => $precios[$itemId] ?? '', 'modo' => $modos[$itemId] ?? 'taller'];
         }
       }
+      $detalle['pieza'] = self::piezasCliente((array) old('pieza_descripcion', []), (array) old('pieza_cantidad', []));
     }
 
     $this->render('ordenes/form', [

@@ -562,7 +562,7 @@
             restaurarCampos(form, pendientes);
           }
         }, espera));
-        form.dispatchEvent(new CustomEvent('borrador:restaurado'));
+        form.dispatchEvent(new CustomEvent('borrador:restaurado', { detail: guardado.datos }));
       });
       const aviso = document.createElement('div');
       aviso.className = 'alert alert-info d-flex flex-wrap gap-2 align-items-center';

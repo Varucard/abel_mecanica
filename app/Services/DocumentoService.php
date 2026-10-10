@@ -60,6 +60,8 @@ final class DocumentoService
       'numero' => str_pad((string) $orden['id'], 4, '0', STR_PAD_LEFT),
       'cliente' => $this->clientes->find((int) $orden['cliente_id']),
       'items' => $items,
+      // Si hay repuestos que trajo el cliente, el documento aclara que la garantía no los cubre.
+      'provistosCliente' => array_filter($items, fn($i) => (bool) $i['provisto_cliente']) !== [],
       'total' => array_sum(array_map(fn($i) => (float) $i['costo'], $items)),
       // Km con que ingresó en esta orden; si no se cargó, el último conocido del vehículo.
       'kilometraje' => ($orden['km_ingreso'] ?? $orden['kilometraje']) !== null

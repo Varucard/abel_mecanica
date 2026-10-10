@@ -21,6 +21,11 @@
   <label class="form-check-label" for="aceptar_inicia_trabajo">Cuando el cliente acepta el presupuesto desde el link, pasar la orden a <em>En reparación</em></label>
 </div>
 <?= $view->partial('componentes/campo', [
+  'nombre' => 'garantia_repuestos_cliente', 'etiqueta' => 'Aviso de garantía para los repuestos que trae el cliente', 'tipo' => 'textarea', 'columna' => 'mb-3',
+  'valor' => $valores['garantia_repuestos_cliente'], 'atributos' => ['rows' => 2],
+  'ayuda' => 'Sale en el presupuesto y en el comprobante de entrega solo si la orden lleva algún repuesto que trajo el cliente. Vacío: no se muestra.',
+]) ?>
+<?= $view->partial('componentes/campo', [
   'nombre' => 'mensaje_legal', 'etiqueta' => 'Mensaje legal', 'tipo' => 'textarea', 'columna' => 'mb-3',
   'valor' => $valores['mensaje_legal'], 'atributos' => ['rows' => 2],
 ]) ?>
