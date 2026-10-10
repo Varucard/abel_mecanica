@@ -124,6 +124,11 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
   await tom(p, 'repuesto_id', 'Líquido'); await p.keyboard.press('Escape');
   await p.fill('input[name^="cantidad_repuesto"]', '2'); await p.locator('input[name^="cantidad_repuesto"]').blur();
   await contenido(p, '31-orden-editar');
+  // Los tres modos de un repuesto (sin guardar): la orden 4 lleva lo que trae el cliente.
+  await ir(p, '/ordenes/4/editar');
+  await p.locator('#detalle_orden tr[data-tipo="repuesto"]', { hasText: 'Líquido' }).locator('.js-modo').selectOption('costo');
+  await p.mouse.move(0, 0); await p.waitForTimeout(350);
+  await p.locator('#detalle_orden').locator('xpath=..').screenshot({ path: path.join(DESTINO, '39-repuestos-modos.png') }); console.log('· 39-repuestos-modos');
   await ir(p, '/ordenes/3');
   await contenido(p, '32-orden-reparacion');
   await p.click('button:has-text("Terminar el trabajo")'); await p.waitForSelector('.modal.show'); await p.waitForTimeout(400);
@@ -209,6 +214,8 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
   await pc.screenshot({ path: path.join(DESTINO, '95-portal.png') }); console.log('· 95-portal');
   await pc.fill('#dni', '22333444'); await pc.fill('#patente', 'AB789KL'); await pc.click('form button[type=submit]'); await pc.waitForLoadState();
   await pc.screenshot({ path: path.join(DESTINO, '96-portal-resultado.png') }); console.log('· 96-portal-resultado');
+  await pc.goto(BASE + '/presupuesto/' + 'e'.repeat(64)); // el link fijo de la orden 4 (semilla.php)
+  await pc.screenshot({ path: path.join(DESTINO, '97-presupuesto-cliente.png'), fullPage: true }); console.log('· 97-presupuesto-cliente');
 
   // ---------- Celular ----------
   const m = await sesion({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });

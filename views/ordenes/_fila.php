@@ -9,7 +9,7 @@ $opciones = implode('', array_map(
   $estados
 ));
 
-$sinItems = $o['servicios'] === null && $o['repuestos'] === null;
+$sinItems = $o['servicios'] === null && $o['repuestos'] === null && $o['repuestos_cliente'] === null;
 
 return [
   // En el celular las columnas de cliente y vehículo se pliegan: la patente va acá, a la vista.
@@ -19,6 +19,7 @@ return [
   e($o['vehiculo']) . ($o['mecanico'] ? '<div class="small text-muted">' . icono('wrench') . ' ' . e($o['mecanico']) . '</div>' : ''),
   ($sinItems ? '<span class="text-muted small">Sin trabajos cargados todavía</span>' : '')
     . e($o['servicios'] ?? '') . ($o['repuestos'] ? '<div class="small text-muted mt-1"><strong>Repuestos:</strong> ' . e($o['repuestos']) . '</div>' : '')
+    . ($o['repuestos_cliente'] ? '<div class="small text-muted mt-1"><strong>Trajo el cliente:</strong> ' . e($o['repuestos_cliente']) . '</div>' : '')
     . ($o['presupuesto_respuesta'] ? '<div class="small ' . ($o['presupuesto_respuesta'] === 'aceptado' ? 'text-success">' . icono('check-lg') . ' Presupuesto aceptado' : 'text-danger">' . icono('x-lg') . ' Presupuesto rechazado') . '</div>' : ''),
   importe($o['total']),
   match (true) {

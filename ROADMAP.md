@@ -157,6 +157,15 @@ Hallazgos de una revisión usando la app en computadora y celular, claro y oscur
 | 94 | **Borradores**: "Llegó un auto", orden, turno, cliente y vehículo se recuperan si se cierra la pestaña o se corta la luz. Se borran al guardar, al salir o a las 8 h. | ✅ |
 | 95 | **Tamaño de letra A− / A+**, guardado por navegador (WCAG 1.4.4). | ✅ |
 
+## Repuestos a costo y del cliente (2026-10-09)
+
+Pedido del taller: poder cobrar un repuesto sin ganancia y registrar los que trae el cliente.
+
+| # | Ítem | Estado |
+| --- | --- | --- |
+| 96 | **Repuesto a costo**: en la orden, cada repuesto puede ir "a costo (sin ganancia)": se cobra el precio de costo del momento en que se marca y no se edita a mano. El cliente lo ve como cualquier otro repuesto; la marca "a costo" solo aparece en la ficha interna. Sin costo cargado no se puede elegir. | ✅ |
+| 97 | **Repuesto que trae el cliente**: del catálogo o escrito a mano si no está en la lista. Figura sin precio en la orden, el presupuesto, el PDF y el link del cliente, no se descuenta del stock ni cuenta en "más vendidos", y el presupuesto agrega un aviso de garantía configurable (*Configuración › Sistema › Trabajo*). | ✅ |
+
 ## A futuro
 
 ### Mejoras de usabilidad propuestas (estándares de la industria)

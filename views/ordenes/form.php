@@ -4,7 +4,7 @@
  * @var list<array<string, mixed>> $vehiculos
  * @var list<array<string, mixed>> $servicios
  * @var list<array<string, mixed>> $repuestos
- * @var array{servicio: array<int, array<string, mixed>>, repuesto: array<int, array<string, mixed>>} $detalle
+ * @var array{servicio: array<int, array<string, mixed>>, repuesto: array<int, array<string, mixed>>, pieza: list<array<string, mixed>>} $detalle
  * @var array<string, mixed> $precarga  datos sugeridos al crear (p. ej. desde un turno)
  * @var int|null $kmVehiculo
  * @var array<string, mixed> $service  configuración de intervalos
@@ -25,7 +25,8 @@ $abrirCierre = array_filter($cierre, fn($campo) => (string) old($campo, $orden[$
   </div>
   <div class="card-body">
     <form action="<?= url($orden ? "ordenes/{$orden['id']}" : 'ordenes') ?>" method="POST" id="form_orden" data-borrador
-      data-detalle="<?= e(json_encode($detalle, JSON_FORCE_OBJECT)) ?>">
+      data-detalle="<?= e(json_encode($detalle, JSON_FORCE_OBJECT)) ?>"
+      data-modos="<?= e(json_encode(\App\Services\OrdenService::MODOS_REPUESTO)) ?>">
       <?= csrf_field() ?>
 
       <div class="row mb-3">
@@ -90,7 +91,8 @@ $abrirCierre = array_filter($cierre, fn($campo) => (string) old($campo, $orden[$
           'atributos' => ['multiple' => true, 'data-tipo' => 'repuesto', 'data-chip-corto' => true],
           'valor' => array_keys($detalle['repuesto']), 'usarAnterior' => false,
           'opciones' => array_column(array_map(fn($r) => [(int) $r['id'], [
-            'texto' => "{$r['nombre']} ($ " . money($r['precio']) . ') · stock ' . qty($r['stock_actual']), 'atributos' => ['data-precio' => (float) $r['precio']],
+            'texto' => "{$r['nombre']} ($ " . money($r['precio']) . ') · stock ' . qty($r['stock_actual']),
+            'atributos' => ['data-precio' => (float) $r['precio'], 'data-costo' => $r['precio_costo'] !== null ? (float) $r['precio_costo'] : null],
           ]], $repuestos), 1, 0),
         ]) ?>
       </div>
@@ -126,6 +128,13 @@ $abrirCierre = array_filter($cierre, fn($campo) => (string) old($campo, $orden[$
             <tr class="js-sin-items"><td colspan="5" class="text-muted">Todavía no hay trabajos ni repuestos. Elegilos arriba y acá aparecen con su precio.</td></tr>
           </tbody>
         </table>
+        <button type="button" class="btn btn-sm btn-outline-secondary" id="agregar_pieza">
+          <?= icono('plus-lg') ?> Repuesto que trae el cliente y no está en la lista
+        </button>
+        <small class="form-text text-muted d-block">
+          En cada repuesto podés elegir si es <strong>del taller</strong>, <strong>a costo</strong> (se cobra lo que te salió, sin ganancia)
+          o si <strong>lo trae el cliente</strong> (figura sin precio y no se descuenta del stock).
+        </small>
       </div>
 
       <div class="mb-4">

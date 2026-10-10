@@ -37,6 +37,8 @@ return [
       'Los precios están sujetos a modificación si surgen imprevistos o variaciones en repuestos.',
     ],
     'mensaje_legal' => 'Este documento no es una factura y no posee validez fiscal.',
+    // Aviso en el presupuesto y la entrega cuando la orden lleva repuestos que trajo el cliente.
+    'garantia_repuestos_cliente' => 'La garantía no cubre los repuestos provistos por el cliente: cubre únicamente la mano de obra.',
     // Si el cliente acepta el presupuesto desde el link, la orden pasa a "En proceso".
     'aceptar_inicia_trabajo' => true,
   ],

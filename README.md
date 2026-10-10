@@ -11,7 +11,9 @@ Aplicación web en PHP para administrar un taller mecánico.
 - **Clientes** con ficha (foto, vehículos, historial de órdenes y turnos, deuda) y acceso directo a WhatsApp.
 - **Vehículos** con motor, combustible, color, VIN, observaciones, galería de imágenes e historial.
 - **Órdenes de servicio** con cantidades y precios por ítem, combos, mecánico asignado, km de ingreso,
-  diagnóstico, trabajo realizado, notas internas y próximo service; presupuesto y comprobante de entrega
+  diagnóstico, trabajo realizado, notas internas y próximo service. Cada repuesto puede cobrarse
+  **a costo** (sin ganancia; el cliente no ve la diferencia) o figurar como **traído por el cliente**
+  (sin precio, sin mover stock y con aviso de garantía), incluso si no está en el catálogo. Presupuesto y comprobante de entrega
   (HTML imprimible y PDF). El presupuesto se **envía por email** y el cliente lo **acepta online**; si se
   modifica uno ya aceptado, se le avisa para que lo vuelva a aceptar. Al finalizar la orden, el cliente
   recibe el aviso de **vehículo listo** con el saldo a abonar.

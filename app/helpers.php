@@ -45,7 +45,7 @@ function importe(mixed $amount): string
 /** Versión del sistema que se muestra en el pie (APP_VERSION en .env; subirla en cada entrega). */
 function version_app(): string
 {
-  return (string) \App\Core\Env::get('APP_VERSION', '1.5.0');
+  return (string) \App\Core\Env::get('APP_VERSION', '1.6.0');
 }
 
 /** Ícono de Bootstrap Icons (https://icons.getbootstrap.com), decorativo: icono('check-lg'). */
@@ -109,6 +109,21 @@ function current_section(): string
 function auth(): \App\Core\Auth
 {
   return App::instance()->container->get(\App\Core\Auth::class);
+}
+
+/**
+ * Descripción de un ítem de la orden (fila de OrdenRepository::items) para mostrar: el
+ * servicio, o el repuesto (del catálogo o descrito a mano), aclarando si lo trae el cliente.
+ */
+function item_orden(array $item): string
+{
+  if ($item['servicio_id'] !== null) {
+    return (string) $item['servicio_nombre'];
+  }
+
+  $nombre = 'Repuesto: ' . ($item['repuesto_nombre'] ?? $item['descripcion']);
+
+  return $item['provisto_cliente'] ? "{$nombre} (provisto por el cliente)" : $nombre;
 }
 
 /** Cantidad sin decimales innecesarios: 2 → "2", 1.5 → "1,5". */
