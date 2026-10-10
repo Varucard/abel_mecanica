@@ -45,7 +45,7 @@ function importe(mixed $amount): string
 /** Versión del sistema que se muestra en el pie (APP_VERSION en .env; subirla en cada entrega). */
 function version_app(): string
 {
-  return (string) \App\Core\Env::get('APP_VERSION', '1.5.0');
+  return (string) \App\Core\Env::get('APP_VERSION', '1.6.0');
 }
 
 /** Ícono de Bootstrap Icons (https://icons.getbootstrap.com), decorativo: icono('check-lg'). */

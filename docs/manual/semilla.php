@@ -88,11 +88,11 @@ $repo = $s(\App\Repositories\OrdenRepository::class);
 $recibir = function (array $datos) use ($recepcion) {
   return $recepcion->recibir($datos + ['telefono' => '1123456789', 'anio' => '2019']);
 };
-$items = function (int $orden, array $servicioIds, array $repuestoIds = []) use ($ordenes, $repo) {
+$items = function (int $orden, array $servicioIds, array $repuestoIds = [], array $piezasCliente = []) use ($ordenes, $repo) {
   $o = $repo->find($orden);
   $ordenes->guardar((int) $o['vehiculo_id'], $servicioIds, $repuestoIds, $orden, $o['mecanico_id'] ? (int) $o['mecanico_id'] : null, [
     'km_ingreso' => (string) $o['km_ingreso'], 'diagnostico' => (string) $o['diagnostico'],
-  ]);
+  ], $piezasCliente);
 };
 
 $personas = [
@@ -128,7 +128,15 @@ $pagos->registrar($ids['AD456HJ'], ['monto' => '20000', 'forma_pago' => 'Contado
 $items($ids['AB789KL'], [$servicios['Alineación y balanceo'], $servicios['Revisión de tren delantero']]);
 $ordenes->cambiarEstado($ids['AB789KL'], 'en_proceso');
 
-$items($ids['AF321MN'], [$servicios['Diagnóstico computarizado']], [$repuestos['Bomba de agua'] => ['cantidad' => '1'], $repuestos['Líquido refrigerante (litro)'] => ['cantidad' => '3']]);
+// Pierde agua: la bomba y el termostato los trae el cliente; el líquido es del taller.
+$items(
+  $ids['AF321MN'],
+  [$servicios['Diagnóstico computarizado']],
+  [$repuestos['Bomba de agua'] => ['cantidad' => '1', 'modo' => 'cliente'], $repuestos['Líquido refrigerante (litro)'] => ['cantidad' => '3']],
+  [['descripcion' => 'Termostato original', 'cantidad' => '1']],
+);
+// Link de presupuesto fijo, para capturar lo que ve el cliente (capturar.js lo usa).
+$c->get(PDO::class)->prepare('UPDATE ordenes SET token = ? WHERE id = ?')->execute([str_repeat('e', 64), $ids['AF321MN']]);
 $items($ids['AC654PQ'], [$servicios['Diagnóstico computarizado']]);
 $ordenes->cambiarEstado($ids['AC654PQ'], 'en_proceso');
 // NHK482 y AG987RS quedan recibidas: una sin trabajos cargados todavía.

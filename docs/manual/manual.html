@@ -88,7 +88,7 @@
   <div class="bajada">Sistema de gestión del taller</div>
   <div class="linea"></div>
   <div class="temas">Llegó un auto · Órdenes · Pagos · Turnos · Clientes · Vehículos · Stock · Reportes</div>
-  <div class="version">Versión 1.5.0 · octubre 2026</div>
+  <div class="version">Versión 1.6.0 · octubre 2026</div>
 </section>
 
 <section class="indice">
@@ -165,7 +165,7 @@
     <tr><td>🌙 Modo oscuro</td><td>Fondo oscuro, más cómodo de noche o con poca luz. Se vuelve con ☀️ Modo claro.</td></tr>
     <tr><td>Salir</td><td>Cierra la sesión. Usalo siempre en computadoras compartidas.</td></tr>
   </table>
-  <p>Al pie de cada pantalla figuran el nombre del taller y la <strong>versión del sistema</strong> (por ejemplo, v1.5.0), útil para consultas de soporte.</p>
+  <p>Al pie de cada pantalla figuran el nombre del taller y la <strong>versión del sistema</strong> (por ejemplo, v1.6.0), útil para consultas de soporte.</p>
 
   <h3>Cambiar tu contraseña</h3>
   <p>Tocá tu nombre arriba a la derecha, escribí la contraseña actual y la nueva dos veces, y tocá <span class="boton">Actualizar contraseña</span>.</p>
@@ -419,12 +419,24 @@
   </table>
   <div class="nota consejo"><strong class="titulo">💡 Precios congelados</strong>El precio de cada ítem queda guardado en la orden. Si después se actualizan los precios del catálogo, las órdenes ya hechas no cambian.</div>
 
+  <h3>Repuestos a costo y repuestos que trae el cliente</h3>
+  <p>Debajo del nombre de cada repuesto, en la tabla de detalle, se elige cómo va en la orden:</p>
+  <table>
+    <tr><th>Opción</th><th>Qué pasa</th></tr>
+    <tr><td><strong>Del taller</strong></td><td>Lo normal: se cobra con el precio de venta del catálogo, que se puede ajustar en la fila.</td></tr>
+    <tr><td><strong>A costo (sin ganancia)</strong></td><td>Se cobra lo que le costó al taller, sin margen. El precio queda fijo (no se edita a mano) y se conserva aunque después cambie el costo. El cliente lo ve como cualquier otro repuesto; la marca <strong>a costo</strong> solo aparece en la ficha de la orden, para el taller. Si el repuesto no tiene costo cargado, la opción aparece deshabilitada.</td></tr>
+    <tr><td><strong>Lo trae el cliente</strong></td><td>Figura en la orden <strong>sin precio</strong> («—»), no se descuenta del stock y no cuenta en el reporte de más vendidos.</td></tr>
+  </table>
+  <p>Si el cliente trae algo que no está en la lista de repuestos, tocá <span class="boton">Repuesto que trae el cliente y no está en la lista</span>, escribí qué es (por ejemplo, «Termostato original») y la cantidad.</p>
+  <figure class="alta"><img src="capturas/39-repuestos-modos.png" alt=""><figcaption>Un repuesto que trae el cliente, uno escrito a mano y uno a costo.</figcaption></figure>
+  <div class="nota atencion"><strong class="titulo">⚠️ Garantía</strong>Cuando la orden lleva repuestos que trajo el cliente, el presupuesto y el comprobante de entrega aclaran que la garantía no los cubre. El texto se cambia en <span class="menu">⚙️ Configuración › Sistema › Presupuestos</span>.</div>
+
   <h3>Empezar y terminar el trabajo</h3>
   <p><span class="boton">Empezar el trabajo</span> pasa la orden a <strong>En reparación</strong> al toque, con <span class="boton">Deshacer</span> por si fue sin querer.</p>
   <figure class="alta"><img src="capturas/32-orden-reparacion.png" alt=""><figcaption>Orden en reparación.</figcaption></figure>
   <p><span class="boton">Terminar el trabajo</span> pregunta antes de hacerlo, porque tiene efectos afuera del sistema, y te dice cuáles:</p>
   <ul>
-    <li>Se registra la fecha de finalización y se <strong>descuentan del stock</strong> los repuestos usados.</li>
+    <li>Se registra la fecha de finalización y se <strong>descuentan del stock</strong> los repuestos usados (salvo los que trajo el cliente).</li>
     <li>Si el cliente tiene email y está activado, se le avisa que <strong>el auto está listo</strong>, con el saldo a pagar (una sola vez por orden).</li>
   </ul>
   <figure class="media"><img src="capturas/33-terminar.png" alt=""><figcaption>Confirmación al terminar el trabajo.</figcaption></figure>
@@ -520,7 +532,7 @@
     <tr><th>Acción</th><th>Cuándo usarla</th></tr>
     <tr><td>Registrar ingreso</td><td>Cuando llega mercadería: Cantidad, Proveedor, Costo unitario (debajo se ve el último costo) y el comprobante (por ejemplo, «Factura A 0001-00001234»). El stock <strong>sube</strong>. Si tildás «Actualizar el precio de venta», se recalcula con el margen configurado.</td></tr>
     <tr><td>Ajustar por conteo</td><td>Plegado más abajo: cuando contás los repuestos en el estante y no coincide con el sistema. El número que cargás <strong>reemplaza</strong> el stock actual (pide confirmación).</td></tr>
-    <tr><td>Descuento por orden</td><td>Automático al terminar una orden; no hay que hacer nada.</td></tr>
+    <tr><td>Descuento por orden</td><td>Automático al terminar una orden; no hay que hacer nada. Los repuestos que trajo el cliente no se descuentan.</td></tr>
   </table>
   <figure class="alta"><img src="capturas/61-stock.png" alt=""><figcaption>Ingreso, ajuste y movimientos de un repuesto.</figcaption></figure>
   <div class="nota atencion"><strong class="titulo">⚠️ Stock insuficiente</strong>Por defecto, si un repuesto no alcanza, la orden no se puede terminar. Un administrador puede permitirlo en la configuración (el stock queda negativo hasta el próximo ingreso).</div>
@@ -566,7 +578,7 @@
   <p>El cliente no necesita usuario ni contraseña. Se comunica con el taller por tres caminos.</p>
 
   <h3>Portal «Seguí tu vehículo»</h3>
-  <p>En la dirección del sistema seguida de <strong>/seguimiento</strong>, el cliente escribe su DNI y la patente, y ve sus próximos turnos y sus trabajos: cada orden con su avance (<strong>Recibido → En reparación → Listo</strong>, los mismos nombres que usa el taller) y, si está habilitado, el total y el saldo.</p>
+  <p>En la dirección del sistema seguida de <strong>/seguimiento</strong>, el cliente escribe su DNI y la patente, y ve sus próximos turnos y sus trabajos: cada orden con su avance (<strong>Recibido → En reparación → Listo</strong>, los mismos nombres que usa el taller) y, si está habilitado, el total y el saldo. Si trajo repuestos, los ve aparte, como «Repuestos que trajiste».</p>
   <figure class="par">
     <div><img src="capturas/95-portal.png" alt="" style="max-height:105mm"></div>
     <div><img src="capturas/96-portal-resultado.png" alt="" style="max-height:105mm"></div>
@@ -580,6 +592,8 @@
 
   <h3>Email de presupuesto</h3>
   <p>El cliente ve el detalle del presupuesto, puede descargarlo en PDF y tocar <strong>Acepto el presupuesto</strong> o <strong>No lo acepto</strong>. Desde ese mismo link puede seguir el avance del trabajo.</p>
+  <p>Si trajo repuestos, debajo del total ve el recuadro <strong>Repuestos que trajiste</strong>, que aclara que no se cobran y que la garantía no los cubre.</p>
+  <figure class="celular"><img src="capturas/97-presupuesto-cliente.png" alt=""><figcaption>Presupuesto del cliente con los repuestos que trajo.</figcaption></figure>
 </section>
 
 <!-- ============================================================ 15 -->
@@ -589,7 +603,7 @@
   <table>
     <tr><th>Pestaña</th><th>Qué se configura</th></tr>
     <tr><td>Taller</td><td>Nombre, CUIT, dirección, teléfono, WhatsApp y email. Aparecen en presupuestos, comprobantes, emails y al pie del sistema.</td></tr>
-    <tr><td>Presupuestos</td><td>Validez del presupuesto y días de garantía; formas de pago (una por línea: son las que se ofrecen al cobrar); observaciones y leyenda del presupuesto; si al aceptar el presupuesto la orden pasa sola a En reparación.</td></tr>
+    <tr><td>Presupuestos</td><td>Validez del presupuesto y días de garantía; formas de pago (una por línea: son las que se ofrecen al cobrar); observaciones y leyenda del presupuesto; aviso de garantía para los repuestos que trae el cliente (vacío: no se muestra); si al aceptar el presupuesto la orden pasa sola a En reparación.</td></tr>
     <tr><td>Turnos y horario</td><td>Horario de atención por día; no permitir turnos fuera de horario ni en feriados; turnos simultáneos por horario; franjas de la agenda (minutos); feriados (con el botón para importar los nacionales); pedir confirmación al agendar; recordatorio automático.</td></tr>
     <tr><td>Service preventivo</td><td>Intervalo sugerido en km y meses para el próximo service; aviso automático al cliente y con cuántos días de anticipación.</td></tr>
     <tr><td>Avisos</td><td>Canales para avisar a los clientes (email; WhatsApp Business próximamente); avisar al taller cuando un cliente responde un presupuesto; avisar al cliente cuando el auto está listo; botón de WhatsApp manual. Abajo, los últimos avisos enviados con su resultado.</td></tr>
@@ -698,6 +712,7 @@
     <tr><td>No aparece la opción de mandar el presupuesto por email.</td><td>El cliente no tiene email. Tocá «Cargarle el email al cliente», o descargá el PDF y mandalo por WhatsApp.</td></tr>
     <tr><td>El cliente no recibió el email.</td><td>Que revise la carpeta de spam, y verificá que el email esté bien escrito. Un administrador puede ver en Configuración › Sistema › Avisos si el envío salió o falló.</td></tr>
     <tr><td>Se cortó la luz mientras cargaba algo.</td><td>Volvé a la misma pantalla: aparece «Recuperamos lo que estabas cargando».</td></tr>
+    <tr><td>No puedo elegir «A costo» en un repuesto.</td><td>El repuesto no tiene precio de costo cargado. Cargalo en <span class="menu">📦 Stock › Repuestos</span> o con un ingreso de stock, y volvé a la orden.</td></tr>
     <tr><td>No puedo borrar un servicio, repuesto o cliente.</td><td>Está en uso. Para no perder el historial no se borra; a clientes y vehículos se los desactiva.</td></tr>
     <tr><td>Me equivoqué en el DNI de un cliente.</td><td>El DNI no se puede modificar. Consultá con un administrador.</td></tr>
     <tr><td>La letra es muy chica (o muy grande).</td><td>Usá los botones <strong>A−</strong> y <strong>A+</strong> de arriba a la derecha (en el celular, dentro de Menú).</td></tr>
