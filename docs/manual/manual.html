@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <title>Manual de Usuario — Mecánica Abel</title>
 <style>
-  /* Manual para imprimir en A4 (generar-pdf.js). Mismo estilo que la versión anterior. */
+  /* Manual para imprimir en A4 (generar-pdf.js y Ayuda › Imprimir). Dentro del sistema se
+     muestra con los estilos de la app (ver app/Support/Manual.php). Cada <section> lleva un id
+     fijo: los botones de Ayuda de cada pantalla enlazan ahí, no cambiarlos. */
   @page { size: A4; margin: 18mm 16mm 20mm; }
   :root {
     --azul: #16365c; --ambar: #f0a500; --texto: #2b2f36; --suave: #5f6b7a; --borde: #dfe3e8;
@@ -88,10 +90,10 @@
   <div class="bajada">Sistema de gestión del taller</div>
   <div class="linea"></div>
   <div class="temas">Llegó un auto · Órdenes · Pagos · Turnos · Clientes · Vehículos · Stock · Reportes</div>
-  <div class="version">Versión 1.6.0 · octubre 2026</div>
+  <div class="version">Versión <span class="js-version">1.6.0</span> · <span class="js-fecha">octubre 2026</span></div>
 </section>
 
-<section class="indice">
+<section class="indice" id="como-leer">
   <h2>Contenido</h2>
   <ol>
     <li>Primeros pasos</li>
@@ -124,6 +126,7 @@
   <div class="nota nuevo">
     <strong class="titulo">✨ Qué cambió en esta versión</strong>
     <ul>
+      <li><strong>Ayuda dentro del sistema</strong>: el botón ❓ Ayuda abre este manual en la parte que explica la pantalla en la que estás, con un botón para volver.</li>
       <li><strong>«Llegó un auto»</strong>: el cliente, el auto y la orden se cargan en una sola pantalla, empezando por la patente.</li>
       <li><strong>La orden te dice qué sigue</strong>: Recibido → En reparación → Listo, con un botón para cada paso.</li>
       <li><strong>Menú nuevo</strong>, con un color por sección, y un inicio con los números del día.</li>
@@ -135,7 +138,7 @@
 </section>
 
 <!-- ============================================================ 1 -->
-<section>
+<section id="primeros-pasos">
   <h2>1. Primeros pasos</h2>
 
   <h3>Ingresar al sistema</h3>
@@ -160,6 +163,7 @@
   <p>Arriba a la derecha de todas las pantallas están:</p>
   <table>
     <tr><th>Botón</th><th>Para qué sirve</th></tr>
+    <tr><td>❓ Ayuda</td><td>Abre este manual en la parte que explica la pantalla en la que estás.</td></tr>
     <tr><td>👤 Tu nombre</td><td>Cambiar tu contraseña.</td></tr>
     <tr><td>A− / A+</td><td>Achicar o agrandar la letra de todo el sistema. Queda guardado en esa computadora o celular.</td></tr>
     <tr><td>🌙 Modo oscuro</td><td>Fondo oscuro, más cómodo de noche o con poca luz. Se vuelve con ☀️ Modo claro.</td></tr>
@@ -184,7 +188,7 @@
 </section>
 
 <!-- ============================================================ 2 -->
-<section>
+<section id="pantalla-principal">
   <h2>2. La pantalla principal</h2>
 
   <h3>El menú</h3>
@@ -198,17 +202,17 @@
     <tr><td>👥 Clientes (verde)</td><td>Nuevo cliente, Ver clientes, Deudores.</td></tr>
     <tr><td>🚗 Vehículos (celeste)</td><td>Nuevo vehículo, Ver vehículos.</td></tr>
     <tr><td>📦 Stock (terracota)</td><td>Repuestos, Proveedores y (administradores) Actualizar precios.</td></tr>
-    <tr><td>⚙️ Configuración (gris)</td><td>Servicios, Combos, Marcas, Modelos. Para administradores, además: Sistema, Empleados, Usuarios, Auditoría y Registro del sistema.</td></tr>
+    <tr><td>⚙️ Configuración (gris)</td><td>Servicios, Combos de servicios, Marcas, Modelos. Para administradores, además: Sistema, Empleados, Usuarios, Auditoría y Registro del sistema.</td></tr>
   </table>
 
   <h3>El inicio</h3>
-  <p>Es lo primero que se ve al ingresar. Arriba, tres botones grandes para lo de todos los días: <span class="boton">Llegó un auto</span>, <span class="boton">Nuevo turno</span> y <span class="boton">Cobrar</span>. Debajo, los números del taller; <strong>tocando cada uno vas al listado con el detalle</strong>:</p>
+  <p>Es lo primero que se ve al ingresar. Arriba, tres botones grandes para lo de todos los días: <span class="boton">Llegó un auto</span>, <span class="boton">Nuevo turno</span> y <span class="boton">Cobrar</span> (en el celular, «Llegó un auto» es el botón redondo del medio de la barra de abajo). Debajo, los números del taller; <strong>tocando cada uno vas al listado con el detalle</strong>:</p>
   <figure><img src="capturas/03-inicio.png" alt=""><figcaption>Inicio: accesos de todos los días y los números del taller.</figcaption></figure>
   <table>
     <tr><th>Número</th><th>Qué muestra y adónde lleva</th></tr>
     <tr><td>Turnos de hoy</td><td>Los turnos del día. Lleva a la agenda semanal.</td></tr>
     <tr><td>Autos en el taller</td><td>Cuántos están recibidos y cuántos en reparación. Lleva a las órdenes abiertas.</td></tr>
-    <tr><td>Cobrado en el mes</td><td>Lo cobrado y cuántos autos quedaron listos. Lleva a los reportes.</td></tr>
+    <tr><td>Cobrado en &lt;mes&gt; (por ejemplo, «Cobrado en octubre»)</td><td>Lo cobrado en el mes y cuántos autos quedaron listos. Lleva a los reportes (a los empleados, al listado de órdenes).</td></tr>
     <tr><td>Saldo adeudado</td><td>Lo que deben los clientes y cuántos son. Lleva a Deudores.</td></tr>
     <tr><td>Stock bajo mínimo</td><td>Cuántos repuestos hay que reponer. Lleva a Repuestos.</td></tr>
   </table>
@@ -224,13 +228,22 @@
   <figure class="alta"><img src="capturas/07-listado.png" alt=""><figcaption>Listado de clientes.</figcaption></figure>
 
   <h3>En el celular</h3>
-  <p>En el celular, el menú pasa a una <strong>barra abajo</strong>: Inicio, Órdenes, <strong>Llegó un auto</strong> (el botón redondo del medio), Turnos y Menú. En <strong>Menú</strong> están el resto de las secciones y, arriba, los botones de tu usuario, letra, modo oscuro y salir.</p>
+  <p>En el celular, el menú pasa a una <strong>barra abajo</strong>: Inicio, Órdenes, <strong>Llegó un auto</strong> (el botón redondo del medio), Turnos y Menú. En <strong>Menú</strong> están el resto de las secciones y, arriba, los botones de ayuda, tu usuario, letra, modo oscuro y salir.</p>
   <figure class="par celular">
     <div><img src="capturas/09-celular-inicio.png" alt=""></div>
     <div><img src="capturas/09-celular-menu.png" alt=""></div>
   </figure>
   <p style="text-align:center"><em class="figcaption" style="color:var(--suave);font-size:9pt">Inicio en el celular y el menú abierto.</em></p>
-  <p>El sistema se puede <strong>instalar como app</strong> en el celular o la computadora (el navegador ofrece «Instalar» o «Agregar a la pantalla de inicio»). Si te quedás sin conexión, avisa con un cartel.</p>
+  <p>El sistema se puede <strong>instalar como app</strong> en el celular o la computadora (el navegador ofrece «Instalar» o «Agregar a la pantalla de inicio»). Si te quedás sin conexión, aparece una pantalla de «Sin conexión» hasta que vuelva.</p>
+
+  <h3>La ayuda</h3>
+  <p>Este manual también está dentro del sistema. El botón <span class="boton">❓ Ayuda</span>, arriba a la derecha (en el celular, dentro de <span class="menu">Menú</span>), lo abre <strong>justo en la parte que explica la pantalla en la que estás</strong>, marcada en amarillo por un momento: desde la agenda, en «Agenda semanal»; mientras cargás los trabajos de una orden, en «Cargar trabajos y repuestos».</p>
+  <figure class="media"><img src="capturas/06-ayuda.png" alt=""><figcaption>La ayuda, con el buscador y los capítulos a la izquierda.</figcaption></figure>
+  <ul>
+    <li>Para seguir trabajando, <span class="boton">← Volver a …</span> (arriba, siempre a la vista) o la tecla <kbd>Esc</kbd> te devuelven a la pantalla donde estabas.</li>
+    <li>Arriba a la izquierda hay un <strong>buscador</strong>: escribí una palabra (por ejemplo, «deudor» o «backup») y quedan solo los capítulos que la mencionan.</li>
+    <li><span class="boton">Imprimir o guardar en PDF</span> arma este mismo manual en hojas A4, listo para imprimir o para guardarlo como PDF desde el navegador.</li>
+  </ul>
 
   <h3>Atajos de teclado</h3>
   <p>En la computadora del mostrador, estas teclas ahorran tiempo (no funcionan mientras estás escribiendo en un campo):</p>
@@ -241,6 +254,7 @@
     <tr><td><kbd>T</kbd></td><td>Abre «Nuevo turno».</td></tr>
     <tr><td><kbd>O</kbd></td><td>Abre el listado de órdenes.</td></tr>
     <tr><td><kbd>I</kbd></td><td>Vuelve al inicio.</td></tr>
+    <tr><td><kbd>A</kbd></td><td>Abre la ayuda de la pantalla en la que estás.</td></tr>
     <tr><td><kbd>?</kbd></td><td>Muestra esta lista (también desde «Atajos de teclado», al pie de la pantalla).</td></tr>
   </table>
 
@@ -260,7 +274,7 @@
 </section>
 
 <!-- ============================================================ 3 -->
-<section>
+<section id="llego-un-auto">
   <h2>3. Llegó un auto</h2>
   <p>Es la forma de recibir un vehículo en el taller. En <strong>una sola pantalla</strong> cargás, si hace falta, el cliente y el auto, y queda abierta la orden. No hace falta saber todavía qué trabajos se van a hacer.</p>
   <p>Se abre desde el botón grande del inicio, el botón del medio en el celular, <span class="menu">📋 Órdenes › Llegó un auto</span> o la tecla <kbd>N</kbd>.</p>
@@ -286,11 +300,11 @@
   <figure class="media"><img src="capturas/12-recepcion-abierta.png" alt=""><figcaption>El auto ya está en el taller.</figcaption></figure>
 
   <h3>Si el cliente tenía turno</h3>
-  <p>En el listado de turnos, cada turno del día tiene el botón <span class="boton">Recibir</span>: abre «Llegó un auto» con el auto y el motivo ya cargados, y al recibirlo el turno queda como <strong>Realizado</strong>.</p>
+  <p>En el listado de turnos, cada turno pendiente o confirmado tiene el botón <span class="boton">Recibir</span>: abre «Llegó un auto» con el auto y el motivo ya cargados, y al recibirlo el turno queda como <strong>Realizado</strong>.</p>
 </section>
 
 <!-- ============================================================ 4 -->
-<section>
+<section id="clientes">
   <h2>4. Clientes</h2>
   <p>Lo más común es cargar el cliente cuando llega con su auto (sección 3). También se puede cargar solo, por ejemplo para darle un turno por teléfono.</p>
 
@@ -312,7 +326,7 @@
 </section>
 
 <!-- ============================================================ 5 -->
-<section>
+<section id="vehiculos">
   <h2>5. Vehículos</h2>
 
   <h3>Nuevo vehículo</h3>
@@ -338,7 +352,7 @@
 </section>
 
 <!-- ============================================================ 6 -->
-<section>
+<section id="turnos">
   <h2>6. Turnos y agenda</h2>
 
   <h3>Nuevo turno</h3>
@@ -365,14 +379,16 @@
   </table>
 
   <h3>El listado de turnos</h3>
-  <p><span class="menu">📅 Turnos › Ver turnos</span> se filtra por Próximos, Pasados o Todos, y por estado. El estado se cambia desde el desplegable de cada fila. Cada turno tiene:</p>
+  <p><span class="menu">📅 Turnos › Ver turnos</span> se filtra por Próximos, Pasados o Todos, y por estado. El estado se cambia desde el desplegable de cada fila. Cada turno tiene estos botones (en la tabla, los de aviso se ven solo como íconos; al pasar el mouse aparece el nombre):</p>
   <table>
     <tr><th>Botón</th><th>Qué hace</th></tr>
     <tr><td>Recibir</td><td>El cliente llegó: abre «Llegó un auto» con todo cargado.</td></tr>
-    <tr><td>🔔 Recordar</td><td>Envía ahora el recordatorio por email (solo si el cliente tiene email).</td></tr>
-    <tr><td>✉️ Pedir confirmación</td><td>Reenvía el email para confirmar o cancelar (solo si el cliente tiene email).</td></tr>
+    <tr><td>🔔 Recordar (campana)</td><td>Envía ahora el recordatorio por email (solo si el cliente tiene email).</td></tr>
+    <tr><td>✉️ Pedir confirmación (sobre)</td><td>Reenvía el email para confirmar o cancelar (solo si el cliente tiene email y todavía no respondió).</td></tr>
     <tr><td>WhatsApp</td><td>Abre WhatsApp con el recordatorio ya escrito; solo queda tocar «enviar». Es la opción para los clientes sin email.</td></tr>
+    <tr><td>✏️ / 🗑️</td><td>Editar o eliminar el turno.</td></tr>
   </table>
+  <p><span class="boton">Recibir</span> y los avisos aparecen solo en los turnos pendientes o confirmados (los avisos, además, solo de hoy en adelante).</p>
   <figure class="alta"><img src="capturas/21-turnos.png" alt=""><figcaption>Listado de turnos.</figcaption></figure>
 
   <h3>Confirmación y recordatorios</h3>
@@ -384,7 +400,7 @@
 </section>
 
 <!-- ============================================================ 7 -->
-<section>
+<section id="ordenes">
   <h2>7. Órdenes de servicio</h2>
   <p>La orden es el centro del sistema: registra qué se le hace al auto, cuánto cuesta, quién lo hace y cuánto pagó el cliente. Pasa por tres etapas (los mismos nombres que ve el cliente en su consulta):</p>
   <div class="etapas"><span class="a">1. Recibido</span><span class="b">2. En reparación</span><span class="c">3. Listo</span></div>
@@ -394,7 +410,7 @@
   <p>Arriba de cada orden se ve en qué etapa está y un recuadro <strong>Qué sigue</strong> con el botón del próximo paso:</p>
   <table>
     <tr><th>Situación</th><th>Botón principal</th></tr>
-    <tr><td>Recibida, sin trabajos cargados</td><td><span class="boton">Cargar trabajos y repuestos</span> (y, si ya se empezó, <span class="boton">Empezar el trabajo</span>).</td></tr>
+    <tr><td>Recibida, sin trabajos cargados</td><td><span class="boton">Cargar trabajos y repuestos</span> (mientras está Recibida, también <span class="boton">Empezar el trabajo</span>, por si se arranca a diagnosticar).</td></tr>
     <tr><td>Recibida, con trabajos</td><td><span class="boton">Empezar el trabajo</span>. Es el momento de mandarle el presupuesto al cliente.</td></tr>
     <tr><td>En reparación</td><td><span class="boton">Terminar el trabajo</span>.</td></tr>
     <tr><td>Lista, con saldo</td><td><span class="boton">Cobrar</span> y <span class="boton">Comprobante de entrega</span>.</td></tr>
@@ -454,23 +470,23 @@
 </section>
 
 <!-- ============================================================ 8 -->
-<section>
+<section id="presupuestos">
   <h2>8. Presupuestos y comprobantes</h2>
-  <p>En la ficha de la orden, el botón <span class="boton">Imprimir / Enviar</span> reúne todo:</p>
+  <p>En la ficha de la orden, el botón <span class="boton">Imprimir / Enviar</span> (aparece cuando la orden ya tiene trabajos cargados) reúne todo:</p>
   <figure class="media"><img src="capturas/36-imprimir.png" alt=""><figcaption>Menú «Imprimir / Enviar» de una orden lista.</figcaption></figure>
   <table>
     <tr><th>Opción</th><th>Qué hace</th></tr>
     <tr><td>Presupuesto › Ver e imprimir</td><td>El presupuesto listo para imprimir, con los datos del taller, cliente, vehículo, ítems, validez, formas de pago y observaciones.</td></tr>
     <tr><td>Presupuesto › Descargar PDF</td><td>El mismo presupuesto en PDF, para guardarlo o mandarlo.</td></tr>
-    <tr><td>Mandar por email al cliente</td><td>Le llega un email con un link para ver el presupuesto y <strong>aceptarlo o rechazarlo online</strong>. Si el cliente no tiene email, en su lugar aparece «Cargarle el email al cliente».</td></tr>
-    <tr><td>Escribirle por WhatsApp</td><td>Abre WhatsApp con un mensaje para el cliente; adjuntale el PDF.</td></tr>
+    <tr><td>Mandar por email al cliente</td><td>Le llega un email con un link para ver el presupuesto y <strong>aceptarlo o rechazarlo online</strong>. Si el cliente no tiene email, en su lugar aparece «Cargarle el email al cliente para mandárselo». Solo mientras la orden está Recibida o En reparación.</td></tr>
+    <tr><td>Escribirle por WhatsApp</td><td>Abre WhatsApp con un mensaje para el cliente; adjuntale el PDF. Solo mientras la orden está Recibida o En reparación.</td></tr>
     <tr><td>Comprobante de entrega</td><td>Solo en órdenes listas: el comprobante para entregar el auto, con el trabajo realizado, lo pagado, el saldo, el próximo service y la garantía (para imprimir o en PDF).</td></tr>
   </table>
   <figure class="alta"><img src="capturas/40-presupuesto.png" alt=""><figcaption>Presupuesto listo para imprimir o descargar.</figcaption></figure>
   <figure class="alta"><img src="capturas/41-entrega.png" alt=""><figcaption>Comprobante de entrega.</figcaption></figure>
 
   <h3>La respuesta del cliente</h3>
-  <p>Cuando el cliente responde desde el link, la orden lo muestra: «Presupuesto aceptado por el cliente» o «Presupuesto rechazado» (con la fecha); si no contestó, «Presupuesto enviado el …, sin respuesta».</p>
+  <p>Cuando el cliente responde desde el link, la orden lo muestra: «Presupuesto aceptado por el cliente» o «Presupuesto rechazado por el cliente», con la fecha y la hora; si no contestó, «Presupuesto enviado el …, sin respuesta».</p>
   <ul>
     <li>Si está configurado, al aceptar el presupuesto la orden pasa sola a <strong>En reparación</strong>.</li>
     <li>Si se modifica un presupuesto que el cliente ya había aceptado, se le avisa para que lo vuelva a aceptar.</li>
@@ -479,7 +495,7 @@
 </section>
 
 <!-- ============================================================ 9 -->
-<section>
+<section id="pagos">
   <h2>9. Pagos y deudores</h2>
 
   <h3>Cobrar</h3>
@@ -490,16 +506,16 @@
   </ol>
   <figure class="media"><img src="capturas/42-cobro.png" alt=""><figcaption>Registrar un pago.</figcaption></figure>
   <p>Se aceptan pagos parciales (una seña al empezar y el resto al retirar). Un pago no puede superar el saldo: si te pasás, el sistema avisa «No podés cobrar más que el saldo». Cada pago queda registrado con quién lo cargó.</p>
-  <div class="nota admin"><strong class="titulo">🔒 Anular un pago</strong>Si se cargó un pago por error, un administrador puede anularlo con el botón <span class="boton">Anular</span> en la lista de pagos de la orden. Queda registrado en la auditoría.</div>
+  <div class="nota admin"><strong class="titulo">🔒 Anular un pago</strong>Si se cargó un pago por error, un administrador puede anularlo con el botón rojo ⊗ (Anular) de esa fila, en la lista de pagos de la orden; pide confirmación. Queda registrado en la auditoría.</div>
 
   <h3>Deudores</h3>
-  <p><span class="menu">👥 Clientes › Deudores</span> (o el número «Saldo adeudado» del inicio, o el botón <span class="boton">Cobrar</span>) lista los clientes con saldo pendiente: el total adeudado, cuántas órdenes deben y el saldo de cada uno. El botón <span class="boton">Cobrar</span> de cada fila abre directo la orden impaga más vieja de ese cliente, lista para registrar el pago.</p>
+  <p><span class="menu">👥 Clientes › Deudores</span> (o el número «Saldo adeudado» del inicio, o el botón <span class="boton">Cobrar</span> del inicio) lista los clientes con saldo pendiente: el total adeudado y, por cliente, su saldo, su teléfono y cuántas órdenes debe. El botón <span class="boton">Cobrar</span> de cada fila abre directo la orden impaga más vieja de ese cliente, lista para registrar el pago.</p>
   <figure class="media"><img src="capturas/43-deudores.png" alt=""><figcaption>Deudores, con «Cobrar» en cada fila.</figcaption></figure>
   <p>Se consideran deudas las órdenes <strong>listas</strong> que no se terminaron de pagar; las que todavía están en el taller no cuentan.</p>
 </section>
 
 <!-- ============================================================ 10 -->
-<section>
+<section id="servicios">
   <h2>10. Servicios, combos, marcas y modelos</h2>
   <p>Están en <span class="menu">⚙️ Configuración</span> y los puede manejar cualquier usuario.</p>
 
@@ -519,23 +535,23 @@
 </section>
 
 <!-- ============================================================ 11 -->
-<section>
+<section id="stock">
   <h2>11. Stock, repuestos y proveedores</h2>
 
   <h3>Repuestos</h3>
-  <p>En <span class="menu">📦 Stock › Repuestos</span> se cargan los repuestos con Código, Nombre, Costo, Precio de venta, Proveedor habitual, Stock mínimo y Descripción. Al escribir el costo, el botón <span class="boton">Sugerir</span> calcula el precio de venta con el margen configurado, y se muestra el margen resultante. El listado resalta los que están en el mínimo o por debajo.</p>
+  <p>En <span class="menu">📦 Stock › Repuestos</span> se cargan los repuestos con Código, Nombre, Costo, Precio de venta, Proveedor habitual, Stock mínimo y Descripción. Al escribir el costo, el link <strong>Sugerir con N % de margen</strong> (debajo del precio) calcula el precio de venta con el margen configurado, y debajo se muestra el «Margen actual». El listado resalta los que están en el mínimo o por debajo.</p>
   <figure class="alta"><img src="capturas/60-repuestos.png" alt=""><figcaption>Repuestos con costo, precio, margen y stock.</figcaption></figure>
 
   <h3>Movimientos de stock</h3>
   <p>Tocá el botón de stock de un repuesto para ver su stock actual y su historial. Desde ahí:</p>
   <table>
     <tr><th>Acción</th><th>Cuándo usarla</th></tr>
-    <tr><td>Registrar ingreso</td><td>Cuando llega mercadería: Cantidad, Proveedor, Costo unitario (debajo se ve el último costo) y el comprobante (por ejemplo, «Factura A 0001-00001234»). El stock <strong>sube</strong>. Si tildás «Actualizar el precio de venta», se recalcula con el margen configurado.</td></tr>
-    <tr><td>Ajustar por conteo</td><td>Plegado más abajo: cuando contás los repuestos en el estante y no coincide con el sistema. El número que cargás <strong>reemplaza</strong> el stock actual (pide confirmación).</td></tr>
+    <tr><td>Registrar ingreso</td><td>Cuando llega mercadería: Cantidad, Proveedor, Costo unitario (debajo se ve el último costo) y <strong>Comprobante / observación</strong> (por ejemplo, «Factura A 0001-00001234»). El stock <strong>sube</strong>. Si tildás «Actualizar el precio de venta con N % de margen», se recalcula con el margen configurado.</td></tr>
+    <tr><td>Ajustar por conteo</td><td>Plegado al costado (abajo en el celular), en «¿El stock no coincide con lo que hay?»: cuando contás los repuestos en el estante y no coincide con el sistema. Cargás el <strong>Stock que contaste</strong> y un <strong>Motivo</strong> (obligatorio); ese número <strong>reemplaza</strong> el stock actual (pide confirmación).</td></tr>
     <tr><td>Descuento por orden</td><td>Automático al terminar una orden; no hay que hacer nada. Los repuestos que trajo el cliente no se descuentan.</td></tr>
   </table>
   <figure class="alta"><img src="capturas/61-stock.png" alt=""><figcaption>Ingreso, ajuste y movimientos de un repuesto.</figcaption></figure>
-  <div class="nota atencion"><strong class="titulo">⚠️ Stock insuficiente</strong>Por defecto, si un repuesto no alcanza, la orden no se puede terminar. Un administrador puede permitirlo en la configuración (el stock queda negativo hasta el próximo ingreso).</div>
+  <div class="nota atencion"><strong class="titulo">⚠️ Stock insuficiente</strong>Por defecto, el sistema deja terminar la orden aunque un repuesto no alcance: el stock queda negativo hasta el próximo ingreso. Si un administrador desactiva «Permitir finalizar órdenes aunque el stock de un repuesto quede negativo» en la configuración, la orden no se puede terminar hasta registrar el ingreso de lo que falta.</div>
 
   <h3>Proveedores</h3>
   <p>En <span class="menu">📦 Stock › Proveedores</span>: Nombre o razón social, CUIT, Persona de contacto, Teléfono, Email, Dirección, Observaciones y si está activo.</p>
@@ -543,24 +559,24 @@
 </section>
 
 <!-- ============================================================ 12 -->
-<section>
+<section id="precios">
   <h2>12. Actualizar precios</h2>
   <div class="nota admin"><strong class="titulo">🔒 Solo administradores</strong><span class="menu">📦 Stock › Actualizar precios</span></div>
   <p>Sirve para subir (o bajar) muchos precios de una vez, por ejemplo cuando hay inflación o un proveedor actualiza su lista.</p>
   <ol class="pasos">
     <li>Elegí <strong>Aplicar a</strong> (servicios, repuestos o ambos) y, si querés, <strong>Solo repuestos del proveedor</strong>.</li>
-    <li>Escribí el <strong>Porcentaje</strong> (un número negativo baja los precios) y elegí el <strong>Redondeo</strong>.</li>
+    <li>Escribí el <strong>Porcentaje</strong> (un número negativo baja los precios) y elegí cómo <strong>Redondear</strong> (sin redondeo, o a $10, $50, $100, $500 o $1.000).</li>
     <li>Tocá <span class="boton">Ver cambios</span>: aparece una vista previa con el precio actual, el nuevo y la diferencia.</li>
-    <li>Destildá lo que no quieras modificar y tocá <span class="boton">Aplicar precios</span>.</li>
+    <li>Destildá lo que no quieras modificar y tocá <span class="boton">Aplicar precios</span> (pide confirmación).</li>
   </ol>
   <figure class="alta"><img src="capturas/70-precios.png" alt=""><figcaption>Vista previa de un aumento del 10 %.</figcaption></figure>
   <div class="nota consejo"><strong class="titulo">💡 Nada cambia hasta confirmar</strong>La vista previa no guarda nada. Las órdenes ya creadas mantienen sus precios.</div>
 </section>
 
 <!-- ============================================================ 13 -->
-<section>
+<section id="reportes">
   <h2>13. Reportes</h2>
-  <div class="nota admin"><strong class="titulo">🔒 Solo administradores</strong><span class="menu">📋 Órdenes › Reportes</span> (o el número «Cobrado en el mes» del inicio).</div>
+  <div class="nota admin"><strong class="titulo">🔒 Solo administradores</strong><span class="menu">📋 Órdenes › Reportes</span> (o el número «Cobrado en &lt;mes&gt;» del inicio, por ejemplo «Cobrado en octubre»).</div>
   <p>Elegí el período con <strong>Desde</strong> y <strong>Hasta</strong> y tocá <span class="boton">Ver</span>. Reportes disponibles:</p>
   <ul>
     <li><strong>Cobrado</strong> por mes y forma de pago.</li>
@@ -568,12 +584,12 @@
     <li><strong>Órdenes por mecánico</strong>: totales, terminadas y abiertas, y facturación de cada uno.</li>
     <li><strong>Stock valorizado</strong> (al día de hoy): cuánto vale el stock, a costo y a precio de venta.</li>
   </ul>
-  <p>Cada reporte se descarga con <span class="boton">Excel (CSV)</span>. Las órdenes se cuentan por su fecha de creación y los pagos por su fecha de cobro; las canceladas no se incluyen.</p>
+  <p>Cada reporte se descarga con <span class="boton">Excel (CSV)</span>. Las órdenes se cuentan por su fecha de creación y los pagos por su fecha de cobro; las canceladas no suman en los totales (en «Órdenes por mecánico» sí figuran en la cantidad de órdenes). Los repuestos que trajo el cliente no cuentan en «Repuestos más usados».</p>
   <figure class="alta"><img src="capturas/71-reportes.png" alt=""><figcaption>Pantalla de reportes.</figcaption></figure>
 </section>
 
 <!-- ============================================================ 14 -->
-<section>
+<section id="lo-que-ve-el-cliente">
   <h2>14. Lo que ve el cliente</h2>
   <p>El cliente no necesita usuario ni contraseña. Se comunica con el taller por tres caminos.</p>
 
@@ -597,14 +613,14 @@
 </section>
 
 <!-- ============================================================ 15 -->
-<section>
+<section id="configuracion">
   <h2>15. Configuración del sistema</h2>
   <div class="nota admin"><strong class="titulo">🔒 Solo administradores</strong><span class="menu">⚙️ Configuración › Sistema</span> (el clic directo en «Configuración» del menú). Cada pestaña se guarda con <span class="boton">Guardar cambios</span>.</div>
   <table>
     <tr><th>Pestaña</th><th>Qué se configura</th></tr>
     <tr><td>Taller</td><td>Nombre, CUIT, dirección, teléfono, WhatsApp y email. Aparecen en presupuestos, comprobantes, emails y al pie del sistema.</td></tr>
-    <tr><td>Presupuestos</td><td>Validez del presupuesto y días de garantía; formas de pago (una por línea: son las que se ofrecen al cobrar); observaciones y leyenda del presupuesto; aviso de garantía para los repuestos que trae el cliente (vacío: no se muestra); si al aceptar el presupuesto la orden pasa sola a En reparación.</td></tr>
-    <tr><td>Turnos y horario</td><td>Horario de atención por día; no permitir turnos fuera de horario ni en feriados; turnos simultáneos por horario; franjas de la agenda (minutos); feriados (con el botón para importar los nacionales); pedir confirmación al agendar; recordatorio automático.</td></tr>
+    <tr><td>Presupuestos</td><td>Validez del presupuesto, garantía y tiempo estimado (en días); formas de pago (una por línea: son las que se ofrecen al cobrar); observaciones del presupuesto (una por línea) y mensaje legal; aviso de garantía para los repuestos que trae el cliente (vacío: no se muestra); si al aceptar el presupuesto la orden pasa sola a En reparación.</td></tr>
+    <tr><td>Turnos y horario</td><td>Horario de atención por día; no permitir turnos fuera de horario ni en feriados; turnos simultáneos por horario; franjas de la agenda (minutos); feriados (con el botón para importar los nacionales); pedir confirmación al agendar o reprogramar; recordatorio automático el día hábil anterior, a partir de la hora que elijas.</td></tr>
     <tr><td>Service preventivo</td><td>Intervalo sugerido en km y meses para el próximo service; aviso automático al cliente y con cuántos días de anticipación.</td></tr>
     <tr><td>Avisos</td><td>Canales para avisar a los clientes (email; WhatsApp Business próximamente); avisar al taller cuando un cliente responde un presupuesto; avisar al cliente cuando el auto está listo; botón de WhatsApp manual. Abajo, los últimos avisos enviados con su resultado.</td></tr>
     <tr><td>Mensajes</td><td>Los textos de los emails y mensajes a clientes, con variables (nombre, fecha, saldo…) que el sistema completa solo.</td></tr>
@@ -614,7 +630,7 @@
   </table>
   <figure class="alta"><img src="capturas/80-config-turnos.png" alt=""><figcaption>Pestaña «Turnos y horario».</figcaption></figure>
   <div class="nota atencion"><strong class="titulo">⚠️ Feriados</strong>Al empezar cada año, importá los feriados nacionales y agregá a mano los días que el taller no abre (vacaciones, puentes). Así no se agendan turnos ni salen recordatorios esos días.</div>
-  <div class="nota consejo"><strong class="titulo">💡 Si los emails no salen</strong>En la pestaña Avisos, el canal email tiene que figurar como listo. Si dice «falta configurar», hay que pedirle a quien instaló el sistema que configure el servidor de correo.</div>
+  <div class="nota consejo"><strong class="titulo">💡 Si los emails no salen</strong>En la pestaña Avisos, el canal email tiene que figurar como listo. Si dice «falta configurar MAIL_DSN en .env», hay que pedirle a quien instaló el sistema que configure el servidor de correo.</div>
   <figure class="alta"><img src="capturas/80-config-taller.png" alt=""><figcaption>Pestaña «Taller».</figcaption></figure>
   <figure class="alta"><img src="capturas/80-config-trabajo.png" alt=""><figcaption>Pestaña «Presupuestos».</figcaption></figure>
   <figure class="alta"><img src="capturas/80-config-notificaciones.png" alt=""><figcaption>Pestaña «Avisos», con el estado de cada canal y los últimos avisos.</figcaption></figure>
@@ -623,12 +639,12 @@
 </section>
 
 <!-- ============================================================ 16 -->
-<section>
+<section id="usuarios">
   <h2>16. Usuarios y empleados</h2>
   <div class="nota admin"><strong class="titulo">🔒 Solo administradores</strong></div>
 
   <h3>Usuarios</h3>
-  <p>Son las personas que entran al sistema. En <span class="menu">⚙️ Configuración › Usuarios</span> se ve la lista con su rol, estado y último acceso. Con <span class="boton">Nuevo usuario</span> se carga Nombre y apellido, Usuario, Rol (empleado o administrador) y contraseña. Con <strong>Usuario activo</strong> se habilita o bloquea su ingreso.</p>
+  <p>Son las personas que entran al sistema. En <span class="menu">⚙️ Configuración › Usuarios</span> se ve la lista con su rol, estado y último acceso. Con <span class="boton">Nuevo usuario</span> se carga Nombre y apellido, Usuario, Rol (empleado o administrador) y la contraseña (mínimo 8 caracteres, dos veces); el usuario nuevo queda activo. Al editarlo, con <strong>Usuario activo</strong> se habilita o bloquea su ingreso.</p>
   <ul>
     <li>Para restablecer la contraseña de alguien, editá el usuario y asignale una nueva.</li>
     <li>Cuando alguien deja de trabajar en el taller, desactivá su usuario.</li>
@@ -643,12 +659,12 @@
 </section>
 
 <!-- ============================================================ 17 -->
-<section>
+<section id="auditoria">
   <h2>17. Auditoría, registro y backups</h2>
   <div class="nota admin"><strong class="titulo">🔒 Solo administradores</strong></div>
 
   <h3>Auditoría</h3>
-  <p><span class="menu">⚙️ Configuración › Auditoría</span> responde <strong>quién hizo qué y cuándo</strong>: cambios de estado, pagos, movimientos de stock, cambios de precios, configuración e ingresos al sistema, con el usuario y la IP. Se filtra por tipo, usuario y fechas.</p>
+  <p><span class="menu">⚙️ Configuración › Auditoría</span> responde <strong>quién hizo qué y cuándo</strong>: cambios de estado, pagos, movimientos de stock, cambios de precios, configuración e ingresos al sistema, con el usuario y la IP. Se filtra por tema («Sobre»: cliente, orden, repuesto, configuración…), usuario y fechas.</p>
   <figure class="alta"><img src="capturas/93-auditoria.png" alt=""><figcaption>Auditoría.</figcaption></figure>
 
   <h3>Registro del sistema</h3>
@@ -656,13 +672,13 @@
   <figure class="alta"><img src="capturas/94-logs.png" alt=""><figcaption>Registro técnico del sistema.</figcaption></figure>
 
   <h3>Backups</h3>
-  <p>El sistema hace una <strong>copia de seguridad automática todos los días</strong> de la base de datos y de las imágenes. En <span class="menu">⚙️ Configuración › Sistema › Backups</span> se configura a partir de qué hora y cuántas copias conservar; también se puede <span class="boton">Generar backup ahora</span> y descargar cualquiera de los disponibles.</p>
+  <p>El sistema hace una <strong>copia de seguridad automática todos los días</strong> de la base de datos y de las imágenes. En <span class="menu">⚙️ Configuración › Sistema › Backups</span> se activa o desactiva, y se configura a partir de qué hora (de fábrica, 22:00) y cuántas copias conservar (de fábrica, las últimas 14); también se puede <span class="boton">Generar backup ahora</span> y descargar cualquiera de los disponibles.</p>
   <figure class="alta"><img src="capturas/80-config-backups.png" alt=""><figcaption>Pestaña «Backups».</figcaption></figure>
   <div class="nota atencion"><strong class="titulo">⚠️ Guardá una copia fuera del taller</strong>Si el servidor se rompe, los backups que están en él se pierden también. Descargá un backup periódicamente (por ejemplo, una vez por semana) y guardalo en un pendrive o en la nube.</div>
 </section>
 
 <!-- ============================================================ 18 -->
-<section>
+<section id="rutina">
   <h2>18. Rutina diaria recomendada</h2>
 
   <h3>Al abrir el taller</h3>
@@ -687,19 +703,19 @@
   <h3>En la entrega</h3>
   <ol class="pasos">
     <li>Completá el <strong>Trabajo realizado</strong> y el <strong>Próximo service</strong> (en «Al terminar el trabajo»).</li>
-    <li><span class="boton">Terminar el trabajo</span>: se descuenta el stock y, si tiene email, se le avisa al cliente.</li>
-    <li><span class="boton">Cobrar</span> e imprimí o mandá el <strong>Comprobante de entrega</strong>.</li>
+    <li><span class="boton">Terminar el trabajo</span>: se descuenta el stock y, si tiene email y el aviso de «auto listo» está activado, se le avisa al cliente.</li>
+    <li><span class="boton">Cobrar</span> e imprimí el <strong>Comprobante de entrega</strong> (o descargá el PDF y mandáselo por WhatsApp).</li>
   </ol>
 
   <h3>Una vez por semana</h3>
   <ol class="pasos">
-    <li>Revisá <strong>Deudores</strong> y <strong>Stock bajo mínimo</strong> desde los números del inicio.</li>
+    <li>Revisá <strong>Saldo adeudado</strong> (los deudores) y <strong>Stock bajo mínimo</strong> desde los números del inicio.</li>
     <li>Descargá un backup y guardalo fuera del taller.</li>
   </ol>
 </section>
 
 <!-- ============================================================ 19 -->
-<section>
+<section id="preguntas">
   <h2>19. Preguntas frecuentes</h2>
   <table class="faq">
     <tr><th>Pregunta</th><th>Respuesta</th></tr>
@@ -709,12 +725,12 @@
     <tr><td>No puedo terminar una orden.</td><td>Puede faltar cargar los trabajos y repuestos, o algún repuesto no tiene stock suficiente: registrá el ingreso o pedile a un administrador que permita stock negativo.</td></tr>
     <tr><td>No puedo editar una orden.</td><td>Solo se editan órdenes Recibidas o En reparación. Si está lista, usá «Volver a abrir el trabajo» (el stock se repone), editala y terminala de nuevo.</td></tr>
     <tr><td>Quise recibir un auto y me dice que ya está en el taller.</td><td>Ya tiene una orden abierta: tocá <span class="boton">Seguir con la orden</span>. Si es otro trabajo, usá <span class="boton">Abrir otra orden igual</span>.</td></tr>
-    <tr><td>No aparece la opción de mandar el presupuesto por email.</td><td>El cliente no tiene email. Tocá «Cargarle el email al cliente», o descargá el PDF y mandalo por WhatsApp.</td></tr>
+    <tr><td>No aparece la opción de mandar el presupuesto por email.</td><td>Puede ser que el cliente no tenga email: tocá «Cargarle el email al cliente para mandárselo», o descargá el PDF y mandalo por WhatsApp. Si la orden ya está lista, el presupuesto no se manda por email.</td></tr>
     <tr><td>El cliente no recibió el email.</td><td>Que revise la carpeta de spam, y verificá que el email esté bien escrito. Un administrador puede ver en Configuración › Sistema › Avisos si el envío salió o falló.</td></tr>
     <tr><td>Se cortó la luz mientras cargaba algo.</td><td>Volvé a la misma pantalla: aparece «Recuperamos lo que estabas cargando».</td></tr>
     <tr><td>No puedo elegir «A costo» en un repuesto.</td><td>El repuesto no tiene precio de costo cargado. Cargalo en <span class="menu">📦 Stock › Repuestos</span> o con un ingreso de stock, y volvé a la orden.</td></tr>
     <tr><td>No puedo borrar un servicio, repuesto o cliente.</td><td>Está en uso. Para no perder el historial no se borra; a clientes y vehículos se los desactiva.</td></tr>
-    <tr><td>Me equivoqué en el DNI de un cliente.</td><td>El DNI no se puede modificar. Consultá con un administrador.</td></tr>
+    <tr><td>Me equivoqué en el DNI de un cliente.</td><td>El DNI no se puede modificar, ni siquiera un administrador. Si el cliente todavía no tiene vehículos ni turnos, eliminalo y cargalo de nuevo; si no, consultá con soporte técnico.</td></tr>
     <tr><td>La letra es muy chica (o muy grande).</td><td>Usá los botones <strong>A−</strong> y <strong>A+</strong> de arriba a la derecha (en el celular, dentro de Menú).</td></tr>
     <tr><td>Me bloqueó el ingreso.</td><td>Tras 5 intentos fallidos hay que esperar 15 minutos. Si no recordás la contraseña, pedile a un administrador una nueva.</td></tr>
     <tr><td>Aparece una pantalla de error.</td><td>Anotá el código que figura, qué estabas haciendo y la versión del pie de página, y pasáselo a quien da soporte técnico.</td></tr>

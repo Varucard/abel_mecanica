@@ -1,13 +1,18 @@
 <?php
 /**
- * Usuario, modo oscuro y salir. Van en el encabezado (computadora) y en el menú del celular.
+ * Ayuda, usuario, modo oscuro y salir. Van en el encabezado (computadora) y en el menú del celular.
  *
  * @var string $clase clases de los botones
+ * @var string $ayuda  link de Ayuda de esta pantalla (url_ayuda(), lo arma el layout)
  * @var bool|null $soloIcono  solo los íconos (menú del celular); el texto queda para lectores de pantalla
  */
 $texto = !empty($soloIcono) ? 'visually-hidden' : '';
 ?>
 <?php if ($usuarioActual = auth()->user()): ?>
+  <?php // Abre el manual en la parte que explica la pantalla en la que se está. ?>
+  <a href="<?= e($ayuda) ?>" class="<?= e($clase) ?>" title="Ayuda: cómo se usa esta pantalla">
+    <?= icono('question-circle') ?> <span class="<?= $texto ?>">Ayuda</span>
+  </a>
   <a href="<?= url('perfil/clave') ?>" class="<?= e($clase) ?>" title="<?= e($usuarioActual['nombre']) ?> · cambiar contraseña">
     <?= icono('person-circle') ?> <span class="<?= $texto ?>"><?= e($usuarioActual['nombre']) ?></span>
   </a>

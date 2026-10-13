@@ -84,6 +84,9 @@ $s(Services\UsuarioService::class)->crear([
 $recepcion = $s(Services\RecepcionService::class);
 $ordenes = $s(Services\OrdenService::class);
 $pagos = $s(Services\PagoService::class);
+// Los pagos, a nombre del administrador (el que se crea antes de la semilla): si no, la columna
+// «Registró» de la captura sale con «—».
+$admin = (int) ($s(\App\Repositories\UsuarioRepository::class)->all()[0]['id'] ?? 0) ?: null;
 $repo = $s(\App\Repositories\OrdenRepository::class);
 $recibir = function (array $datos) use ($recepcion) {
   return $recepcion->recibir($datos + ['telefono' => '1123456789', 'anio' => '2019']);
@@ -118,12 +121,12 @@ foreach ($personas as $i => [$patente, $dni, $nombre, $apellido, $marca, $modelo
 $items($ids['AE123FG'], [$servicios['Cambio de aceite y filtro']], [$repuestos['Filtro de aceite'] => ['cantidad' => '1'], $repuestos['Aceite 5W30 (litro)'] => ['cantidad' => '4']]);
 $ordenes->cambiarEstado($ids['AE123FG'], 'en_proceso');
 $ordenes->cambiarEstado($ids['AE123FG'], 'finalizado');
-$pagos->registrar($ids['AE123FG'], ['monto' => '97000', 'forma_pago' => 'Mercado Pago', 'fecha' => date('Y-m-d')], null);
+$pagos->registrar($ids['AE123FG'], ['monto' => '97000', 'forma_pago' => 'Mercado Pago', 'fecha' => date('Y-m-d')], $admin);
 
 $items($ids['AD456HJ'], [$servicios['Cambio de pastillas de freno']], [$repuestos['Pastillas de freno delanteras'] => ['cantidad' => '1']]);
 $ordenes->cambiarEstado($ids['AD456HJ'], 'en_proceso');
 $ordenes->cambiarEstado($ids['AD456HJ'], 'finalizado');
-$pagos->registrar($ids['AD456HJ'], ['monto' => '20000', 'forma_pago' => 'Contado', 'fecha' => date('Y-m-d'), 'observacion' => 'Seña'], null);
+$pagos->registrar($ids['AD456HJ'], ['monto' => '20000', 'forma_pago' => 'Contado', 'fecha' => date('Y-m-d'), 'observacion' => 'Seña'], $admin);
 
 $items($ids['AB789KL'], [$servicios['Alineación y balanceo'], $servicios['Revisión de tren delantero']]);
 $ordenes->cambiarEstado($ids['AB789KL'], 'en_proceso');

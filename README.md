@@ -65,8 +65,7 @@ docker compose up -d --build
 ```
 
 - Aplicación: <http://localhost:8050> (puertos configurables en `.env`). El pie de página muestra el
-  nombre del taller y la versión (`APP_VERSION` en `.env`, por defecto la de `version_app()`):
-  subirla en cada entrega.
+  nombre del taller y la versión (ver [Versiones](#versiones)).
 - phpMyAdmin: <http://localhost:8051> (solo desde el propio servidor; MySQL también
   escucha solo en `127.0.0.1`. Para abrirlos a la red: `PMA_BIND` / `DB_BIND` en `.env`)
 
@@ -268,6 +267,33 @@ son `POST` con token CSRF.
   formularios y siempre al menos un administrador activo.
 - **Imágenes**: JPG/PNG/WEBP hasta 8 MB, guardadas fuera de `public/` y
   re-codificadas (se eliminan metadatos como la ubicación GPS).
+
+## Versiones
+
+La versión vive en el archivo **`VERSION`** de la raíz y **no se edita a mano**. Al mergear
+un PR a `main`, el workflow `.github/workflows/version.yml` la sube, la commitea y crea el
+tag `vX.Y.Z`. El servidor la recibe con el `git pull` de siempre. La muestran el pie de
+todas las pantallas, la Ayuda y la portada del manual.
+
+Cuánto sube lo decide la etiqueta del PR:
+
+| Etiqueta | Sube | Ejemplo |
+| --- | --- | --- |
+| (ninguna) | la del medio | 1.6.0 → 1.7.0 |
+| `version:patch` | la última | 1.6.0 → 1.6.1 |
+| `version:major` | la primera | 1.6.0 → 2.0.0 |
+| `version:none` | no sube | solo documentación, CI… |
+
+## Ayuda (el manual dentro del sistema)
+
+**Ayuda**, en el encabezado de cada pantalla (o la tecla <kbd>A</kbd>), abre el manual de
+usuario en la parte que explica esa pantalla, con un botón (o <kbd>Esc</kbd>) para volver a
+ella. El manual sale de `docs/manual/manual.html`, la misma fuente del PDF: editar ahí
+alcanza para los dos. La relación ruta → parte del manual está en
+`App\Support\Manual::DESTINOS`: apunta al `id` de un capítulo (`<section id="…">`) o de un
+subtítulo (`<h3>`, con id armado del texto: `turnos-agenda-semanal`). Si se cambia el texto de
+un subtítulo, cambia su id: `tests/Unit/ManualTest.php` falla si un botón de Ayuda quedó
+apuntando a algo que ya no existe.
 
 ## Migrar desde la versión anterior
 
