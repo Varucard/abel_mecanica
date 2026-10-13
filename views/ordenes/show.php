@@ -9,8 +9,13 @@
  * @var \App\Enums\EstadoOrden $estado
  * @var list<array<string, mixed>> $historial
  * @var bool $puedeEnviar
+ * @var bool $whatsapp  mostrar los botones de WhatsApp (configuración y teléfono del cliente)
  * @var bool $avisaListo  al terminar se le avisa al cliente que el vehículo está listo
  * @var array<string, mixed>|null $turno  turno del que vino la orden
+ * @var list<array<string, mixed>> $fotos  fotos sacadas en esta orden (al recibir el auto o después)
+ * @var array<string, array<string, mixed>> $firmas  momento (recepcion | entrega) => firma
+ * @var array<int, string> $combustibles  niveles de nafta
+ * @var bool $puedeDeshacerEntrega  recién entregado, o es administrador (EntregaService::anular)
  */
 use App\Enums\EstadoOrden;
 use App\Services\OrdenService;
@@ -36,9 +41,14 @@ $alTerminar = array_filter([
 ]);
 $confirmarTerminar = '¿Terminar el trabajo?' . ($alTerminar ? ' Al confirmar, ' . implode(' y ', $alTerminar) . '.' : '');
 
-// Las tres etapas, con los mismos nombres que ve el cliente en su portal.
-$pasos = [EstadoOrden::Pendiente, EstadoOrden::EnProceso, EstadoOrden::Finalizado];
-$actual = array_search($estado, $pasos, true);
+// Las etapas, con los mismos nombres que ve el cliente en su portal, más la entrega: un auto
+// "Listo" que no se entregó sigue en el taller.
+$entregado = $orden['entregado_en'] !== null;
+$pasos = [EstadoOrden::Pendiente->label(), EstadoOrden::EnProceso->label(), EstadoOrden::Finalizado->label(), 'Entregado'];
+$actual = $entregado ? 4 : array_search($estado, [EstadoOrden::Pendiente, EstadoOrden::EnProceso, EstadoOrden::Finalizado], true);
+// Una sola acción principal: con saldo, cobrar (entregar queda al lado, de contorno); pagado, entregar.
+$botonEntregar = '<a href="' . e(url("ordenes/{$id}/entregar")) . '" class="btn ' . ($saldo > 0 ? 'btn-outline-success' : 'btn-success') . ' btn-lg">' . icono('key') . ' Entregar el auto</a>';
+$botonAvisar = $whatsapp ? $view->partial('partials/boton_whatsapp', ['orden' => $id, 'tipo' => 'listo', 'texto' => 'Avisarle por WhatsApp', 'clase' => 'btn btn-outline-success btn-lg']) : '';
 ?>
 <div class="card mt-3 etapa-orden">
   <div class="card-body">
@@ -48,7 +58,7 @@ $actual = array_search($estado, $pasos, true);
     <?php else: ?>
       <ol class="pasos-orden" aria-label="Etapas de la orden">
         <?php foreach ($pasos as $i => $paso): ?>
-          <li class="<?= $i < $actual ? 'hecho' : ($i === $actual ? 'actual' : '') ?>" <?= $i === $actual ? 'aria-current="step"' : '' ?>><?= e($paso->label()) ?></li>
+          <li class="<?= $i < $actual ? 'hecho' : ($i === $actual ? 'actual' : '') ?>" <?= $i === $actual ? 'aria-current="step"' : '' ?>><?= e($paso) ?></li>
         <?php endforeach; ?>
       </ol>
 
@@ -56,31 +66,53 @@ $actual = array_search($estado, $pasos, true);
       <?php if ($editable && $sinItems): ?>
         <p class="mb-3">Cuando sepas qué hay que hacer, cargá los trabajos y repuestos: con eso se arma el presupuesto.</p>
         <div class="d-flex flex-wrap gap-2">
-          <a href="<?= url("ordenes/{$id}/editar") ?>" class="btn btn-seccion btn-lg"><?= icono('list-check') ?> Cargar trabajos y repuestos</a>
+          <a href="<?= url("ordenes/{$id}/editar#trabajos") ?>" class="btn btn-seccion btn-lg"><?= icono('list-check') ?> Cargar trabajos y repuestos</a>
           <?php if ($estado === EstadoOrden::Pendiente): ?>
             <?= $botonEstado(EstadoOrden::EnProceso, 'play-fill', 'Empezar el trabajo', 'btn-outline-secondary btn-lg') ?>
           <?php endif; ?>
         </div>
       <?php elseif ($estado === EstadoOrden::Pendiente): ?>
-        <p class="mb-3">El auto está recibido. Mandale el presupuesto al cliente y, cuando arranquen, tocá «Empezar el trabajo».</p>
+        <?php $falta = !$orden['presupuesto_enviado'] && $orden['presupuesto_respuesta'] === null; ?>
+        <p class="mb-3"><?= $falta
+          ? 'El auto está recibido. Mandale el presupuesto al cliente y, cuando arranquen, tocá «Empezar el trabajo».'
+          : 'El presupuesto ya se mandó. Cuando arranquen, tocá «Empezar el trabajo».' ?></p>
         <div class="d-flex flex-wrap gap-2">
-          <?= $botonEstado(EstadoOrden::EnProceso, 'play-fill', 'Empezar el trabajo', 'btn-seccion btn-lg') ?>
+          <?php if ($falta && $whatsapp): ?>
+            <?= $view->partial('partials/boton_whatsapp', ['orden' => $id, 'tipo' => 'presupuesto', 'texto' => 'Mandar el presupuesto por WhatsApp', 'clase' => 'btn btn-seccion btn-lg']) ?>
+            <?= $botonEstado(EstadoOrden::EnProceso, 'play-fill', 'Empezar el trabajo', 'btn-outline-secondary btn-lg') ?>
+          <?php else: ?>
+            <?= $botonEstado(EstadoOrden::EnProceso, 'play-fill', 'Empezar el trabajo', 'btn-seccion btn-lg') ?>
+          <?php endif; ?>
         </div>
       <?php elseif ($estado === EstadoOrden::EnProceso): ?>
         <p class="mb-3">Cuando el auto esté terminado, tocá «Terminar el trabajo».</p>
         <div class="d-flex flex-wrap gap-2">
           <?= $botonEstado(EstadoOrden::Finalizado, 'check2-circle', 'Terminar el trabajo', 'btn-success btn-lg', $confirmarTerminar) ?>
         </div>
-      <?php elseif ($saldo > 0): ?>
-        <p class="mb-3">El auto está listo. Falta cobrar <strong><?= importe($saldo) ?></strong>.</p>
+      <?php elseif (!$entregado && $saldo > 0): ?>
+        <p class="mb-3">El auto está listo. Falta cobrar <strong><?= importe($saldo) ?></strong>. Cuando lo retiren, tocá «Entregar el auto».</p>
         <div class="d-flex flex-wrap gap-2">
           <a href="#registrar_pago" class="btn btn-seccion btn-lg" data-enfocar="#monto"><?= icono('cash-coin') ?> Cobrar</a>
-          <a href="<?= url("ordenes/{$id}/entrega") ?>" class="btn btn-outline-secondary btn-lg"><?= icono('receipt') ?> Comprobante de entrega</a>
+          <?= $botonEntregar ?>
+          <?= $botonAvisar ?>
+        </div>
+      <?php elseif (!$entregado): ?>
+        <p class="mb-3">El auto está listo y pagado. Cuando lo retiren, tocá «Entregar el auto»: ahí el cliente puede firmar la conformidad.</p>
+        <div class="d-flex flex-wrap gap-2">
+          <?= $botonEntregar ?>
+          <?= $botonAvisar ?>
         </div>
       <?php else: ?>
-        <p class="mb-3">El auto está listo y pagado. Imprimí el comprobante para entregarlo.</p>
+        <p class="mb-3">
+          Entregado el <?= format_date($orden['entregado_en'], 'd/m/Y \a \l\a\s H:i') ?><?= isset($firmas['entrega']) ? ', con la firma del cliente' : '' ?>.
+          <?= $saldo > 0 ? 'Quedó debiendo <strong>' . importe($saldo) . '</strong>.' : '' ?>
+        </p>
         <div class="d-flex flex-wrap gap-2">
-          <a href="<?= url("ordenes/{$id}/entrega") ?>" class="btn btn-seccion btn-lg"><?= icono('receipt') ?> Comprobante de entrega</a>
+          <?php if ($saldo > 0): ?>
+            <a href="#registrar_pago" class="btn btn-seccion btn-lg" data-enfocar="#monto"><?= icono('cash-coin') ?> Cobrar</a>
+          <?php endif; ?>
+          <a href="<?= url("ordenes/{$id}/entrega") ?>" class="btn btn-outline-secondary btn-lg"><?= icono('receipt') ?> Comprobante de entrega</a>
+          <a href="<?= url("ordenes/{$id}/ticket/entrega?imprimir=1") ?>" class="btn btn-outline-secondary btn-lg"><?= icono('receipt-cutoff') ?> Ticket</a>
         </div>
       <?php endif; ?>
 
@@ -96,9 +128,15 @@ $actual = array_search($estado, $pasos, true);
             <?= csrf_field() ?><input type="hidden" name="estado" value="pendiente">
             <button type="submit" class="btn btn-link btn-sm p-0">Volver a «<?= e(EstadoOrden::Pendiente->label()) ?>»</button>
           </form>
+        <?php elseif ($estado === EstadoOrden::Finalizado && $entregado && $puedeDeshacerEntrega): ?>
+          <form action="<?= url("ordenes/{$id}/entrega/anular") ?>" method="POST" class="d-inline"
+            data-confirm="¿Deshacer la entrega? El auto vuelve a figurar como listo para retirar<?= isset($firmas['entrega']) ? ' y se borra la firma del cliente' : '' ?>." data-confirm-aceptar="Sí, deshacer la entrega">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn-link btn-sm p-0">Deshacer la entrega</button>
+          </form>
         <?php elseif ($estado === EstadoOrden::Finalizado): ?>
           <form action="<?= url("ordenes/{$id}/estado") ?>" method="POST" class="d-inline"
-            data-confirm="¿Volver a abrir el trabajo?<?= $repuestos > 0 ? ' Los repuestos vuelven al stock hasta que se termine de nuevo.' : '' ?>" data-confirm-aceptar="Sí, volver a abrirlo">
+            data-confirm="¿Volver a abrir el trabajo?<?= $repuestos > 0 ? ' Los repuestos vuelven al stock hasta que se termine de nuevo.' : '' ?>" data-confirm-aceptar="Sí, volver a abrir el trabajo">
             <?= csrf_field() ?><input type="hidden" name="estado" value="en_proceso">
             <button type="submit" class="btn btn-link btn-sm p-0">Volver a abrir el trabajo</button>
           </form>
@@ -112,12 +150,22 @@ $actual = array_search($estado, $pasos, true);
   <?php if ($editable): ?>
     <a href="<?= url("ordenes/{$id}/editar") ?>" class="btn btn-outline-primary"><?= icono('pencil') ?> Editar orden</a>
   <?php endif; ?>
-  <?php if (!$sinItems): ?>
-    <div class="dropdown">
-      <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
-        <?= icono('printer') ?> Imprimir / Enviar
-      </button>
-      <ul class="dropdown-menu">
+  <div class="dropdown">
+    <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+      <?= icono('printer') ?> Imprimir / Enviar
+    </button>
+    <ul class="dropdown-menu">
+      <?php // Tickets para la impresora térmica, con el QR para seguir el auto (o aceptar el presupuesto). ?>
+      <li><h6 class="dropdown-header">Ticket (impresora de tickets)</h6></li>
+      <li><a class="dropdown-item" href="<?= url("ordenes/{$id}/ticket/recepcion?imprimir=1") ?>"><?= icono('receipt-cutoff') ?> De recepción, con QR para seguir el auto</a></li>
+      <?php if (!$sinItems): ?>
+        <li><a class="dropdown-item" href="<?= url("ordenes/{$id}/ticket/presupuesto?imprimir=1") ?>"><?= icono('receipt-cutoff') ?> Del presupuesto</a></li>
+      <?php endif; ?>
+      <?php if ($estado === EstadoOrden::Finalizado): ?>
+        <li><a class="dropdown-item" href="<?= url("ordenes/{$id}/ticket/entrega?imprimir=1") ?>"><?= icono('receipt-cutoff') ?> De entrega</a></li>
+      <?php endif; ?>
+    <?php if (!$sinItems): ?>
+        <li><hr class="dropdown-divider"></li>
         <li><h6 class="dropdown-header">Presupuesto</h6></li>
         <li><a class="dropdown-item" href="<?= url("ordenes/{$id}/presupuesto") ?>"><?= icono('file-text') ?> Ver e imprimir</a></li>
         <li><a class="dropdown-item" href="<?= url("ordenes/{$id}/presupuesto/pdf") ?>"><?= icono('file-earmark-pdf') ?> Descargar PDF</a></li>
@@ -133,19 +181,22 @@ $actual = array_search($estado, $pasos, true);
           <?php // Sin email no se puede mandar: se dice por qué y cómo resolverlo, en vez de un botón gris. ?>
           <li><a class="dropdown-item" href="<?= url("clientes/{$cliente['id']}/editar") ?>"><?= icono('envelope-plus') ?> Cargarle el email al cliente para mandárselo</a></li>
         <?php endif; ?>
-        <?php if ($editable): ?>
-          <li><a class="dropdown-item" href="<?= e(whatsapp_url($cliente['telefono'], "Hola {$cliente['nombre']}, te escribimos del taller por la orden #{$id}.")) ?>" target="_blank" rel="noopener">
-            <?= icono('whatsapp') ?> Escribirle por WhatsApp <small class="text-muted">(adjuntá el PDF)</small></a></li>
+        <?php if ($editable && $whatsapp): ?>
+          <?php // El mensaje lleva el link para ver y aceptar el presupuesto: no hace falta adjuntar el PDF. ?>
+          <li><?= $view->partial('partials/boton_whatsapp', ['orden' => $id, 'tipo' => 'presupuesto', 'texto' => 'Mandar por WhatsApp, con el link para aceptarlo']) ?></li>
         <?php endif; ?>
         <?php if ($estado === EstadoOrden::Finalizado): ?>
           <li><hr class="dropdown-divider"></li>
           <li><h6 class="dropdown-header">Comprobante de entrega</h6></li>
           <li><a class="dropdown-item" href="<?= url("ordenes/{$id}/entrega") ?>"><?= icono('receipt') ?> Ver e imprimir</a></li>
           <li><a class="dropdown-item" href="<?= url("ordenes/{$id}/entrega/pdf") ?>"><?= icono('file-earmark-pdf') ?> Descargar PDF</a></li>
+          <?php if ($whatsapp && !$entregado): ?>
+            <li><?= $view->partial('partials/boton_whatsapp', ['orden' => $id, 'tipo' => 'listo', 'texto' => 'Avisar por WhatsApp que está listo']) ?></li>
+          <?php endif; ?>
         <?php endif; ?>
-      </ul>
-    </div>
-  <?php endif; ?>
+    <?php endif; ?>
+    </ul>
+  </div>
   <a href="<?= url('ordenes') ?>" class="btn btn-outline-secondary ms-auto">Volver a órdenes</a>
 </div>
 
@@ -154,14 +205,15 @@ $actual = array_search($estado, $pasos, true);
     <div class="card h-100">
       <div class="card-header"><strong>Orden #<?= (int) $orden['id'] ?></strong></div>
       <div class="card-body">
-        <p class="mb-1">Estado: <?= $view->partial('componentes/estado', ['estado' => $estado]) ?></p>
+        <p class="mb-1">Estado: <?= $view->partial('componentes/estado', ['estado' => $estado, 'entregado' => $entregado]) ?></p>
+        <?php if ($entregado): ?><p class="mb-1">Entregado: <?= format_date($orden['entregado_en'], 'd/m/Y H:i') ?></p><?php endif; ?>
         <p class="mb-1">Fecha: <?= format_date($orden['created_at']) ?></p>
         <p class="mb-1">Mecánico: <?= e($orden['mecanico'] ?? 'sin asignar') ?></p>
         <?php if ($orden['presupuesto_respuesta'] === 'aceptado'): ?>
           <p class="mb-1 text-success"><?= icono('check-lg') ?> Presupuesto aceptado por el cliente (<?= format_date($orden['presupuesto_respuesta_en'], 'd/m H:i') ?>)</p>
         <?php elseif ($orden['presupuesto_respuesta'] === 'rechazado'): ?>
           <p class="mb-1 text-danger"><?= icono('x-lg') ?> Presupuesto rechazado por el cliente (<?= format_date($orden['presupuesto_respuesta_en'], 'd/m H:i') ?>)</p>
-        <?php elseif ($orden['presupuesto_enviado']): ?>
+        <?php elseif ($orden['presupuesto_enviado'] && $editable): ?>
           <p class="mb-1 text-muted">Presupuesto enviado el <?= format_date($orden['presupuesto_enviado'], 'd/m H:i') ?>, sin respuesta</p>
         <?php endif; ?>
         <?php if ($orden['km_ingreso'] !== null): ?><p class="mb-1">Km al ingresar: <?= number_format((float) $orden['km_ingreso'], 0, ',', '.') ?></p><?php endif; ?>
@@ -222,6 +274,60 @@ $actual = array_search($estado, $pasos, true);
     </div>
   </div>
 <?php endif; ?>
+
+<?php $hayLlegada = $orden['combustible_ingreso'] !== null || $orden['estado_ingreso'] || $fotos !== [] || $firmas !== []; ?>
+<div class="card mt-3" id="como_llego">
+  <div class="card-header d-flex flex-wrap gap-2 justify-content-between align-items-center">
+    <strong>Cómo llegó</strong>
+    <span class="small text-muted"><?= $fotos === [] ? 'Sin fotos' : count($fotos) . (count($fotos) === 1 ? ' foto' : ' fotos') ?></span>
+  </div>
+  <div class="card-body">
+    <?php if (!$hayLlegada): ?>
+      <p class="text-muted">No se cargó cómo llegó el auto. Podés sumar fotos ahora (golpes, rayones, el tablero).</p>
+    <?php endif; ?>
+    <?php if ($orden['combustible_ingreso'] !== null || $orden['estado_ingreso']): ?>
+      <div class="row g-3 mb-2">
+        <?php if ($orden['combustible_ingreso'] !== null): ?>
+          <div class="col-sm-3"><strong>Nafta</strong><div><?= e($combustibles[(int) $orden['combustible_ingreso']] ?? '—') ?></div></div>
+        <?php endif; ?>
+        <?php if ($orden['estado_ingreso']): ?>
+          <div class="col-sm-9"><strong>Golpes, rayones o faltantes</strong><div><?= nl2br(e($orden['estado_ingreso'])) ?></div></div>
+        <?php endif; ?>
+      </div>
+    <?php endif; ?>
+    <?php if ($fotos !== []): ?>
+      <div class="fotos-vista mb-3">
+        <?php foreach ($fotos as $i => $foto): ?>
+          <?php $src = url("vehiculos/{$foto['vehiculo_id']}/imagenes/{$foto['id']}"); ?>
+          <a href="<?= e($src) ?>" target="_blank" rel="noopener" class="foto-miniatura" title="Ver la foto <?= $i + 1 ?> (<?= format_date($foto['created_at'], 'd/m H:i') ?>)">
+            <img src="<?= e($src) ?>" alt="Foto <?= $i + 1 ?> del auto en esta orden" loading="lazy">
+          </a>
+        <?php endforeach; ?>
+      </div>
+    <?php endif; ?>
+    <div class="d-flex flex-wrap gap-4 mb-3">
+      <?php foreach (\App\Services\FirmaService::MOMENTOS as $momento => $cuando): ?>
+        <?php if (isset($firmas[$momento])): ?>
+          <figure class="mb-0">
+            <img src="<?= url("ordenes/{$id}/firmas/{$momento}") ?>?v=<?= e(strtotime((string) $firmas[$momento]['created_at'])) ?>" alt="Firma del cliente <?= e($cuando) ?>" class="firma-guardada">
+            <figcaption class="small text-muted">Firma <?= e($cuando) ?><?= $firmas[$momento]['aclaracion'] ? ' · ' . e($firmas[$momento]['aclaracion']) : '' ?> · <?= format_date($firmas[$momento]['created_at'], 'd/m/Y H:i') ?></figcaption>
+          </figure>
+        <?php endif; ?>
+      <?php endforeach; ?>
+    </div>
+    <div class="d-flex flex-wrap gap-2 align-items-start">
+      <form action="<?= url("ordenes/{$id}/fotos") ?>" method="POST" enctype="multipart/form-data" class="d-flex flex-wrap gap-2 align-items-start">
+        <?= csrf_field() ?>
+        <?= $view->partial('componentes/fotos', ['ayuda' => 'Se guardan en esta orden y en la ficha del vehículo.']) ?>
+        <?php // Aparece recién cuando se eligieron fotos (fotos.js). ?>
+        <button type="submit" class="btn btn-seccion btn-lg js-fotos-enviar" hidden><?= icono('upload') ?> Guardar las fotos</button>
+      </form>
+      <?php if (!isset($firmas['recepcion']) && $estado !== EstadoOrden::Cancelado && !$entregado): ?>
+        <a href="<?= url("ordenes/{$id}/firmar") ?>" class="btn btn-outline-secondary btn-lg"><?= icono('pen') ?> Que firme cómo llegó</a>
+      <?php endif; ?>
+    </div>
+  </div>
+</div>
 
 <div class="card mt-3">
   <div class="card-header"><strong>Detalle</strong></div>

@@ -27,13 +27,14 @@ $campos = [
     'email_service_asunto' => ['Asunto', 1],
     'email_service' => ['Texto', 7],
   ],
-  'WhatsApp' => [
-    'whatsapp_recordatorio' => ['Recordatorio (botón manual)', 3],
-    'whatsapp_confirmacion' => ['Confirmación (para cuando se active WhatsApp Business)', 3],
-    'whatsapp_presupuesto' => ['Presupuesto (para cuando se active WhatsApp Business)', 3],
-    'whatsapp_presupuesto_modificado' => ['Presupuesto modificado (para cuando se active WhatsApp Business)', 3],
-    'whatsapp_listo' => ['Vehículo listo (para cuando se active WhatsApp Business)', 3],
-    'whatsapp_service' => ['Próximo service (para cuando se active WhatsApp Business)', 3],
+  'WhatsApp (los botones abren la conversación con este texto)' => [
+    'whatsapp_confirmacion' => ['Turno sin confirmar (debe incluir {link_turno})', 3],
+    'whatsapp_recordatorio' => ['Recordatorio de turno ya confirmado', 3],
+    'whatsapp_presupuesto' => ['Presupuesto (debe incluir {link_presupuesto})', 3],
+    'whatsapp_presupuesto_modificado' => ['Presupuesto modificado (debe incluir {link_presupuesto})', 3],
+    'whatsapp_presupuesto_recordatorio' => ['Recordatorio de un presupuesto sin respuesta (debe incluir {link_presupuesto})', 3],
+    'whatsapp_listo' => ['Vehículo listo', 3],
+    'whatsapp_service' => ['Próximo service', 3],
   ],
 ];
 ?>

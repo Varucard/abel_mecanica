@@ -32,7 +32,7 @@ $marcaId = (int) old('marca_id', 0);
 $modeloId = (int) old('modelo_id', 0);
 $modeloNuevo = str_starts_with((string) old('modelo_id', ''), VehiculoService::MODELO_NUEVO) ? (string) old('modelo_id') : null;
 ?>
-<form action="<?= url('recepcion') ?>" method="POST" id="form_recepcion" class="recepcion mt-3" data-borrador data-estado="<?= e($estado) ?>"
+<form action="<?= url('recepcion') ?>" method="POST" enctype="multipart/form-data" id="form_recepcion" class="recepcion mt-3" data-borrador data-estado="<?= e($estado) ?>"
   data-patente-url="<?= e(url('recepcion/patente')) ?>" data-cliente-url="<?= e(url('recepcion/cliente')) ?>"
   data-modelos-url="<?= e(url('marcas/{id}/modelos')) ?>">
   <?= csrf_field() ?>
@@ -65,7 +65,8 @@ $modeloNuevo = str_starts_with((string) old('modelo_id', ''), VehiculoService::M
         <?php if ($busqueda['abiertas'] !== []): ?>
           <?php $abierta = $busqueda['abiertas'][0]; ?>
           <div class="alert alert-warning mt-2 mb-0 d-flex flex-wrap gap-2 align-items-center">
-            <span class="me-auto"><?= icono('exclamation-triangle') ?> Este auto ya está en el taller: tiene la orden #<?= (int) $abierta['id'] ?> abierta.</span>
+            <span class="me-auto"><?= icono('exclamation-triangle') ?> Este auto ya está en el taller:
+              <?= $abierta['estado'] === 'finalizado' ? 'la orden #' . (int) $abierta['id'] . ' está lista y todavía no se retiró.' : 'tiene la orden #' . (int) $abierta['id'] . ' abierta.' ?></span>
             <a href="<?= url("ordenes/{$abierta['id']}") ?>" class="btn btn-primary"><?= icono('arrow-right') ?> Seguir con la orden #<?= (int) $abierta['id'] ?></a>
           </div>
         <?php endif; ?>
@@ -116,7 +117,7 @@ $modeloNuevo = str_starts_with((string) old('modelo_id', ''), VehiculoService::M
       <div class="row">
         <div class="col-md-5 mb-3">
           <label for="marca_id" class="form-label">Marca *</label>
-          <select class="form-select js-buscable" id="marca_id" name="marca_id" data-crear="<?= e(\App\Services\VehiculoService::MODELO_NUEVO) ?>" data-placeholder="Elegí o escribí la marca" required>
+          <select class="form-select js-buscable<?= error_campo('marca_id') !== null ? ' is-invalid' : '' ?>" id="marca_id" name="marca_id" data-crear="<?= e(\App\Services\VehiculoService::MODELO_NUEVO) ?>" data-placeholder="Elegí o escribí la marca" required>
             <option value=""></option>
             <?php foreach ($marcas as $m): ?>
               <option value="<?= (int) $m['id'] ?>" <?= selected($marcaId === (int) $m['id']) ?>><?= e($m['nombre']) ?></option>
@@ -125,10 +126,11 @@ $modeloNuevo = str_starts_with((string) old('modelo_id', ''), VehiculoService::M
               <option value="<?= e((string) old('marca_id')) ?>" selected><?= e(substr((string) old('marca_id'), strlen(\App\Services\VehiculoService::MODELO_NUEVO))) ?></option>
             <?php endif; ?>
           </select>
+          <?= $view->partial('componentes/error_campo', ['nombre' => 'marca_id']) ?>
         </div>
         <div class="col-md-4 mb-3">
           <label for="modelo_id" class="form-label">Modelo *</label>
-          <select class="form-select js-buscable" id="modelo_id" name="modelo_id" data-crear="<?= e(VehiculoService::MODELO_NUEVO) ?>"
+          <select class="form-select js-buscable<?= error_campo('modelo_id') !== null ? ' is-invalid' : '' ?>" id="modelo_id" name="modelo_id" data-crear="<?= e(VehiculoService::MODELO_NUEVO) ?>"
             <?php $hayMarca = $marcaId > 0 || str_starts_with((string) old('marca_id', ''), \App\Services\VehiculoService::MODELO_NUEVO); ?>
             data-placeholder="<?= $hayMarca ? 'Elegí o escribí el modelo' : 'Primero elegí la marca' ?>" required <?= $hayMarca ? '' : 'disabled' ?>>
             <option value=""></option>
@@ -139,6 +141,7 @@ $modeloNuevo = str_starts_with((string) old('modelo_id', ''), VehiculoService::M
               <option value="<?= e($modeloNuevo) ?>" selected><?= e(substr($modeloNuevo, strlen(VehiculoService::MODELO_NUEVO))) ?></option>
             <?php endif; ?>
           </select>
+          <?= $view->partial('componentes/error_campo', ['nombre' => 'modelo_id']) ?>
           <small class="form-text text-muted">Si no está, escribilo y elegí «Agregar».</small>
         </div>
         <?= $view->partial('componentes/campo', [
@@ -173,6 +176,29 @@ $modeloNuevo = str_starts_with((string) old('modelo_id', ''), VehiculoService::M
         <?php endif; ?>
       </div>
       <p class="small text-muted">Los servicios y repuestos se cargan después, en la orden, cuando ya se sabe qué hay que hacer.</p>
+    </section>
+
+    <?php // Para que no haya discusiones al entregarlo: cómo llegó, con fotos y la firma del cliente. Todo opcional. ?>
+    <section class="paso">
+      <h2 class="paso-titulo"><span class="paso-numero js-numero-estado"><?= $estado === 'nuevo' ? 5 : 3 ?></span> ¿Cómo viene? <small class="text-muted fw-normal fs-6">(opcional)</small></h2>
+      <?php if (session()->hasOldInput()): ?>
+        <?php // Los archivos y el dibujo no vuelven con el formulario: se dice, para no darlos por cargados. ?>
+        <div class="alert alert-warning py-2"><?= icono('camera') ?> Si habías sacado fotos o el cliente había firmado, hay que volver a hacerlo: no se guardan cuando falta corregir algún dato.</div>
+      <?php endif; ?>
+      <?= $view->partial('componentes/nafta', ['niveles' => $combustibles]) ?>
+      <?= $view->partial('componentes/campo', [
+        'nombre' => 'estado_ingreso', 'etiqueta' => 'Golpes, rayones o faltantes', 'tipo' => 'textarea', 'columna' => 'mb-3',
+        'atributos' => ['rows' => 2, 'maxlength' => 1000, 'placeholder' => 'Ej: raspón en el paragolpes trasero, falta la tapa de la rueda de auxilio…'],
+      ]) ?>
+      <div class="mb-3">
+        <?= $view->partial('componentes/fotos') ?>
+      </div>
+      <details class="mas-datos">
+        <summary>Que el cliente firme que el auto llegó así</summary>
+        <div class="mt-3">
+          <?= $view->partial('componentes/firma', ['texto' => 'El cliente firma que deja el auto en el estado descripto (nafta, golpes y fotos).']) ?>
+        </div>
+      </details>
     </section>
 
     <?php // Si el auto ya tiene una orden abierta, abrir otra es la opción secundaria y se confirma. ?>

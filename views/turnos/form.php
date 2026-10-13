@@ -26,7 +26,7 @@ $view->script('turnos.js');
       <div class="row">
         <div class="col-md-6 mb-3">
           <label for="cliente_id" class="form-label">Cliente *</label>
-          <select name="cliente_id" id="cliente_id" class="form-select js-buscable" data-placeholder="Escribí el apellido o el DNI" required>
+          <select name="cliente_id" id="cliente_id" class="form-select js-buscable<?= error_campo('cliente_id') !== null ? ' is-invalid' : '' ?>" data-placeholder="Escribí el apellido o el DNI" required>
             <option value=""></option>
             <?php foreach ($clientes as $c): ?>
               <option value="<?= (int) $c['id'] ?>" <?= selected($clienteId === (int) $c['id']) ?>>
@@ -34,6 +34,7 @@ $view->script('turnos.js');
               </option>
             <?php endforeach; ?>
           </select>
+          <?= $view->partial('componentes/error_campo', ['nombre' => 'cliente_id']) ?>
           <?php if (!$turno): ?>
             <a href="<?= url('clientes/crear?para=turno') ?>" class="btn btn-sm btn-outline-secondary mt-2"><?= icono('person-plus') ?> Es un cliente nuevo</a>
             <small class="form-text text-muted d-block">Cargás el cliente y su auto, y volvés acá con todo elegido.</small>
@@ -42,7 +43,7 @@ $view->script('turnos.js');
 
         <div class="col-md-6 mb-3">
           <label for="vehiculo_id" class="form-label">Vehículo *</label>
-          <select name="vehiculo_id" id="vehiculo_id" class="form-select js-buscable" data-placeholder="Primero elegí el cliente"
+          <select name="vehiculo_id" id="vehiculo_id" class="form-select js-buscable<?= error_campo('vehiculo_id') !== null ? ' is-invalid' : '' ?>" data-placeholder="Primero elegí el cliente"
             required <?= $vehiculos === [] ? 'disabled' : '' ?>>
             <option value=""></option>
             <?php foreach ($vehiculos as $v): ?>
@@ -51,6 +52,7 @@ $view->script('turnos.js');
               </option>
             <?php endforeach; ?>
           </select>
+          <?= $view->partial('componentes/error_campo', ['nombre' => 'vehiculo_id']) ?>
         </div>
 
         <?= $view->partial('componentes/campo', [

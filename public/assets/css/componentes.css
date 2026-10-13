@@ -388,6 +388,7 @@ main:focus {
 .estado-pendiente   { --estado: var(--estado-pendiente);   --estado-texto: var(--estado-texto-oscuro); }
 .estado-en_proceso  { --estado: var(--estado-en-proceso);  --estado-texto: var(--estado-texto-oscuro); }
 .estado-finalizado  { --estado: var(--estado-finalizado);  --estado-texto: var(--estado-texto-claro); }
+.estado-entregado   { --estado: var(--estado-entregado);   --estado-texto: var(--estado-texto-claro); }
 .estado-cancelado   { --estado: var(--estado-cancelado);   --estado-texto: var(--estado-texto-claro); }
 .estado-confirmado  { --estado: var(--estado-confirmado);  --estado-texto: var(--estado-texto-oscuro); }
 .estado-realizado   { --estado: var(--estado-finalizado);  --estado-texto: var(--estado-texto-claro); }
@@ -575,6 +576,11 @@ main:focus {
   z-index: 1090;
   padding: 1rem;
   width: min(100%, 380px);
+  pointer-events: none; /* está siempre (aunque vacío): no tapa los botones de abajo */
+}
+
+.avisos > * {
+  pointer-events: auto;
 }
 
 @media (max-width: 767.98px) {
@@ -753,6 +759,104 @@ main:focus {
   color: var(--seccion-texto);
   font-size: 1rem;
   font-weight: 700;
+}
+
+/* === Firma del cliente en la pantalla (componentes/firma) === */
+.firma-lienzo {
+  position: relative;
+  max-width: 640px;
+  height: 200px;
+  border: 2px dashed var(--firma-borde);
+  border-radius: var(--app-radio);
+  background-color: var(--firma-papel);
+}
+
+.firma-lienzo canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none; /* el dedo dibuja: no desplaza la página */
+  cursor: crosshair;
+}
+
+.firma-guia {
+  position: absolute;
+  inset: auto 0 0.6rem;
+  text-align: center;
+  color: var(--firma-guia);
+  pointer-events: none;
+}
+
+.firma.firmado .firma-guia {
+  display: none;
+}
+
+.firma.is-invalid .firma-lienzo {
+  border-color: var(--app-peligro);
+}
+
+/* Firma ya guardada, mostrada en la orden */
+.firma-guardada {
+  max-width: 280px;
+  max-height: 110px;
+  padding: 0.25rem;
+  border: 1px solid var(--app-borde);
+  border-radius: var(--app-radio);
+  background-color: var(--firma-papel);
+}
+
+/* === Fotos del auto (componentes/fotos y la orden) === */
+.fotos-vista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.foto-miniatura {
+  position: relative;
+  margin: 0;
+}
+
+.foto-miniatura img {
+  width: 96px;
+  height: 96px;
+  object-fit: cover;
+  border-radius: var(--app-radio);
+  border: 1px solid var(--app-borde);
+}
+
+.foto-quitar {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.15rem;
+  min-width: 2.25rem; /* para el dedo */
+  min-height: 2.25rem;
+  padding: 0;
+}
+
+/* El campo de archivo está oculto dentro del botón: el foco con teclado se marca en el botón. */
+.fotos-auto label:focus-within {
+  outline: 3px solid var(--app-foco);
+  outline-offset: 2px;
+}
+
+/* Nivel de nafta: botones en tira (radios); en el celular, los cinco en una fila a lo ancho. */
+.nivel-nafta .btn {
+  min-width: 4.5rem;
+}
+
+@media (max-width: 575.98px) {
+  .nivel-nafta {
+    display: flex;
+    flex-wrap: nowrap;
+    width: 100%;
+  }
+
+  .nivel-nafta .btn {
+    flex: 1;
+    min-width: 0;
+    padding-inline: 0.25rem;
+  }
 }
 
 /* fieldset sin marco: solo agrupa (y deshabilita en bloque lo que no hace falta enviar). */

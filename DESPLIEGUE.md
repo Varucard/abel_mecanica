@@ -112,6 +112,14 @@ git pull
 docker compose up -d --build database public tareas
 ```
 
+`APP_URL` en el `.env` tiene que ser la dirección pública (`https://taller.pcfighter.com.ar`): con ella
+se arman los links de los emails y de los mensajes de WhatsApp (aceptar el presupuesto, seguir el
+auto). Con otra, al cliente le llega un link que no abre.
+
+Si el `pull` trae un `composer.lock` nuevo (se agregó o actualizó una librería, como la de los
+códigos QR en la 1.8), el contenedor `public` corre `composer install` solo al arrancar. El
+`--build` hace falta cuando cambian `Dockerfile`, `docker/entrypoint.sh` o `docker/php.ini`.
+
 **Estado y logs:**
 
 ```bash

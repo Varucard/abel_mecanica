@@ -214,7 +214,7 @@
       </div>
       <div class="box small">
         <div><strong>Nº <?= $entrega ? 'Orden' : 'Presupuesto' ?>:</strong> <?= e($numero) ?></div>
-        <div><strong>Fecha:</strong> <?= format_date($entrega ? $orden['fecha_realizado'] : $orden['created_at']) ?></div>
+        <div><strong>Fecha:</strong> <?= format_date($entrega ? ($orden['entregado_en'] ?? $orden['fecha_realizado']) : $orden['created_at']) ?></div>
         <?php if ($entrega): ?>
           <div><strong>Mecánico:</strong> <?= e($orden['mecanico'] ?? '—') ?></div>
         <?php else: ?>
@@ -275,6 +275,11 @@
     <?php if (!$entrega && $orden['diagnostico']): ?>
       <div class="notes"><strong>Motivo / diagnóstico:</strong> <?= nl2br(e($orden['diagnostico'])) ?></div>
     <?php endif; ?>
+    <?php if ($entrega && ($combustible !== null || $orden['estado_ingreso'])): ?>
+      <div class="notes"><strong>Al recibirlo:</strong>
+        <?= $combustible !== null ? 'nafta ' . e($combustible) . ($orden['estado_ingreso'] ? '. ' : '.') : '' ?><?= e((string) $orden['estado_ingreso']) ?>
+      </div>
+    <?php endif; ?>
     <?php if ($entrega && $orden['trabajo_realizado']): ?>
       <div class="notes"><strong>Trabajo realizado:</strong> <?= nl2br(e($orden['trabajo_realizado'])) ?></div>
     <?php endif; ?>
@@ -307,11 +312,19 @@
 
     <div class="legal"><?= e($trabajo['mensaje_legal']) ?></div>
 
+    <div style="display:flex; align-items:center; gap:10px; margin-top:12px;" class="small">
+      <div style="width:96px;" role="img" aria-label="Código QR"><?= \App\Support\CodigoQr::svg($linkQr) ?></div>
+      <div><?= e($textoQr) ?></div>
+    </div>
+
     <div style="display:flex; gap:20px; margin-top:35px; align-items:center; justify-content:space-between; flex-wrap:wrap;">
       <div>
         <div class="small"><?= $entrega ? 'Recibí el vehículo en conformidad con los trabajos detallados:' : 'Firma y conformidad del cliente:' ?></div>
-        <div style="margin-top:100px; border-top:1px dashed #999; width:340px; max-width:100%; padding-top:16px; padding-bottom:24px; font-size:14px;">
-          Nombre y Firma
+        <?php if (!empty($firma)): ?>
+          <img src="<?= e($firma) ?>" alt="Firma del cliente" style="display:block; margin-top:12px; max-width:300px; max-height:110px;">
+        <?php endif; ?>
+        <div style="margin-top:<?= !empty($firma) ? '4px' : '100px' ?>; border-top:1px dashed #999; width:340px; max-width:100%; padding-top:16px; padding-bottom:24px; font-size:14px;">
+          <?= !empty($firmaAclaracion) ? e($firmaAclaracion) : 'Nombre y Firma' ?>
         </div>
       </div>
       <div class="actions">

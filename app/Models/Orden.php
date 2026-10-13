@@ -25,8 +25,15 @@ final class Orden
     public readonly ?int $proximoServiceKm = null,
     public readonly ?string $proximoServiceFecha = null,
     public readonly ?int $turnoId = null,
+    /** Nivel de nafta al recibirlo, en cuartos de tanque: 0 = reserva … 4 = lleno. */
+    public readonly ?int $combustibleIngreso = null,
+    /** Golpes, rayones o faltantes que se vieron al recibirlo. */
+    public readonly ?string $estadoIngreso = null,
   ) {
   }
+
+  /** Cómo se dice cada nivel de nafta (combustible_ingreso). */
+  public const COMBUSTIBLE = [0 => 'Reserva', 1 => '1/4', 2 => '1/2', 3 => '3/4', 4 => 'Lleno'];
 
   public function total(): float
   {

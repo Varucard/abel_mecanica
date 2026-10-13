@@ -53,7 +53,9 @@ if ($tipo === 'importe') {
   }
 }
 $elegidos = array_map('strval', is_array($valor) ? $valor : [$valor]);
-$claseControl = trim(($tipo === 'select' ? 'form-select' : 'form-control') . (!empty($buscable) ? ' js-buscable' : '') . ' ' . ($clase ?? ''));
+// Error que devolvió el servidor para este campo: queda marcado en rojo con el mensaje abajo.
+$errorCampo = error_campo($nombre);
+$claseControl = trim(($tipo === 'select' ? 'form-select' : 'form-control') . (!empty($buscable) ? ' js-buscable' : '') . ' ' . ($clase ?? '') . ($errorCampo !== null ? ' is-invalid' : ''));
 
 if (!empty($buscable)) {
   $atributos['data-placeholder'] = $placeholder ?? '';
@@ -89,6 +91,9 @@ $extra = $html($atributos);
     <input type="<?= e($tipo) ?>" class="<?= e($claseControl) ?>" id="<?= e($id) ?>" name="<?= e($nombre) ?>" value="<?= e($valor) ?>"<?= $extra ?>>
   <?php endif; ?>
   <?php if (!empty($prefijo)): ?></div><?php endif; ?>
+  <?php if ($errorCampo !== null): ?>
+    <div class="invalid-feedback d-block js-error-campo"><?= e($errorCampo) ?></div>
+  <?php endif; ?>
   <?php if (!empty($ayuda)): ?>
     <small class="form-text text-muted"><?= e($ayuda) ?></small>
   <?php endif; ?>

@@ -89,6 +89,7 @@ final class NotificacionTest extends IntegrationTestCase
   public function testWhatsappManualUsaCodigoDePaisYPlantilla(): void
   {
     $this->configurar('mensajes', ['whatsapp_recordatorio' => 'Hola {cliente}, turno {fecha} {hora}']);
+    $this->configurar('notificaciones', ['whatsapp_abrir' => 'wame']);
     $id = $this->turno(date('Y-m-d', strtotime('+1 day')));
 
     $url = $this->notificaciones->whatsappManual($id);

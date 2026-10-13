@@ -7,7 +7,15 @@ Aplicación web en PHP para administrar un taller mecánico.
 - **"Llegó un auto"** (`/recepcion`): se escribe la patente y, si el auto es nuevo, en la misma
   pantalla se cargan el dueño (se lo busca por DNI) y el auto (el modelo se puede escribir si no
   está en el catálogo). Termina con la orden abierta, sin necesidad de saber todavía qué trabajos
-  hacer. Desde un turno del día, el botón **"Recibir el auto"** lleva directo.
+  hacer. Desde un turno del día, el botón **"Recibir el auto"** lleva directo. Opcionalmente se
+  anota **cómo viene** (nivel de nafta, golpes y faltantes), se sacan **fotos con la cámara del
+  celular** (el navegador las achica antes de subirlas) y el cliente **firma en la pantalla** la
+  conformidad con ese estado.
+- **Tablero del taller** (`/ordenes/tablero`): los autos en el taller en columnas Recibido · En
+  reparación · Listo, que se arrastran de una a otra (también en el celular) o se mueven con
+  «Mover a…».
+- **Entrega del auto**: al retirarlo, el cliente firma la conformidad en la pantalla y la firma sale
+  en el comprobante. Un auto listo sin entregar sigue figurando en el taller.
 - **Clientes** con ficha (foto, vehículos, historial de órdenes y turnos, deuda) y acceso directo a WhatsApp.
 - **Vehículos** con motor, combustible, color, VIN, observaciones, galería de imágenes e historial.
 - **Órdenes de servicio** con cantidades y precios por ítem, combos, mecánico asignado, km de ingreso,
@@ -17,6 +25,12 @@ Aplicación web en PHP para administrar un taller mecánico.
   (HTML imprimible y PDF). El presupuesto se **envía por email** y el cliente lo **acepta online**; si se
   modifica uno ya aceptado, se le avisa para que lo vuelva a aceptar. Al finalizar la orden, el cliente
   recibe el aviso de **vehículo listo** con el saldo a abonar.
+- **WhatsApp con link**: el presupuesto (con el link para aceptarlo), el aviso de vehículo listo
+  (con el link para ver el trabajo), la confirmación del turno y el aviso de service se mandan por
+  WhatsApp con el mensaje ya escrito, desde el teléfono o la PC, sin costo.
+- **Tickets para impresora térmica** (58 u 80 mm) de recepción, presupuesto y entrega, con un
+  **código QR** para seguir el auto (o aceptar el presupuesto). El QR también va en el presupuesto
+  y el comprobante A4.
 - **Pagos** parciales por orden, saldos y listado de **deudores**.
 - **Stock de repuestos**: precio de costo y margen, ingresos por proveedor, ajustes por conteo, descuento
   automático al finalizar órdenes, historial de movimientos y alerta de stock mínimo. **Proveedores**.
@@ -39,11 +53,19 @@ Aplicación web en PHP para administrar un taller mecánico.
   cobrar o entregar.
 - **Reportes** (cobranzas, más vendidos, por mecánico, stock valorizado) con exportación a Excel.
 - **Aviso automático de próximo service** al cliente.
+- **Para no olvidarse** (en el inicio): autos listos sin retirar, presupuestos sin respuesta y
+  services por vencer, cada uno con su WhatsApp armado.
+- **Modo mostrador**: en la PC o tablet que comparten, cada uno entra tocando su nombre y con un
+  **PIN de 4 dígitos**; la sesión se cierra sola a los 10 minutos sin uso.
+- **Primeros pasos** guiados al instalar (con las marcas y modelos más comunes de un clic) y
+  **Ayuda** contextual en cada pantalla (el manual de usuario).
+- **Encuesta de usabilidad SUS** por rondas, para medir si los cambios mejoran el sistema (con un
+  protocolo de pruebas en `docs/usabilidad/protocolo.md`).
 - **Auditoría** (quién hizo qué y cuándo) y **registro técnico** (logs) con visor.
 - **Backup automático diario** de la base y las imágenes.
 - **Usuarios** con roles (administrador / empleado) y **empleados** del taller.
 - **App instalable (PWA)** en el celular o la PC, con barra de navegación inferior en pantallas chicas,
-  tablas que pliegan sus columnas y aviso de "Sin conexión".
+  tablas que pliegan sus columnas (órdenes y turnos, como tarjetas) y aviso de "Sin conexión".
 
 ## Stack
 
@@ -53,6 +75,8 @@ Aplicación web en PHP para administrar un taller mecánico.
 | MySQL | 8.4 LTS |
 | phpMyAdmin | 5 |
 | Dompdf (vía Composer) | 3.1 |
+| chillerlan/php-qrcode (códigos QR) | 5.0 |
+| SortableJS (tablero) | 1.15.6 |
 | Bootstrap · jQuery · DataTables (+ Responsive) · Tom Select | 5.3.8 · 3.7.1 · 2.3.8 (3.0.8) · 2.6.2 |
 | Symfony Mailer | 7.4 |
 | PHPUnit | 11.5 |
@@ -107,14 +131,18 @@ recordatorios de turnos del día hábil siguiente y los avisos de próximo servi
 genera el backup diario y limpia registros y logs viejos. Sin Docker, agregar
 al crontab: `*/15 * * * * cd /ruta/al/proyecto && php bin/tareas.php`.
 
-### WhatsApp Business (preparado, no activo)
+### WhatsApp
 
-Los avisos pasan por canales intercambiables (`app/Notificaciones/`). Hoy está
-activo el email; `WhatsAppCanal` ya tiene la interfaz y sus plantillas de mensaje.
-Para activarlo hace falta una cuenta de WhatsApp Business verificada en Meta, un
-número dedicado, plantillas aprobadas, las variables `WHATSAPP_TOKEN` y
-`WHATSAPP_PHONE_ID`, e implementar el envío en `WhatsAppCanal::enviar()`.
-Mientras tanto, el botón manual "WhatsApp" abre la conversación con el mensaje armado.
+Los avisos automáticos salen solo por email. WhatsApp va **a mano**: los botones abren la
+conversación (`wa.me`) con el mensaje ya escrito —con el link para aceptar el presupuesto,
+confirmar el turno o seguir el auto— y la persona lo envía desde su teléfono o la PC. Los textos
+se editan en *Configuración > Mensajes* (`whatsapp_*`). En la computadora abren, según *Configuración >
+Avisos*, la app de escritorio (`whatsapp://`, sin pasar por el navegador), WhatsApp Web directo
+(en una pestaña nueva: su `Cross-Origin-Opener-Policy` impide reutilizar una pestaña, así que si ya
+había una abierta, WhatsApp pregunta «¿Usar aquí?») o `wa.me`, que pregunta en una página; en el
+celular, siempre `wa.me`, que abre la app (ver `whatsapp_modo()`). No se usa la API de WhatsApp Business:
+cobra por mensaje y pide una cuenta verificada por Meta, un número dedicado y plantillas
+aprobadas.
 
 ### Sin Docker
 
@@ -141,8 +169,9 @@ app/
 ├── Repositories/   Único lugar con SQL (PDO + sentencias preparadas).
 ├── Models/         Entidades del dominio (Persona → Cliente, Vehiculo, Orden, Turno…).
 ├── Enums/          Estados de órdenes, turnos y clientes/vehículos.
-├── Notificaciones/ Canales de aviso (email activo, WhatsApp preparado).
-├── Support/        Validator, ImageUpload, HorarioAtencion, ConsultaPaginada (DataTables en el servidor).
+├── Notificaciones/ Canal de los avisos automáticos (email).
+├── Support/        Validator, ImageUpload, HorarioAtencion, ConsultaPaginada (DataTables en el servidor),
+│                   CodigoQr (QR de tickets y comprobantes), Manual (la Ayuda).
 └── helpers.php     Funciones para vistas: e(), url(), asset(), money(), csrf_field()…
 bin/                migrate.php (migraciones), tareas.php (recordatorios) y usuario.php (recuperar acceso).
 config/
@@ -174,15 +203,18 @@ Para cambiar la base de datos se agrega un archivo nuevo en `database/migrations
 | Órdenes | `/ordenes`, `/ordenes/crear`, `/ordenes/{id}/editar`, `/ordenes/{id}/presupuesto`, `/ordenes/{id}/presupuesto/pdf` |
 | Turnos | `/turnos`, `/turnos/crear`, `/turnos/{id}/editar` |
 | Catálogos | `/marcas`, `/modelos`, `/servicios`, `/repuestos` |
-| Inicio | `/` (panel), `/recepcion` (llegó un auto) |
+| Inicio | `/` (panel), `/recepcion` (llegó un auto), `/primeros-pasos` |
 | Clientes | `/clientes/{id}` (ficha), `/deudores` |
 | Vehículos | `/vehiculos/{id}` (ficha con imágenes) |
-| Órdenes | `/ordenes/{id}` (ficha con pagos), `/ordenes/{id}/entrega`, `/ordenes/{id}/entrega/pdf` |
+| Órdenes | `/ordenes/{id}` (ficha con pagos), `/ordenes/{id}/entrega`, `/ordenes/{id}/entrega/pdf`, `/ordenes/tablero` |
+| Recepción y entrega | `/ordenes/{id}/fotos`, `/ordenes/{id}/firmar`, `/ordenes/{id}/entregar`, `/ordenes/{id}/firmas/{recepcion\|entrega}` |
+| Tickets y WhatsApp | `/ordenes/{id}/ticket/{recepcion\|presupuesto\|entrega}`, `/ordenes/{id}/whatsapp/{tipo}` |
 | Stock | `/repuestos/{id}/stock`, `/proveedores` |
-| Acceso | `/login`, `/perfil/clave` |
+| Acceso | `/login`, `/login/pin` (mostrador), `/perfil/clave` (contraseña y PIN) |
+| Encuesta | `/encuesta` (la responde cada usuario) |
 | Públicas (clientes) | `/seguimiento`, `/turno/{token}` (confirmar o cancelar), `/presupuesto/{token}` (aceptar o rechazar) |
 | Búsqueda y agenda | `/buscar?q=`, `/turnos/semana`, `/turnos/horarios?fecha=` (horarios libres, JSON) |
-| Solo administradores | `/configuracion/{seccion}`, `/usuarios`, `/empleados`, `/precios`, `/reportes`, `/auditoria`, `/logs` |
+| Solo administradores | `/configuracion/{seccion}`, `/usuarios`, `/empleados`, `/precios`, `/reportes`, `/auditoria`, `/logs`, `/mostrador`, `/usabilidad` |
 
 Todas las acciones que modifican datos (alta, edición, baja, cambio de estado)
 son `POST` con token CSRF.
@@ -219,6 +251,14 @@ son `POST` con token CSRF.
 - **Importes a la argentina**: los campos de plata y cantidades (`tipo => 'importe'` en
   `componentes/campo`) son de texto, no `number` (el navegador toma "10.000" como diez). Punto de
   miles y coma decimal; la misma regla en `window.leerImporte()` y `Validator::importe()`.
+- **Reglas compartidas con el servidor**: importes, cantidades, teléfonos y patentes viven en
+  `public/assets/js/reglas.js` (`window.Reglas`), con sus pares en PHP. Los casos de
+  `tests/casos/*.json` se prueban contra los dos lados: si se cambia una regla en uno solo, falla.
+- **Firma en la pantalla** (`componentes/firma` + `firma.js`): canvas con Pointer Events, sin
+  librerías; viaja como PNG en el campo `firma` y `FirmaService` la re-codifica y rechaza las vacías.
+  **Fotos** (`componentes/fotos` + `fotos.js`): se suman de a una y se achican en el navegador.
+- **Tarjetas en el celular**: una tabla con `data-tarjetas` se dibuja como tarjetas en pantallas
+  chicas (cada celda con el nombre de su columna; `data-tarjeta="ocultar"` en el `<th>` la saca).
 - **Opciones que se crean escribiéndolas**: `data-crear="prefijo:"` en un `<select class="js-buscable">`
   permite agregar una opción que no está; viaja como `prefijo:texto` (así se agregan modelos).
 - **Botones según su función**: la acción principal de la pantalla va en el color de la
@@ -266,7 +306,15 @@ son `POST` con token CSRF.
   intentos fallidos, cierre de sesión por 8 h de inactividad, CSRF en todos los
   formularios y siempre al menos un administrador activo.
 - **Imágenes**: JPG/PNG/WEBP hasta 8 MB, guardadas fuera de `public/` y
-  re-codificadas (se eliminan metadatos como la ubicación GPS).
+  re-codificadas (se eliminan metadatos como la ubicación GPS). Hasta 10 fotos por recepción.
+- **Entrega**: solo de órdenes listas y una vez; si la orden se reabre, deja de estar entregada.
+  Un auto entregado no se reabre sin deshacer antes la entrega; deshacerla se puede durante 30
+  minutos (después, solo un administrador: se borra la firma). La garantía corre desde la
+  entrega. Las órdenes listas hace más de una semana al pasar a la 1.8 se dieron por entregadas.
+- **Modo mostrador**: el PIN (4 dígitos, sin los obvios como 1234 o 0000) solo sirve desde un
+  navegador habilitado por un administrador (cookie con un token al azar; en la base, su hash).
+  Definirlo pide la contraseña. 5 PIN equivocados bloquean a ese usuario 15 minutos en ese equipo.
+  Con PIN no se entra a lo de administrador (se pide usuario y contraseña).
 
 ## Versiones
 
@@ -369,7 +417,17 @@ docker compose exec -e DB_TEST_HOST=database -e DB_TEST_PASSWORD="$MYSQL_ROOT_PA
 ```
 
 Los tests de integración usan una base descartable (`taller_test`) y se omiten si
-no está definida `DB_TEST_HOST`. En GitHub Actions corren en cada push y PR.
+no está definida `DB_TEST_HOST`. Los de controladores (`tests/Integration/HttpTestCase`) hacen
+el pedido por las mismas rutas y el mismo control de acceso que el navegador: `redirect()` y
+`json()` lanzan una `App\Core\Respuesta` en vez de cortar con `exit`.
+
+Las reglas del navegador se prueban con Node (los mismos casos que PHP, ver `tests/casos/`):
+
+```bash
+node --test "tests/js/*.test.mjs"
+```
+
+En GitHub Actions corren todos en cada push y PR.
 
 La hoja de ruta con lo hecho y lo pendiente está en [ROADMAP.md](ROADMAP.md).
 

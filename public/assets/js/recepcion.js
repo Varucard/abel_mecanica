@@ -11,7 +11,7 @@ $(function () {
   const $patente = $('#patente');
   const $resultado = $('#resultado_patente');
   const $nuevos = $('#datos_nuevos');
-  const normalizar = (texto) => texto.toUpperCase().replace(/[\s.\-]/g, '');
+  const normalizar = window.Reglas.normalizarPatente; // la misma regla que VehiculoService::normalizarPatente
   let buscada = $form.data('estado') === 'sin-buscar' ? null : normalizar($patente.val());
 
   function alerta(tipo, icono, partes) {
@@ -52,6 +52,7 @@ $(function () {
     $nuevos.prop('disabled', !nuevo).prop('hidden', !nuevo);
     $('.js-tras-buscar').prop('hidden', estado === 'sin-buscar');
     $('.js-numero-motivo').text(nuevo ? '4' : '2');
+    $('.js-numero-estado').text(nuevo ? '5' : '3');
   }
 
   let buscando = null; // patente que se está buscando: el blur y el clic en "Buscar" no la piden dos veces
@@ -97,7 +98,9 @@ $(function () {
         const abiertaVista = r.abiertas.reduce((mayor, o) => (o.id > (mayor?.id ?? 0) ? o : mayor), null);
         if (abiertaVista) {
           $resultado.append(alerta('warning', 'exclamation-triangle', [
-            $('<span>', { class: 'me-auto' }).text(` Este auto ya está en el taller: tiene la orden #${abiertaVista.id} abierta.`),
+            $('<span>', { class: 'me-auto' }).text(abiertaVista.lista
+              ? ` Este auto ya está en el taller: la orden #${abiertaVista.id} está lista y todavía no se retiró.`
+              : ` Este auto ya está en el taller: tiene la orden #${abiertaVista.id} abierta.`),
             $('<a>', { href: abiertaVista.url, class: 'btn btn-primary' }).html('<i class="bi bi-arrow-right" aria-hidden="true"></i> ').append(document.createTextNode(`Seguir con la orden #${abiertaVista.id}`)),
           ]).addClass('d-flex flex-wrap gap-2 align-items-center'));
         }

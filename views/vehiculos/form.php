@@ -30,7 +30,7 @@ $view->script('vehiculos.js');
       <div class="row mb-3">
         <div class="col-md-6">
           <label for="cliente_id" class="form-label">Cliente *</label>
-          <select class="form-select js-buscable" id="cliente_id" name="cliente_id" data-placeholder="Escribí el apellido o el DNI" required>
+          <select class="form-select js-buscable<?= error_campo('cliente_id') !== null ? ' is-invalid' : '' ?>" id="cliente_id" name="cliente_id" data-placeholder="Escribí el apellido o el DNI" required>
             <option value=""></option>
             <?php foreach ($clientes as $c): ?>
               <option value="<?= (int) $c['id'] ?>" <?= selected($clienteId === (int) $c['id']) ?>>
@@ -38,10 +38,11 @@ $view->script('vehiculos.js');
               </option>
             <?php endforeach; ?>
           </select>
+          <?= $view->partial('componentes/error_campo', ['nombre' => 'cliente_id']) ?>
         </div>
         <div class="col-md-6">
           <label for="marca_id" class="form-label">Marca *</label>
-          <select class="form-select js-buscable" id="marca_id" name="marca_id" data-crear="<?= e(\App\Services\VehiculoService::MODELO_NUEVO) ?>" data-placeholder="Elegí o escribí la marca" required>
+          <select class="form-select js-buscable<?= error_campo('marca_id') !== null ? ' is-invalid' : '' ?>" id="marca_id" name="marca_id" data-crear="<?= e(\App\Services\VehiculoService::MODELO_NUEVO) ?>" data-placeholder="Elegí o escribí la marca" required>
             <option value=""></option>
             <?php foreach ($marcas as $m): ?>
               <option value="<?= (int) $m['id'] ?>" <?= selected($marcaId === (int) $m['id']) ?>><?= e($m['nombre']) ?></option>
@@ -50,13 +51,14 @@ $view->script('vehiculos.js');
               <option value="<?= e((string) old('marca_id')) ?>" selected><?= e(substr((string) old('marca_id'), strlen(\App\Services\VehiculoService::MODELO_NUEVO))) ?></option>
             <?php endif; ?>
           </select>
+          <?= $view->partial('componentes/error_campo', ['nombre' => 'marca_id']) ?>
         </div>
       </div>
 
       <div class="row mb-3">
         <div class="col-md-6">
           <label for="modelo_id" class="form-label">Modelo *</label>
-          <select class="form-select js-buscable" id="modelo_id" name="modelo_id" data-crear="<?= e(\App\Services\VehiculoService::MODELO_NUEVO) ?>"
+          <select class="form-select js-buscable<?= error_campo('modelo_id') !== null ? ' is-invalid' : '' ?>" id="modelo_id" name="modelo_id" data-crear="<?= e(\App\Services\VehiculoService::MODELO_NUEVO) ?>"
             <?php $hayMarca = $marcaId > 0 || str_starts_with((string) old('marca_id', ''), \App\Services\VehiculoService::MODELO_NUEVO); ?>
             data-placeholder="<?= $hayMarca ? 'Elegí o escribí el modelo' : 'Primero elegí la marca' ?>" required <?= $hayMarca ? '' : 'disabled' ?>>
             <option value=""></option>
@@ -67,6 +69,7 @@ $view->script('vehiculos.js');
               <option value="<?= e($modeloNuevo) ?>" selected><?= e(substr($modeloNuevo, strlen(\App\Services\VehiculoService::MODELO_NUEVO))) ?></option>
             <?php endif; ?>
           </select>
+          <?= $view->partial('componentes/error_campo', ['nombre' => 'modelo_id']) ?>
           <small class="form-text text-muted">Si no está en la lista, escribilo y elegí «Agregar».</small>
         </div>
         <?= $view->partial('componentes/campo', [

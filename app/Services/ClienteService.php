@@ -157,12 +157,12 @@ final class ClienteService
     $email = Validator::nullable(mb_strtolower((string) ($input['email'] ?? '')));
 
     (new Validator())
-      ->check(Validator::soloLetras($nombre, 2, 50), 'El nombre debe contener solo letras (2 a 50 caracteres).')
-      ->check(Validator::soloLetras($apellido, 2, 50), 'El apellido debe contener solo letras (2 a 50 caracteres).')
-      ->check((bool) preg_match('/^\d{6,8}$/', $dni), 'El DNI debe tener entre 6 y 8 dígitos.')
-      ->check(self::telefonoValido($telefono), 'El teléfono no es válido: tiene que tener el código de área y el número (por ejemplo, 11 2345 6789).')
-      ->check($direccion === null || Validator::largo($direccion, 5, 200), 'La dirección debe tener entre 5 y 200 caracteres.')
-      ->check($email === null || filter_var($email, FILTER_VALIDATE_EMAIL) !== false, 'El email no tiene un formato válido.')
+      ->check(Validator::soloLetras($nombre, 2, 50), 'El nombre debe contener solo letras (2 a 50 caracteres).', 'nombre')
+      ->check(Validator::soloLetras($apellido, 2, 50), 'El apellido debe contener solo letras (2 a 50 caracteres).', 'apellido')
+      ->check((bool) preg_match('/^\d{6,8}$/', $dni), 'El DNI debe tener entre 6 y 8 dígitos.', 'dni')
+      ->check(self::telefonoValido($telefono), 'El teléfono no es válido: tiene que tener el código de área y el número (por ejemplo, 11 2345 6789).', 'telefono')
+      ->check($direccion === null || Validator::largo($direccion, 5, 200), 'La dirección debe tener entre 5 y 200 caracteres.', 'direccion')
+      ->check($email === null || filter_var($email, FILTER_VALIDATE_EMAIL) !== false, 'El email no tiene un formato válido.', 'email')
       ->validate();
 
     return new Cliente($nombre, $apellido, $dni, $telefono, $direccion, $email, id: $id);

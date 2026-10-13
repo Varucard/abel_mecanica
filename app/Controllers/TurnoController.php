@@ -98,8 +98,11 @@ final class TurnoController extends Controller
   {
     $this->verifyCsrf($request);
 
-    header('Location: ' . $this->notificaciones->whatsappManual($id), true, 303);
-    exit;
+    $url = $this->notificaciones->whatsappManual($id, $request->string('tipo'));
+    // La pantalla de turnos se recarga sola (app.js) y muestra esto.
+    $this->success('Se abrió WhatsApp con el mensaje del turno. Tocá «Enviar» allá para que le llegue al cliente.'
+      . OrdenController::siNoSeAbrio($this->configuracion->seccion('notificaciones')));
+    $this->redirectExterno($url);
   }
 
   /** Botón manual: envía ahora el recordatorio por el canal disponible (email). */

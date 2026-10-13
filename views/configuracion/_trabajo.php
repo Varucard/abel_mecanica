@@ -29,3 +29,20 @@
   'nombre' => 'mensaje_legal', 'etiqueta' => 'Mensaje legal', 'tipo' => 'textarea', 'columna' => 'mb-3',
   'valor' => $valores['mensaje_legal'], 'atributos' => ['rows' => 2],
 ]) ?>
+<h5 class="mt-4">Alertas del inicio</h5>
+<div class="row">
+  <?= $view->partial('componentes/campo', [
+    'nombre' => 'alerta_listo_dias', 'etiqueta' => 'Avisar de un auto listo sin retirar después de (días)', 'tipo' => 'number', 'columna' => 'col-md-6 mb-3',
+    'valor' => $valores['alerta_listo_dias'], 'atributos' => ['min' => 1, 'max' => 60, 'required' => true],
+  ]) ?>
+  <?= $view->partial('componentes/campo', [
+    'nombre' => 'alerta_presupuesto_dias', 'etiqueta' => 'Avisar de un presupuesto sin respuesta después de (días)', 'tipo' => 'number', 'columna' => 'col-md-6 mb-3',
+    'valor' => $valores['alerta_presupuesto_dias'], 'atributos' => ['min' => 1, 'max' => 60, 'required' => true],
+  ]) ?>
+</div>
+<h5 class="mt-2">Ticket</h5>
+<?= $view->partial('componentes/campo', [
+  'nombre' => 'ticket_ancho', 'etiqueta' => 'Ancho del papel de la impresora de tickets', 'tipo' => 'select', 'columna' => 'mb-3', 'clase' => 'ancho-max-420',
+  'valor' => (string) $valores['ticket_ancho'], 'opciones' => ['80' => '80 mm (la más común)', '58' => '58 mm'],
+]) ?>
+

@@ -52,6 +52,17 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
     await p.waitForTimeout(400); await p.keyboard.press('Enter'); await p.waitForTimeout(300);
   };
 
+  // Una firma de ejemplo en el recuadro (componentes/firma), como la haría el cliente con el dedo.
+  const firmar = async (p) => {
+    const lienzo = p.locator('.firma-lienzo canvas');
+    await lienzo.scrollIntoViewIfNeeded();
+    const c = await lienzo.boundingBox();
+    await p.mouse.move(c.x + 40, c.y + 140); await p.mouse.down();
+    await p.mouse.move(c.x + 120, c.y + 50, { steps: 8 }); await p.mouse.move(c.x + 170, c.y + 130, { steps: 8 });
+    await p.mouse.move(c.x + 260, c.y + 60, { steps: 8 }); await p.mouse.move(c.x + 380, c.y + 110, { steps: 8 });
+    await p.mouse.up();
+  };
+
   // ---------- 1. Primeros pasos ----------
   let p = await sesion();
   await ir(p, '/login');
@@ -59,6 +70,8 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
   await entrar(p);
   await ir(p, '/perfil/clave');
   await contenido(p, '02-clave');
+  await ir(p, '/primeros-pasos');
+  await contenido(p, '04-primeros-pasos');
 
   // ---------- 2. La pantalla principal ----------
   await ir(p, '/');
@@ -106,6 +119,14 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
   await ir(p, '/recepcion');
   await p.fill('#patente', 'AE123FG'); await p.click('.js-buscar-patente'); await p.waitForSelector('.js-tras-buscar:not([hidden])');
   await contenido(p, '13-recepcion-conocido');
+  // "¿Cómo viene?": nafta, golpes y la firma del cliente (sin recibir el auto).
+  await p.click('label[for=nafta_2]');
+  await p.fill('#estado_ingreso', 'Raspón en el paragolpes trasero; falta la tapa del tanque');
+  await p.click('summary:has-text("firme")'); await p.waitForTimeout(300);
+  await firmar(p);
+  await p.mouse.move(0, 0); await p.waitForTimeout(350);
+  await p.locator('section.paso').last().screenshot({ path: path.join(DESTINO, '14-recepcion-como-viene.png') }); console.log('· 14-recepcion-como-viene');
+  await sinBorradores();
 
   // ---------- 4. Clientes ----------
   await ir(p, '/clientes/crear');
@@ -162,12 +183,19 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
   await foto(p, '36-imprimir', { clip: { x: 0, y: 0, width: 1280, height: 720 } });
   await ir(p, '/ordenes', 1200);
   await contenido(p, '37-ordenes');
+  await ir(p, '/ordenes/tablero', 600);
+  await contenido(p, '35-tablero');
+  await ir(p, '/ordenes/1/entregar');
+  await firmar(p);
+  await contenido(p, '34-entregar');
 
   // ---------- 8. Presupuestos y comprobantes ----------
   await ir(p, '/ordenes/4/presupuesto');
   await foto(p, '40-presupuesto', { fullPage: true });
   await ir(p, '/ordenes/1/entrega');
   await foto(p, '41-entrega', { fullPage: true });
+  await ir(p, '/ordenes/4/ticket/recepcion');
+  await p.locator('.ticket').screenshot({ path: path.join(DESTINO, '42-ticket.png') }); console.log('· 42-ticket');
 
   // ---------- 9. Pagos y deudores ----------
   await ir(p, '/ordenes/2#registrar_pago', 800);
@@ -244,6 +272,18 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
   await foto(m, '09-celular-menu');
   await ir(m, '/ordenes/3');
   await foto(m, '38-celular-orden');
+
+  // ---------- Modo mostrador: habilitar este navegador, ponerse un PIN y salir ----------
+  await ir(p, '/mostrador');
+  await p.fill('#nombre', 'PC del mostrador'); await p.click('button:has-text("Usar este equipo")'); await p.waitForLoadState();
+  await contenido(p, '93-mostrador');
+  await ir(p, '/perfil/clave');
+  await p.fill('#pin_nuevo', '4826'); await p.fill('#pin_confirmacion', '4826'); await p.fill('#clave_actual_pin', CLAVE);
+  await p.click('button:has-text("Guardar el PIN")'); await p.waitForLoadState();
+  await p.click('header button:has-text("Salir")'); await p.waitForLoadState();
+  await p.click('.toast .btn-close').catch(() => {});
+  await p.locator('.usuarios-pin label').first().click(); await p.waitForTimeout(300);
+  await foto(p, '02-mostrador', { clip: { x: 340, y: 0, width: 600, height: 760 } });
 
   console.log(errores.length ? 'ERRORES JS:\n' + errores.join('\n') : 'Sin errores de JS.');
   await b.close();

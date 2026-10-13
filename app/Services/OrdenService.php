@@ -66,8 +66,8 @@ final class OrdenService
    *
    * @param array<int, mixed> $servicios
    * @param array<int, mixed> $repuestos
-   * @param array<string, mixed> $detalle km_ingreso, diagnostico, trabajo_realizado, notas_internas,
-   *                                      proximo_service_km, proximo_service_fecha, turno_id (solo al crear)
+   * @param array<string, mixed> $detalle km_ingreso, combustible_ingreso, estado_ingreso, diagnostico, trabajo_realizado,
+   *                                      notas_internas, proximo_service_km, proximo_service_fecha, turno_id (solo al crear)
    * @param list<array{descripcion?: string, cantidad?: string}> $piezasCliente
    */
   public function guardar(
@@ -163,6 +163,7 @@ final class OrdenService
       kmIngreso: $datos['km_ingreso'], diagnostico: $datos['diagnostico'], trabajoRealizado: $datos['trabajo_realizado'],
       notasInternas: $datos['notas_internas'], proximoServiceKm: $datos['proximo_service_km'],
       proximoServiceFecha: $datos['proximo_service_fecha'], turnoId: $datos['turno_id'],
+      combustibleIngreso: $datos['combustible_ingreso'], estadoIngreso: $datos['estado_ingreso'],
     );
     (new Validator())
       ->check($orden->total() <= Validator::IMPORTE_MAXIMO, sprintf('El total de la orden supera el máximo admitido ($ %s).', money(Validator::IMPORTE_MAXIMO)))
@@ -247,7 +248,8 @@ final class OrdenService
   /**
    * @param array<string, mixed> $detalle
    * @return array{km_ingreso: ?int, diagnostico: ?string, trabajo_realizado: ?string, notas_internas: ?string,
-   *               proximo_service_km: ?int, proximo_service_fecha: ?string, turno_id: ?int}
+   *               proximo_service_km: ?int, proximo_service_fecha: ?string, turno_id: ?int,
+   *               combustible_ingreso: ?int, estado_ingreso: ?string}
    */
   private function validarDetalle(array $detalle, int $vehiculoId, ?int $id): array
   {
@@ -263,12 +265,16 @@ final class OrdenService
     $proximaFecha = $texto('proximo_service_fecha');
     $turnoId = $id === null ? ((int) ($detalle['turno_id'] ?? 0) ?: null) : null;
     $turno = $turnoId !== null ? $this->turnos->find($turnoId) : null;
+    $combustible = $entero('combustible_ingreso');
+    $estadoIngreso = $texto('estado_ingreso');
 
     (new Validator())
-      ->check($km === null || ($km !== false && $km >= 0 && $km <= 9_999_999), 'El kilometraje de ingreso no es válido.')
-      ->check($proximoKm === null || ($proximoKm !== false && $proximoKm > 0 && $proximoKm <= 9_999_999), 'El km del próximo service no es válido.')
-      ->check($proximoKm === null || !is_int($km) || !is_int($proximoKm) || $proximoKm > $km, 'El próximo service debe ser a más km que el de ingreso.')
-      ->check($proximaFecha === null || (Validator::fecha($proximaFecha) && $proximaFecha > date('Y-m-d')), 'La fecha del próximo service debe ser futura.')
+      ->check($combustible === null || isset(Orden::COMBUSTIBLE[$combustible]), 'Elegí el nivel de nafta (de reserva a lleno).', 'combustible_ingreso')
+      ->check($estadoIngreso === null || mb_strlen($estadoIngreso) <= 1000, 'El estado en que llegó el auto puede tener hasta 1000 caracteres.', 'estado_ingreso')
+      ->check($km === null || ($km !== false && $km >= 0 && $km <= 9_999_999), 'El kilometraje de ingreso no es válido.', 'km_ingreso')
+      ->check($proximoKm === null || ($proximoKm !== false && $proximoKm > 0 && $proximoKm <= 9_999_999), 'El km del próximo service no es válido.', 'proximo_service_km')
+      ->check($proximoKm === null || !is_int($km) || !is_int($proximoKm) || $proximoKm > $km, 'El próximo service debe ser a más km que el de ingreso.', 'proximo_service_km')
+      ->check($proximaFecha === null || (Validator::fecha($proximaFecha) && $proximaFecha > date('Y-m-d')), 'La fecha del próximo service debe ser futura.', 'proximo_service_fecha')
       ->check($turnoId === null || ($turno !== null && (int) $turno['vehiculo_id'] === $vehiculoId), 'El turno no corresponde al vehículo de la orden.')
       // Un turno cancelado, ausente o que ya originó una orden no abre otra.
       ->check($turno === null || in_array($turno['estado'], [EstadoTurno::Pendiente->value, EstadoTurno::Confirmado->value], true),
@@ -284,6 +290,8 @@ final class OrdenService
       'proximo_service_km' => is_int($proximoKm) ? $proximoKm : null,
       'proximo_service_fecha' => $proximaFecha,
       'turno_id' => $turnoId,
+      'combustible_ingreso' => is_int($combustible) ? $combustible : null,
+      'estado_ingreso' => $estadoIngreso,
     ];
   }
 
@@ -422,6 +430,12 @@ final class OrdenService
     $orden = $this->ordenes->transaction(function () use ($id, $nuevo, $usuarioId) {
       $orden = $this->ordenes->bloquear($id) ?? throw new NotFoundException('Orden no encontrada.');
       $descontado = (bool) $orden['stock_descontado'];
+      // Un auto entregado no vuelve al taller por un cambio de estado (p. ej. desde una pestaña
+      // vieja): primero se deshace la entrega, que borra también la firma de entrega.
+      (new Validator())
+        ->check($orden['entregado_en'] === null || $nuevo === EstadoOrden::Finalizado,
+          'Este auto ya se entregó. Para volver a abrir el trabajo, primero tocá «Deshacer la entrega» en la orden.')
+        ->validate();
 
       if ($nuevo === EstadoOrden::Finalizado && !$descontado) {
         $this->stock->descontarOrden($id, $usuarioId);

@@ -64,6 +64,7 @@
   --estado-pendiente: #ffc107;
   --estado-en-proceso: #0dcaf0;
   --estado-finalizado: #198754;
+  --estado-entregado: #495057;            /* gris oscuro: ya no está en el taller (blanco encima: 8:1) */
   --estado-cancelado: #6c757d;
   --estado-confirmado: #0dcaf0;
   --estado-no-asistio: #6c757d;
@@ -95,6 +96,12 @@
   --agenda-hoy-fondo: #e7f1ff;
   --agenda-hoy-texto: #084298;
   --agenda-hoy-columna: rgba(13, 110, 253, 0.04);
+
+  /* Firma en la pantalla: papel blanco y tinta oscura también en modo oscuro (es lo que se imprime) */
+  --firma-papel: #ffffff;
+  --firma-tinta: #1a1a2e;
+  --firma-guia: #8a9199;
+  --firma-borde: #adb5bd;
 
   /* Celular */
   --app-barra-inferior: 64px;
@@ -140,6 +147,7 @@
   --estado-pendiente: #d97706;
   --estado-en-proceso: #0ea5e9;
   --estado-finalizado: #065f46;
+  --estado-entregado: #374151;
   --estado-cancelado: #4b5563;
   --estado-confirmado: #0ea5e9;
   --estado-no-asistio: #4b5563;
@@ -201,7 +209,9 @@
 [data-seccion="deudores"]    { --seccion-fondo: var(--app-exito); --seccion-texto: #ffffff; }
 [data-seccion="vehiculos"]   { --seccion-fondo: #0dcaf0; --seccion-texto: #212529; }
 [data-seccion="ordenes"],
-[data-seccion="recepcion"]   { --seccion-fondo: #ffc107; --seccion-texto: #212529; }
+[data-seccion="recepcion"],
+[data-seccion="usabilidad"],
+[data-seccion="encuesta"]    { --seccion-fondo: #ffc107; --seccion-texto: #212529; }
 /* Configuración (todas las pantallas de su submenú): gris neutro, como su botón en el menú. */
 [data-seccion="servicios"],
 [data-seccion="combos"],
@@ -210,6 +220,8 @@
 [data-seccion="configuracion"],
 [data-seccion="empleados"],
 [data-seccion="usuarios"],
+[data-seccion="mostrador"],
+[data-seccion="primeros-pasos"],
 [data-seccion="auditoria"],
 [data-seccion="logs"]        { --seccion-fondo: var(--app-config); --seccion-texto: #ffffff; }
 /* Turnos: violeta, el mismo tono del lavanda de su botón en el menú (blanco encima: 6.6:1). */

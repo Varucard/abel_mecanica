@@ -17,7 +17,7 @@ $mensajes = session()->messages();
     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
   </div>
 <?php endforeach; ?>
-<?php if (!empty($mensajes['success']) || !empty($mensajes['deshacer'])): ?>
+<?php // El contenedor va siempre (aunque esté vacío): los avisos que agrega JS (window.avisoExito) se anuncian. ?>
   <div class="avisos" aria-live="polite">
     <?php foreach ($mensajes['deshacer'] ?? [] as $json): ?>
       <?php $d = json_decode($json, true); ?>
@@ -47,4 +47,3 @@ $mensajes = session()->messages();
       </div>
     <?php endforeach; ?>
   </div>
-<?php endif; ?>

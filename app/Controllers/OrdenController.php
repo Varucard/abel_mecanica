@@ -42,6 +42,8 @@ final class OrdenController extends Controller
     private readonly \App\Repositories\TurnoRepository $turnos,
     private readonly \App\Services\NotificacionService $notificaciones,
     private readonly \App\Repositories\ComboRepository $combos,
+    private readonly \App\Services\FirmaService $firmas,
+    private readonly \App\Services\Auditor $auditor,
   ) {
     parent::__construct($view, $session);
   }
@@ -49,6 +51,17 @@ final class OrdenController extends Controller
   public function index(Request $request): void
   {
     $this->render('ordenes/index', ['title' => 'Órdenes de servicio', 'estados' => EstadoOrden::cases()]);
+  }
+
+  /** Tablero: los autos del taller en columnas (Recibido · En reparación · Listo), para arrastrar de una a otra. */
+  public function tablero(Request $request): void
+  {
+    $columnas = array_fill_keys([EstadoOrden::Pendiente->value, EstadoOrden::EnProceso->value, EstadoOrden::Finalizado->value], []);
+    foreach ($this->ordenes->tablero() as $orden) {
+      $columnas[$orden['estado']][] = $orden;
+    }
+
+    $this->render('ordenes/tablero', ['title' => 'Tablero del taller', 'columnas' => $columnas]);
   }
 
   public function datos(Request $request): void
@@ -123,6 +136,12 @@ final class OrdenController extends Controller
       'estado' => EstadoOrden::from($orden['estado']),
       'historial' => $this->auditoria->deEntidad('orden', $id),
       'puedeEnviar' => $this->notificaciones->hayCanalDisponible(),
+      'whatsapp' => $this->notificaciones->botonWhatsappManual() && strlen(preg_replace('/\D/', '', (string) $cliente['telefono'])) >= 10,
+      'fotos' => $this->vehiculos->imagenesDeOrden($id),
+      'firmas' => $this->firmas->deOrden($id),
+      'combustibles' => \App\Models\Orden::COMBUSTIBLE,
+      'puedeDeshacerEntrega' => $orden['entregado_en'] !== null && ($this->auth->esAdministrador()
+        || strtotime((string) $orden['entregado_en']) >= time() - \App\Services\EntregaService::MINUTOS_PARA_DESHACER * 60),
     ]);
   }
 
@@ -142,6 +161,36 @@ final class OrdenController extends Controller
     $this->redirect("/ordenes/{$id}");
   }
 
+  /**
+   * Botones de WhatsApp de la orden: abren la conversación con el mensaje y el link armados
+   * (se abren en otra pestaña; si algo falta, esa pestaña muestra la orden con el motivo).
+   */
+  public function whatsapp(Request $request, int $id, string $tipo): void
+  {
+    $this->verifyCsrf($request);
+
+    try {
+      $url = $this->notificaciones->whatsappOrden($id, $tipo);
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+      $this->redirect("/ordenes/{$id}");
+    }
+
+    $nombre = \App\Services\NotificacionService::NOMBRES[$tipo] ?? $tipo;
+    $this->auditor->registrar('whatsapp', 'orden', $id, "Orden #{$id}: se abrió WhatsApp para mandarle al cliente: " . mb_strtolower($nombre));
+    // La pantalla de la orden se recarga sola (app.js) y muestra esto.
+    $this->success("Se abrió WhatsApp con el mensaje ({$nombre}). Tocá «Enviar» allá para que le llegue al cliente." . self::siNoSeAbrio($this->configuracion->seccion('notificaciones')));
+    $this->redirectExterno($url);
+  }
+
+  /** Con la app de escritorio, si no está instalada no pasa nada: se dice qué hacer. */
+  public static function siNoSeAbrio(array $notificaciones): string
+  {
+    return whatsapp_modo($notificaciones) === 'app'
+      ? ' Si no se abrió, instalá WhatsApp en esta computadora o elegí «WhatsApp Web» en Configuración › Avisos.'
+      : '';
+  }
+
   public function cambiarEstado(Request $request, int $id): void
   {
     $this->verifyCsrf($request);
@@ -159,14 +208,21 @@ final class OrdenController extends Controller
     // cliente y mueve stock) se hace sin preguntar y se ofrece "Deshacer".
     $revertible = !$request->isAjax() && $request->string('deshaciendo') !== '1'
       && $estado !== EstadoOrden::Finalizado && $anterior !== EstadoOrden::Finalizado->value && $anterior !== $estado->value;
-    $revertible
-      ? $this->hechoConDeshacer($mensaje, "ordenes/{$id}/estado", ['estado' => $anterior])
-      : $this->success($mensaje);
-    if (!$request->isAjax()) {
-      // Botones de la ficha ("Empezar el trabajo", "Terminar el trabajo"): vuelve a la orden.
-      $this->redirect("/ordenes/{$id}");
+    // Desde el tablero (menú "Mover a…") se vuelve al tablero; desde la ficha, a la orden.
+    $volver = $request->string('volver') === 'tablero' ? 'tablero' : '';
+    if ($request->isAjax()) {
+      // Por AJAX el mensaje va en la respuesta. Se guarda para la próxima pantalla solo si la
+      // página se va a recargar (recargar=1): si no, aparecía después, junto con los de otros cambios.
+      if ($request->string('recargar') === '1') {
+        $this->success($mensaje);
+      }
+      $this->json(['status' => 'success', 'message' => $mensaje]);
     }
-    $this->json(['status' => 'success', 'message' => $mensaje]);
+    $revertible
+      ? $this->hechoConDeshacer($mensaje, "ordenes/{$id}/estado", ['estado' => $anterior, 'volver' => $volver])
+      : $this->success($mensaje);
+    // Botones de la ficha ("Empezar el trabajo", "Terminar el trabajo"): vuelve a la orden.
+    $this->redirect($volver === 'tablero' ? '/ordenes/tablero' : "/ordenes/{$id}");
   }
 
   /** Aviso "vehículo listo" al finalizar la orden. Devuelve el texto a sumar al mensaje; si falla, deja un error. */
@@ -195,6 +251,19 @@ final class OrdenController extends Controller
   public function entrega(Request $request, int $id): void
   {
     $this->documento($request, $id, true);
+  }
+
+  /** Ticket para impresora térmica, con QR (ver DocumentoService::ticket). */
+  public function ticket(Request $request, int $id, string $tipo): void
+  {
+    try {
+      $datos = $this->documentos->ticket($id, $tipo);
+    } catch (ValidationException $e) {
+      $this->error($e->getMessage());
+      $this->redirect("/ordenes/{$id}");
+    }
+
+    echo $this->view->render('tickets/show', [...$datos, 'imprimir' => $request->query('imprimir') === '1'], null);
   }
 
   public function pdf(Request $request, int $id): void
@@ -376,6 +445,7 @@ final class OrdenController extends Controller
       'combos' => $this->combos->all(true),
       'kmVehiculo' => $vehiculoSugerido ? ($this->vehiculos->find($vehiculoSugerido)['kilometraje'] ?? null) : null,
       'service' => $this->configuracion->seccion('service'),
+      'combustibles' => \App\Models\Orden::COMBUSTIBLE,
     ]);
   }
 }

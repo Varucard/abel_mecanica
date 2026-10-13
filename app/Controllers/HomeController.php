@@ -19,8 +19,29 @@ final class HomeController extends Controller
     Session $session,
     private readonly PanelRepository $panel,
     private readonly OrdenRepository $ordenes,
+    private readonly \App\Services\ConfiguracionService $configuracion,
+    private readonly \App\Services\NotificacionService $notificaciones,
+    private readonly \App\Services\PrimerosPasosService $primerosPasos,
+    private readonly \App\Core\Auth $auth,
   ) {
     parent::__construct($view, $session);
+  }
+
+  /** JSON: la sesión sigue abierta (ver el modo mostrador en app.js). */
+  public function sesion(Request $request): void
+  {
+    $this->json(['status' => 'ok']);
+  }
+
+  /** @return list<array<string, mixed>>|null los primeros pasos, si el administrador todavía los tiene que ver */
+  private function primerosPasosDelInicio(): ?array
+  {
+    if (!$this->auth->esAdministrador() || $this->primerosPasos->ocultos()) {
+      return null;
+    }
+    $pasos = $this->primerosPasos->pasos();
+
+    return $this->primerosPasos->mostrarEnElInicio($pasos) ? $pasos : null;
   }
 
   public function index(Request $request): void
@@ -28,6 +49,7 @@ final class HomeController extends Controller
     $inicioMes = date('Y-m-01');
     $hoy = date('Y-m-d');
     $deuda = $this->panel->deuda();
+    $trabajo = $this->configuracion->seccion('trabajo');
 
     // El inicio muestra números; cada uno lleva a su listado con el detalle. Se cuentan en la
     // base (COUNT/SUM), sin traer las listas enteras.
@@ -36,11 +58,16 @@ final class HomeController extends Controller
       'turnosHoy' => $this->panel->turnosDelDia($hoy),
       'abiertas' => $this->panel->ordenesAbiertasPorEstado(),
       'cobradoMes' => $this->panel->cobradoEntre($inicioMes, $hoy),
-      'finalizadasMes' => $this->panel->ordenesFinalizadasEntre($inicioMes, $hoy),
+      'pagosMes' => $this->panel->pagosEntre($inicioMes, $hoy),
       'deudores' => $deuda['clientes'],
       'totalAdeudado' => $deuda['total'],
       'stockBajo' => $this->panel->repuestosBajoMinimo(),
       'services' => $this->ordenes->servicesProximos(30),
+      // "Para no olvidarse": lo que se pasa y cuesta plata.
+      'sinRetirar' => $this->panel->listosSinRetirar((int) $trabajo['alerta_listo_dias']),
+      'sinRespuesta' => $this->panel->presupuestosSinRespuesta((int) $trabajo['alerta_presupuesto_dias']),
+      'whatsapp' => $this->notificaciones->botonWhatsappManual(),
+      'primerosPasos' => $this->primerosPasosDelInicio(),
     ]);
   }
 }
