@@ -62,9 +62,10 @@ final class UsuarioService
     $fila = $usuario !== '' ? $this->usuarios->findParaLogin($usuario) : null;
 
     // Si el usuario no existe se verifica igual contra un hash ficticio, para no
-    // revelar qué usuarios existen por la diferencia en el tiempo de respuesta.
+    // revelar qué usuarios existen por la diferencia en el tiempo de respuesta. En hexadecimal:
+    // los bytes crudos a veces traen un "\0" y bcrypt lo rechaza con un error (1 vez cada 16).
     static $hashFicticio = null;
-    $hash = $fila['password_hash'] ?? ($hashFicticio ??= password_hash(random_bytes(16), PASSWORD_DEFAULT));
+    $hash = $fila['password_hash'] ?? ($hashFicticio ??= password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT));
     $valida = password_verify($clave, $hash);
 
     if ($fila === null || !$valida || !$fila['activo']) {
