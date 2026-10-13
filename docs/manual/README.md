@@ -1,6 +1,19 @@
 # Manual de usuario
 
-Fuente del `Manual_de_Usuario_Mecanica_Abel.pdf` de la raíz del proyecto.
+Fuente del manual en sus dos formatos: la **Ayuda** dentro del sistema (`/ayuda`, ver
+`App\Support\Manual`) y el `Manual_de_Usuario_Mecanica_Abel.pdf` de la raíz del proyecto.
+Para la Ayuda alcanza con editar `manual.html`: el PDF hay que regenerarlo (paso 4). Desde
+la Ayuda también se imprime, con **Imprimir o guardar en PDF**.
+
+- **No cambiar los `id` de los `<section>`**: los botones de Ayuda de cada pantalla enlazan
+  ahí. Un capítulo nuevo lleva su `<section id="…">`. Si explica una pantalla, se agrega en
+  `Manual::DESTINOS`.
+- **Cambiar el texto de un subtítulo (`<h3>`) le cambia el id** (`capitulo-texto-del-subtitulo`)
+  y algunos son destino de un botón de Ayuda: si `ManualTest` falla, actualizar
+  `Manual::DESTINOS`.
+- **La versión de la portada no se escribe a mano**: la ponen `generar-pdf.js` y la Ayuda,
+  desde el archivo `VERSION`. Las capturas salen **sin** la versión del pie (`capturar.js` la
+  oculta), así no quedan viejas cada vez que sube la versión.
 
 | Archivo | Qué es |
 | --- | --- |

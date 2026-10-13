@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Controllers\AuthController;
+use App\Controllers\AyudaController;
 use App\Controllers\BusquedaController;
 use App\Controllers\ClienteController;
 use App\Controllers\ComboController;
@@ -55,6 +56,11 @@ return function (Router $r): void {
   $r->get('/', [HomeController::class, 'index']);
   $r->get('/buscar', [BusquedaController::class, 'index']);
   $r->get('/buscar/sugerencias', [BusquedaController::class, 'sugerencias']);
+
+  // Ayuda: el manual de usuario
+  $r->get('/ayuda', [AyudaController::class, 'index']);
+  $r->get('/ayuda/imprimir', [AyudaController::class, 'imprimir']);
+  $r->get('/ayuda/capturas/{nombre:captura}', [AyudaController::class, 'captura']);
 
   // Llegó un auto: recepción en un solo paso
   $r->get('/recepcion', [RecepcionController::class, 'create']);

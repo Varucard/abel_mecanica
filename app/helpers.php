@@ -42,10 +42,15 @@ function importe(mixed $amount): string
   return '<span class="importe">$&nbsp;' . money($amount) . '</span>';
 }
 
-/** Versión del sistema que se muestra en el pie (APP_VERSION en .env; subirla en cada entrega). */
+/**
+ * Versión del sistema (archivo VERSION de la raíz). No se edita a mano: la sube el workflow
+ * .github/workflows/version.yml al mergear cada PR a main.
+ */
 function version_app(): string
 {
-  return (string) \App\Core\Env::get('APP_VERSION', '1.6.0');
+  static $version = null;
+
+  return $version ??= trim((string) @file_get_contents(App::instance()->rootPath . '/VERSION')) ?: 'sin versión';
 }
 
 /** Ícono de Bootstrap Icons (https://icons.getbootstrap.com), decorativo: icono('check-lg'). */
@@ -104,6 +109,25 @@ function current_section(): string
   $path = substr($path, strlen(App::instance()->basePath));
 
   return explode('/', trim($path, '/'))[0] ?? '';
+}
+
+/**
+ * Ayuda de la pantalla actual: el manual abierto en la parte que la explica, con la pantalla
+ * de la que se viene (desde + su título) para el botón "Volver" de la Ayuda.
+ */
+function url_ayuda(string $pantalla = ''): string
+{
+  $uri = $_SERVER['REQUEST_URI'] ?? '/';
+  $ruta = substr(parse_url($uri, PHP_URL_PATH) ?: '/', strlen(App::instance()->basePath));
+
+  if (current_section() === 'ayuda') {
+    return url('ayuda');
+  }
+
+  $destino = \App\Support\Manual::destinoDe($ruta);
+
+  return url('ayuda') . '?' . http_build_query(['desde' => $uri, 'pantalla' => $pantalla])
+    . ($destino !== null ? '#' . $destino : '');
 }
 
 function auth(): \App\Core\Auth

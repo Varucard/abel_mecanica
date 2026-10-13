@@ -104,7 +104,8 @@ un nombre desconocido el primer sitio que tiene, que es el del colegio.
 Todos los comandos, como `abel` y parado en `~/abel_mecanica` (`sudo -iu abel`, después
 `cd ~/abel_mecanica`).
 
-**Actualizar** después de subir cambios a `main` (las migraciones se aplican solas):
+**Actualizar** después de subir cambios a `main` (las migraciones se aplican solas y la
+versión del pie llega con el `pull`, desde el archivo `VERSION`):
 
 ```bash
 git pull

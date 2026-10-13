@@ -16,8 +16,9 @@
   <meta name="csrf-token" content="<?= e(session()->csrfToken()) ?>">
 </head>
 
+<?php $ayuda = url_ayuda($title ?? ''); // el botón de Ayuda, el del menú del celular y la tecla A ?>
 <?php // Atajos de teclado (app.js): tecla => [destino, descripción]. "?" muestra la lista. ?>
-<?php $atajos = ['n' => [url('recepcion'), 'Llegó un auto'], 't' => [url('turnos/crear'), 'Nuevo turno'], 'o' => [url('ordenes'), 'Ver órdenes'], 'i' => [url('/'), 'Ir al inicio']]; ?>
+<?php $atajos = ['n' => [url('recepcion'), 'Llegó un auto'], 't' => [url('turnos/crear'), 'Nuevo turno'], 'o' => [url('ordenes'), 'Ver órdenes'], 'i' => [url('/'), 'Ir al inicio'], 'a' => [$ayuda, 'Ayuda de esta pantalla']]; ?>
 <body class="con-barra-inferior" data-seccion="<?= e(current_section()) ?>" data-atajos="<?= e(json_encode($atajos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>"
   data-volvio-con-errores="<?= session()->hasOldInput() ? '1' : '0' ?>">
   <?php // Con teclado, el primer Tab ofrece saltar el menú y el buscador. ?>
@@ -29,7 +30,7 @@
         <?php // El título es solo el nombre de la pantalla: el logo y los botones van al lado, no adentro. ?>
         <h1 class="mb-0"><?= e($title ?? '') ?></h1>
         <div class="ms-auto d-none d-md-flex align-items-center gap-2 flex-wrap">
-          <?= $view->partial('partials/acciones_usuario', ['clase' => 'btn btn-sm btn-encabezado']) ?>
+          <?= $view->partial('partials/acciones_usuario', ['clase' => 'btn btn-sm btn-encabezado', 'ayuda' => $ayuda]) ?>
         </div>
       </header>
 
@@ -44,7 +45,7 @@
     <?= $view->partial('partials/pie') ?>
   </div>
 
-  <?= $view->partial('partials/menu_movil') ?>
+  <?= $view->partial('partials/menu_movil', ['ayuda' => $ayuda]) ?>
 
   <script src="<?= asset('vendor/jquery.min.js') ?>"></script>
   <script src="<?= asset('vendor/bootstrap.bundle.min.js') ?>"></script>

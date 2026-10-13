@@ -17,6 +17,13 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
 
   const sesion = async (opciones = {}) => {
     const ctx = await b.newContext({ viewport: { width: 1280, height: 800 }, deviceScaleFactor: 1.5, colorScheme: 'light', locale: 'es-AR', ...opciones });
+    // Sin la versión en el pie: la sube cada entrega y, si no, las capturas quedarían viejas
+    // a la semana sin que haya cambiado ninguna pantalla.
+    await ctx.addInitScript(() => document.addEventListener('DOMContentLoaded', () => {
+      const estilo = document.createElement('style');
+      estilo.textContent = '.pie-version { display: none !important; }';
+      document.head.append(estilo);
+    }));
     const p = await ctx.newPage();
     p.on('pageerror', (e) => errores.push(`${p.url()}: ${e.message}`));
     await p.goto(BASE + '/login');
@@ -56,7 +63,8 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
   // ---------- 2. La pantalla principal ----------
   await ir(p, '/');
   await contenido(p, '03-inicio');
-  await p.locator('.menu-seccion').first().hover(); await p.waitForTimeout(300);
+  // Abierto con un clic en la flecha: con hover solo, el desplegable a veces no llega a abrirse.
+  await p.locator('.menu-seccion .dropdown-toggle').first().click(); await p.waitForSelector('.menu-seccion .dropdown-menu.show'); await p.waitForTimeout(300);
   await foto(p, '04-menu', { clip: { x: 0, y: 0, width: 1280, height: 330 } });
   await ir(p, '/');
   await p.locator('#busqueda_rapida').pressSequentially('gom', { delay: 60 });
@@ -70,6 +78,8 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
   await p.keyboard.press('?'); await p.waitForSelector('.modal.show'); await p.waitForTimeout(400);
   await foto(p, '08-atajos');
   await p.locator('.modal.show .js-modal-aceptar').click(); await p.waitForTimeout(300);
+  await ir(p, '/ayuda', 800);
+  await foto(p, '06-ayuda', { clip: { x: 0, y: 0, width: 1280, height: 640 } });
 
   // ---------- 3. Llegó un auto ----------
   await ir(p, '/recepcion');
@@ -82,9 +92,17 @@ const CHROME = process.env.CHROME || '/usr/bin/google-chrome';
   await p.fill('#anio', '2021'); await p.fill('#diagnostico', 'Hace ruido la suspensión delantera'); await p.fill('#km_ingreso', '68000');
   await p.locator('#mecanico_id').selectOption({ index: 1 });
   await contenido(p, '11-recepcion-nuevo');
+  // Sin el borrador de la 11: si no, la 12 y la 13 salen con «Recuperamos lo que estabas cargando».
+  // Primero se sale de la pantalla: el borrador se guarda con una demora y, si no, se vuelve a escribir.
+  const sinBorradores = async () => {
+    await ir(p, '/');
+    await p.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('borrador:')).forEach((k) => localStorage.removeItem(k)));
+  };
+  await sinBorradores();
   await ir(p, '/recepcion');
   await p.fill('#patente', 'AB789KL'); await p.click('.js-buscar-patente'); await p.waitForSelector('a:has-text("Seguir con la orden")');
   await contenido(p, '12-recepcion-abierta');
+  await sinBorradores();
   await ir(p, '/recepcion');
   await p.fill('#patente', 'AE123FG'); await p.click('.js-buscar-patente'); await p.waitForSelector('.js-tras-buscar:not([hidden])');
   await contenido(p, '13-recepcion-conocido');

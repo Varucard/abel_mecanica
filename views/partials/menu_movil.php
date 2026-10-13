@@ -3,6 +3,8 @@
  * Menú del celular: barra inferior con los accesos de todos los días y un menú
  * lateral con todo lo demás. Va directo en <body>, fuera de la tarjeta principal:
  * dentro de un elemento con transform, lo "fijo" deja de estar fijo a la pantalla.
+ *
+ * @var string $ayuda  link de Ayuda de esta pantalla (url_ayuda())
  */
 use App\Support\MenuPrincipal;
 
@@ -27,7 +29,7 @@ $seccion = current_section();
   <div class="offcanvas-body pt-0">
     <?php // Usuario, modo oscuro y Salir arriba, solo con el ícono (el texto queda para lectores de pantalla). ?>
     <div class="d-flex gap-2 mb-3">
-      <?= $view->partial('partials/acciones_usuario', ['clase' => 'btn btn-outline-secondary', 'soloIcono' => true]) ?>
+      <?= $view->partial('partials/acciones_usuario', ['clase' => 'btn btn-outline-secondary', 'soloIcono' => true, 'ayuda' => $ayuda]) ?>
     </div>
     <?php // Categorías plegables: solo queda abierta la de la sección en la que se está. ?>
     <div class="accordion accordion-flush" id="menu_movil_categorias">
