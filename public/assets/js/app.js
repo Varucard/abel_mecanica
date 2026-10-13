@@ -141,24 +141,10 @@
   /**
    * Lee un número como lo escribe la gente acá: punto para los miles y coma para los decimales
    * ("10.000" = diez mil, "1.234,50"). Acepta también "46000.00" (punto decimal, cuando no
-   * puede ser de miles). Es la misma regla que Validator::importe() en el servidor.
-   * @returns {number} NaN si no es un número válido
+   * puede ser de miles). Es la misma regla que Validator::importe() en el servidor: vive en
+   * reglas.js, con casos de prueba compartidos con PHP (tests/casos/).
    */
-  window.leerImporte = function (texto) {
-    let t = String(texto ?? '').replace(/[$\s ]/g, '');
-    if (t === '') {
-      return NaN;
-    }
-    if (t.includes(',')) {
-      if (!/^[1-9]\d{0,2}(\.\d{3})*,\d+$|^\d+,\d+$/.test(t)) {
-        return NaN;
-      }
-      t = t.replace(/\./g, '').replace(',', '.');
-    } else if (/^[1-9]\d{0,2}(\.\d{3})+$/.test(t)) {
-      t = t.replace(/\./g, '');
-    }
-    return /^\d+(\.\d+)?$/.test(t) ? parseFloat(t) : NaN;
-  };
+  window.leerImporte = window.Reglas.leerImporte;
 
   const formatoPlata = new Intl.NumberFormat('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   // Las cantidades van sin punto de miles: "1.250" en una cantidad es ambiguo (ver Validator::cantidad).
@@ -177,7 +163,7 @@
     const min = campo.dataset.min !== undefined ? parseFloat(campo.dataset.min) : null;
     const max = campo.dataset.max !== undefined ? parseFloat(campo.dataset.max) : null;
     let error = '';
-    if (cantidad && /^\s*\d{1,3}\.\d{3}\s*$/.test(campo.value)) {
+    if (cantidad && window.Reglas.cantidadAmbigua(campo.value)) {
       const entero = campo.value.trim().replace('.', '');
       const decimal = campo.value.trim().replace('.', ',').replace(/,?0+$/, '');
       error = `¿Son ${entero} o ${decimal}? Escribilo sin punto (${entero}) o con coma (${decimal}).`;
@@ -210,26 +196,7 @@
   document.querySelectorAll('.js-importe').forEach(validarImporte);
 
   // ---------- Teléfonos (input[data-telefono]): la misma regla que ClienteService::normalizarTelefono ----------
-  function normalizarTelefono(texto) {
-    let d = String(texto).replace(/\D/g, '');
-    if (d.length > 10 && d.startsWith('54')) {
-      d = d.slice(2);
-      if (d.length > 10 && d.startsWith('9')) {
-        d = d.slice(1);
-      }
-    }
-    if (d.length > 10 && d.startsWith('0')) {
-      d = d.slice(1);
-    }
-    if (d.length === 12) {
-      for (const area of [2, 3, 4]) {
-        if (d.slice(area, area + 2) === '15') {
-          return d.slice(0, area) + d.slice(area + 2);
-        }
-      }
-    }
-    return d;
-  }
+  const normalizarTelefono = window.Reglas.normalizarTelefono;
 
   function validarTelefono(campo) {
     const valor = campo.value.trim();
@@ -238,7 +205,7 @@
     let error = '';
     if (valor !== '' && normalizado.startsWith('15')) {
       error = 'Falta el código de área: si es de Buenos Aires, agregale 11 adelante (11 15 2345-6789).';
-    } else if (valor !== '' && !/^(11\d{8}|[23]\d{9})$/.test(normalizado)) {
+    } else if (valor !== '' && !window.Reglas.telefonoValido(normalizado)) {
       error = 'Falta el código de área o sobran números: tiene que quedar como 11 2345-6789 (10 números, sin contar 0 ni 15).';
     }
     campo.setCustomValidity(error);
@@ -259,7 +226,7 @@
   function mensajeDeError(campo) {
     const v = campo.validity;
     if (v.valueMissing) {
-      return campo.tagName === 'SELECT' ? 'Elegí una opción.' : 'Este dato es obligatorio.';
+      return campo.tagName === 'SELECT' || campo.type === 'radio' ? 'Elegí una opción.' : 'Este dato es obligatorio.';
     }
     if (v.customError) {
       return campo.validationMessage; // ya viene en castellano (p. ej., los importes)
@@ -290,12 +257,21 @@
   }
 
   function lugarDelError(campo) {
+    // Opciones (radios): un solo mensaje, después del grupo de botones, no uno por opción.
+    if (campo.type === 'radio') {
+      return campo.closest('.btn-group, [role="group"]') || campo.closest('fieldset') || campo;
+    }
     // Tom Select esconde el <select>: el mensaje va después de su caja. Con prefijo ($), después del grupo.
     return campo.tomselect?.wrapper || campo.closest('.input-group') || campo;
   }
 
+  /** Las opciones del mismo grupo que el campo (o el campo solo, si no es un radio). */
+  const delGrupo = (campo) => (campo.type === 'radio' && campo.name && campo.form
+    ? [...campo.form.querySelectorAll(`input[type="radio"][name="${CSS.escape(campo.name)}"]`)]
+    : [campo]);
+
   function limpiarError(campo) {
-    campo.classList.remove('is-invalid');
+    delGrupo(campo).forEach((c) => c.classList.remove('is-invalid'));
     campo.tomselect?.wrapper.classList.remove('is-invalid');
     const lugar = lugarDelError(campo);
     if (lugar.nextElementSibling?.classList.contains('js-error-campo')) {
@@ -310,7 +286,7 @@
     // Un campo con error dentro de una sección plegada (<details>) tiene que quedar a la vista.
     campo.closest('details:not([open])')?.setAttribute('open', '');
     limpiarError(campo);
-    campo.classList.add('is-invalid');
+    delGrupo(campo).forEach((c) => c.classList.add('is-invalid'));
     campo.tomselect?.wrapper.classList.add('is-invalid');
     const error = document.createElement('div');
     error.className = 'invalid-feedback d-block js-error-campo';
@@ -334,8 +310,19 @@
     }
   }, true));
 
-  // Los errores del servidor (arriba de la página) se ven aunque se haya bajado en el formulario.
-  document.querySelector('.alert-danger')?.scrollIntoView({ block: 'nearest' });
+  // Los errores del servidor se ven aunque se haya bajado en el formulario. Si alguno quedó marcado
+  // en su campo, el cursor va al primero (con el aviso de arriba ya leído de reojo); si no, al aviso.
+  const primerMarcado = document.querySelector('.js-error-campo')?.closest('.mb-3, [class*="col-"], fieldset')?.querySelector('.is-invalid');
+  if (primerMarcado) {
+    primerMarcado.closest('details:not([open])')?.setAttribute('open', '');
+    window.addEventListener('load', () => {
+      const lugar = primerMarcado.tomselect?.wrapper || primerMarcado;
+      lugar.scrollIntoView({ block: 'center' });
+      (primerMarcado.tomselect?.control_input || primerMarcado).focus({ preventScroll: true });
+    });
+  } else {
+    document.querySelector('.alert-danger')?.scrollIntoView({ block: 'nearest' });
+  }
 
   // ---------- Links a otra parte de la página que además ponen el cursor en un campo ----------
   // <a href="#seccion" data-enfocar="#campo">: p. ej., "Cobrar" baja al formulario de pago.
@@ -471,7 +458,8 @@
    */
   const PREFIJO_BORRADOR = 'borrador:';
   const VIDA_BORRADOR = 8 * 60 * 60 * 1000;
-  const NO_GUARDAR = ['_token', 'confirmar_otra', 'deshaciendo'];
+  // La firma no se guarda: es un dato personal y pesa (un dibujo).
+  const NO_GUARDAR = ['_token', 'confirmar_otra', 'deshaciendo', 'firma'];
   const almacen = (() => { try { return window.localStorage; } catch (e) { return null; } })();
 
   function borrarBorradores() {
@@ -522,6 +510,19 @@
     return pendientes;
   }
 
+  // El envío anterior salió bien (la pantalla trae su aviso de éxito y se llegó desde el
+  // formulario): su borrador ya no hace falta. En una página de error, con la sesión vencida o si
+  // lo enviado pesaba demasiado, no hay aviso de éxito y el borrador sigue.
+  if (almacen && document.body.dataset.exito === '1' && document.referrer) {
+    let desde = '';
+    try { desde = new URL(document.referrer).pathname; } catch (e) { desde = ''; }
+    Object.keys(almacen).filter((k) => k.startsWith(PREFIJO_BORRADOR)).forEach((k) => {
+      try {
+        if (JSON.parse(almacen.getItem(k) || '{}').enviado === desde) almacen.removeItem(k);
+      } catch (e) { almacen.removeItem(k); }
+    });
+  }
+
   document.querySelectorAll('form[data-borrador]').forEach((form) => {
     if (!almacen) {
       return;
@@ -539,6 +540,12 @@
     let guardado = null;
     try { guardado = JSON.parse(almacen.getItem(clave) || 'null'); } catch (e) { guardado = null; }
     const vigente = guardado && Date.now() - guardado.t < VIDA_BORRADOR && guardado.datos.some(([n, v]) => v !== '' && !n.startsWith('_'));
+    // De vuelta en el formulario: vuelve a ser un borrador común (no enviado), también en el
+    // navegador, para que una recarga o la pantalla siguiente no lo borren por error.
+    if (vigente && guardado.enviado) {
+      delete guardado.enviado;
+      try { almacen.setItem(clave, JSON.stringify(guardado)); } catch (e) { /* lleno o bloqueado */ }
+    }
 
     // Se recupera con la página ya cargada (los scripts de cada pantalla escuchando) y se
     // reintenta lo que depende de otra cosa: los modelos llegan después de elegir la marca, los
@@ -581,8 +588,60 @@
 
     form.addEventListener('input', guardarEnUnRato);
     form.addEventListener('change', guardarEnUnRato);
-    form.addEventListener('submit', () => { clearTimeout(demora); almacen.removeItem(clave); });
+    // Al enviar no se borra: se marca. Se borra recién en la pantalla siguiente si el envío salió
+    // bien (ver abajo). Si la sesión había vencido y el envío rebotó a la entrada, sigue ahí.
+    form.addEventListener('submit', (evento) => {
+      clearTimeout(demora);
+      // Si otro canceló el envío (la firma que falta, las fotos que se están preparando: escuchan
+      // antes, en captura), no se marca.
+      if (evento.defaultPrevented) {
+        return;
+      }
+      guardar();
+      try {
+        const actual = JSON.parse(almacen.getItem(clave) || 'null');
+        if (actual) almacen.setItem(clave, JSON.stringify({ ...actual, enviado: window.location.pathname }));
+      } catch (e) { /* lleno o bloqueado */ }
+    });
   });
+
+  // ---------- Botones de WhatsApp: la pantalla se pone al día ----------
+  // WhatsApp se abre en otra pestaña (o en la app): esta se recarga al ratito para mostrar el
+  // aviso y lo que cambió (presupuesto enviado, turno avisado, "avisado el…").
+  document.addEventListener('submit', (evento) => {
+    if (!evento.defaultPrevented && evento.target.matches?.('form[data-whatsapp]')) {
+      setTimeout(() => window.location.reload(), 1500);
+    }
+  });
+
+  // ---------- Mostrador: sin uso, la pantalla vuelve a "¿Quién sos?" ----------
+  // El servidor ya cierra la sesión a los pocos minutos sin uso (MostradorService::INACTIVIDAD);
+  // esto hace que la pantalla no quede mostrando datos mientras tanto.
+  if (document.body.dataset.mostrador) {
+    const vida = Number(document.body.dataset.mostrador) * 1000;
+    let reloj = null;
+    // El servidor cuenta los minutos sin uso desde su último pedido (la página o el aviso de
+    // abajo), no desde la última tecla: la pantalla se vuelve a "¿Quién sos?" con el mismo reloj.
+    // Mientras haya actividad, cada minuto se le avisa al servidor que la sesión sigue en uso; si
+    // no, una recepción larga (firma, fotos, una llamada) rebotaba al enviarla.
+    let ultimoContacto = Date.now();
+    const programar = () => {
+      clearTimeout(reloj);
+      reloj = setTimeout(() => {
+        borrarBorradores();
+        window.location.reload(); // con la sesión vencida, el sistema lleva a la entrada con PIN
+      }, ultimoContacto + vida + 5000 - Date.now());
+    };
+    const huboActividad = () => {
+      if (Date.now() - ultimoContacto > 60 * 1000 && document.body.dataset.sesion) {
+        ultimoContacto = Date.now();
+        fetch(document.body.dataset.sesion, { headers: { 'X-Requested-With': 'XMLHttpRequest' }, credentials: 'same-origin' }).catch(() => {});
+        programar();
+      }
+    };
+    ['pointerdown', 'keydown', 'scroll', 'input'].forEach((evento) => document.addEventListener(evento, huboActividad, { passive: true }));
+    programar();
+  }
 
   // ---------- Atajos de teclado (para el mostrador) ----------
   /**
@@ -629,13 +688,34 @@
   });
 
   // ---------- Avisos flotantes: se van solos ----------
-  if (window.bootstrap) {
-    document.querySelectorAll('.js-aviso').forEach((aviso) => {
-      // 10 segundos (los mensajes con un "qué sigue" no se alcanzaban a leer en 6); mientras el
-      // mouse está encima o tiene el foco, Bootstrap no lo cierra.
-      window.bootstrap.Toast.getOrCreateInstance(aviso, { delay: parseInt(aviso.dataset.demora || '10000', 10) }).show();
-    });
-  }
+  const mostrarAviso = (aviso) => {
+    // 10 segundos (los mensajes con un "qué sigue" no se alcanzaban a leer en 6); mientras el
+    // mouse está encima o tiene el foco, Bootstrap no lo cierra.
+    window.bootstrap?.Toast.getOrCreateInstance(aviso, { delay: parseInt(aviso.dataset.demora || '10000', 10) }).show();
+  };
+  document.querySelectorAll('.js-aviso').forEach(mostrarAviso);
+
+  /**
+   * Aviso de éxito desde JS (p. ej. el tablero, que cambia el estado sin recargar): el mismo
+   * aviso flotante de partials/alerts.php, en su contenedor aria-live (que está siempre, para
+   * que los lectores de pantalla lo anuncien).
+   */
+  window.avisoExito = function (texto) {
+    const contenedor = document.querySelector('.avisos');
+    if (!contenedor) {
+      return;
+    }
+    const aviso = document.createElement('div');
+    aviso.className = 'toast align-items-center mb-2 js-aviso';
+    aviso.setAttribute('role', 'status');
+    aviso.setAttribute('aria-atomic', 'true');
+    aviso.innerHTML = '<div class="d-flex align-items-center gap-2 p-3"><span class="text-success"><i class="bi bi-check-circle-fill" aria-hidden="true"></i></span>'
+      + '<div class="flex-grow-1"></div><button type="button" class="btn-close" data-bs-dismiss="toast" aria-label="Cerrar"></button></div>';
+    aviso.querySelector('.flex-grow-1').textContent = texto;
+    aviso.addEventListener('hidden.bs.toast', () => aviso.remove());
+    contenedor.append(aviso);
+    mostrarAviso(aviso);
+  };
 
   // ---------- Desplegables con buscador (Tom Select) ----------
   /**
@@ -652,11 +732,18 @@
     // valor que viaja es "prefijo:texto" y el servidor lo da de alta (p. ej., un modelo nuevo).
     const crear = select.dataset.crear;
     const escapar = (texto) => texto.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]);
+    const conError = select.classList.contains('is-invalid'); // marcado por el servidor (componentes/campo)
     new window.TomSelect(select, {
       plugins: select.multiple ? ['remove_button'] : ['clear_button'],
       placeholder: select.dataset.placeholder || '',
       maxOptions: null,
       create: crear ? (texto) => ({ value: crear + texto.trim(), text: texto.trim() }) : false,
+      // No ofrece "Agregar fiat" si "Fiat" ya está (sin importar mayúsculas ni tildes): se elegía
+      // el agregado y, aunque el servidor no duplica la marca, los modelos no se cargaban.
+      createFilter(texto) {
+        const normal = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim().toLowerCase();
+        return !Object.values(this.options).some((o) => normal(o.text) === normal(texto));
+      },
       render: {
         // data-chip-corto: lo elegido muestra solo el nombre ("Filtro de aceite"), sin el precio
         // ni el stock que sí ayudan al buscar: así los chips no tapan el lugar para escribir.
@@ -667,6 +754,12 @@
         option_create: (data) => `<div class="create"><i class="bi bi-plus-circle" aria-hidden="true"></i> Agregar <strong>${escapar(data.input)}</strong></div>`,
       },
     });
+    if (conError) {
+      select.tomselect.wrapper.classList.add('is-invalid');
+      // El mensaje va después de la caja de Tom Select (como los errores del navegador).
+      const error = select.parentElement.querySelector(':scope > .js-error-campo');
+      if (error) select.tomselect.wrapper.after(error);
+    }
   };
 
   document.querySelectorAll('select.js-buscable').forEach((select) => window.initBuscable(select));
@@ -734,7 +827,28 @@
       }
     }
 
-    return { ...comunes, columnDefs: prioridades, language: { ...idioma, emptyTable: texto } };
+    const base = { ...comunes, columnDefs: prioridades, language: { ...idioma, emptyTable: texto } };
+
+    // Tarjetas en el celular (data-tarjetas en la <table>): cada fila es una tarjeta con lo
+    // esencial y sus botones, en vez de columnas plegadas. Cada celda lleva el nombre de su
+    // columna (data-titulo, ver librerias.css); las columnas con data-tarjeta="ocultar" no van.
+    if (tabla.hasAttribute('data-tarjetas') && window.matchMedia('(max-width: 767.98px)').matches) {
+      tabla.classList.add('tabla-tarjetas');
+      const titulos = ths.map((th) => th.dataset.titulo ?? th.textContent.trim());
+      const ocultas = ths.map((th) => th.dataset.tarjeta === 'ocultar');
+      return {
+        ...base,
+        responsive: false,
+        createdRow(fila) {
+          [...fila.children].forEach((celda, i) => {
+            celda.dataset.titulo = titulos[i] || '';
+            celda.classList.toggle('d-none', ocultas[i]);
+          });
+        },
+      };
+    }
+
+    return base;
   }
 
   // Tablas con todos los datos en la página.
@@ -816,7 +930,7 @@
           return;
         }
 
-        $.post($select.data('url'), { estado: $select.val() })
+        $.post($select.data('url'), { estado: $select.val(), recargar: 1 })
           .done(() => window.location.reload())
           .fail((xhr) => {
             volver();

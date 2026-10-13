@@ -166,31 +166,30 @@ Pedido del taller: poder cobrar un repuesto sin ganancia y registrar los que tra
 | 96 | **Repuesto a costo**: en la orden, cada repuesto puede ir "a costo (sin ganancia)": se cobra el precio de costo del momento en que se marca y no se edita a mano. El cliente lo ve como cualquier otro repuesto; la marca "a costo" solo aparece en la ficha interna. Sin costo cargado no se puede elegir. | ✅ |
 | 97 | **Repuesto que trae el cliente**: del catálogo o escrito a mano si no está en la lista. Figura sin precio en la orden, el presupuesto, el PDF y el link del cliente, no se descuenta del stock ni cuenta en "más vendidos", y el presupuesto agrega un aviso de garantía configurable (*Configuración › Sistema › Trabajo*). | ✅ |
 
-## A futuro
+## Sexta etapa: mostrador, recepción y entrega (2026-10-13)
 
-### Mejoras de usabilidad propuestas (estándares de la industria)
+Las mejoras de usabilidad que habían quedado propuestas en las revisiones del 2026-10-09, más
+dos pendientes técnicos.
 
-Ideas surgidas de las revisiones del 2026-10-09, para cuando haya tiempo. Están ordenadas
-de menor a mayor esfuerzo.
-
-| Ítem | Qué es | Por qué |
+| # | Ítem | Estado |
 | --- | --- | --- |
-| 💭 **Tablero de órdenes en columnas** | Vista Recibido · En reparación · Listo con tarjetas que se arrastran, a la par del listado. | Es la vista típica de los sistemas de taller: el estado del día de un vistazo. |
-| 💭 **Fotos al recibir el auto** | En "Llegó un auto", sacar fotos con la cámara del celular (golpes, rayones, nivel de nafta, km). | Evita discusiones al entregar; ya existe la galería del vehículo. |
-| 💭 **Firma del cliente en pantalla** | Conformidad al recibir y al entregar, firmando con el dedo. | Reemplaza el papel firmado; queda en el comprobante. |
-| 💭 **WhatsApp con link** | "Presupuesto" y "tu auto está listo" por WhatsApp con el link del portal, en un toque. | La mayoría de los clientes no usa email; hoy el WhatsApp va sin el link. |
-| 💭 **Alertas del taller** | Autos listos sin retirar hace X días, presupuestos sin respuesta, services por vencer. | Lo que se olvida y cuesta plata, a la vista en el inicio. |
-| 💭 **Tarjetas en el celular** | En vez de tablas, cada orden o turno como una tarjeta con lo esencial y sus botones. | Las tablas, aun priorizando columnas, no son cómodas en pantallas chicas. |
-| 💭 **Modo mostrador / tablet con PIN** | Cada empleado entra con un PIN de 4 dígitos, sin usuario y contraseña cada vez. | La PC del mostrador la usan varios; hoy se comparte la sesión. |
-| 💭 **Primeros pasos guiados y ayuda "?"** | Al instalar: cargar marcas, servicios y datos del taller paso a paso. Ayuda contextual en cada pantalla. | Baja la curva de aprendizaje de un empleado nuevo. |
-| 💭 **Ticket térmico y QR** | Comprobante para impresora térmica, con un QR al seguimiento del auto. | Más barato y rápido que la hoja A4; el cliente sigue el trabajo desde el celular. |
-| 💭 **Medir la usabilidad** | Pruebas con 3 a 5 personas del taller haciendo tareas reales y encuesta SUS antes y después. | Con pocas personas aparecen casi todos los problemas (Nielsen); sirve para priorizar lo que sigue. |
+| 98 | **Tablero del taller** (`/ordenes/tablero`): Recibido · En reparación · Listo, con tarjetas que se arrastran (SortableJS, también en el celular) y el menú «Mover a…» para teclado. El número «Autos en el taller» del inicio lleva acá. | ✅ |
+| 99 | **Cómo llegó el auto**: nivel de nafta, golpes y faltantes, y **fotos con la cámara del celular** en «Llegó un auto» (se suman de a una y el navegador las achica). Quedan en la orden y en la galería del vehículo. | ✅ |
+| 100 | **Firma del cliente en pantalla**: conformidad al recibir (con el estado del auto) y al entregar. La firma va en el comprobante de entrega. | ✅ |
+| 101 | **Entrega del auto** como paso propio: una orden lista sin entregar sigue en el taller; la garantía corre desde la entrega; se puede deshacer (30 minutos; después, un administrador). Las órdenes listas hace más de una semana se dieron por entregadas. | ✅ |
+| 102 | **WhatsApp con link**: presupuesto (con el link para aceptarlo), vehículo listo (con el link al trabajo), turno sin confirmar (con el link para confirmar) y service, armados desde las plantillas. | ✅ |
+| 103 | **Para no olvidarse** en el inicio: autos listos sin retirar, presupuestos sin respuesta y services por vencer, con su WhatsApp. Días configurables. | ✅ |
+| 104 | **Tarjetas en el celular** para los listados de órdenes y turnos (`data-tarjetas`). | ✅ |
+| 105 | **Modo mostrador**: entrar con PIN de 4 dígitos desde equipos habilitados, sesión de 10 minutos sin uso, bloqueo por intentos. | ✅ |
+| 106 | **Primeros pasos** guiados (se tildan solos) con las marcas y modelos comunes de un clic. La ayuda contextual ya existía (Ayuda, v1.7). | ✅ |
+| 107 | **Tickets para impresora térmica** (58/80 mm) con **QR** al seguimiento del auto; QR también en el presupuesto y el comprobante A4. | ✅ |
+| 108 | **Medir la usabilidad**: encuesta SUS por rondas dentro del sistema y protocolo de pruebas con personas (`docs/usabilidad/protocolo.md`). | ✅ |
+| 109 | **Casos compartidos PHP/JS**: importes, cantidades, teléfonos y patentes en `tests/casos/*.json`, probados contra `Validator`/servicios y contra `reglas.js` (Node en CI). | ✅ |
+| 110 | **Tests de controladores**: `redirect()`/`json()` lanzan una respuesta en vez de `exit` y `HttpTestCase` pide por las mismas rutas y el mismo control de acceso que el navegador. | ✅ |
+| 111 | **WhatsApp Business (API de Meta) descartado**: cobra por mensaje y no suma frente al botón con link. Se quitó el canal preparado. | ✅ |
 
-### Otros
+## A futuro
 
 | Ítem | Qué falta |
 | --- | --- |
-| 💭 Activar WhatsApp Business (API de Meta) | Cuenta verificada, número dedicado, plantillas aprobadas e implementar `WhatsAppCanal::enviar()`. |
-| 💭 Facturación electrónica (AFIP/ARCA) | Fuera de alcance por ahora. |
-| 💭 Casos compartidos PHP/JS | Un archivo de casos (importes, teléfonos, patentes) que lean PHPUnit y un test de JS, para que las reglas duplicadas en `Validator`/`ClienteService` y `app.js` no se separen. |
-| 💭 Tests de controladores | Cambio de estado por formulario vs. AJAX y las respuestas JSON (`/recepcion/*`, `/turnos/horarios`, `/buscar/sugerencias`): hoy se verifican en el navegador. |
+| 💭 Facturación electrónica (AFIP/ARCA) | Emitir la factura desde la orden cobrada con el web service de facturación electrónica de ARCA (WSFE), con el certificado digital del CUIT del taller y un punto de venta propio. Antes hay que definir con el taller su condición fiscal (monotributo: factura C; responsable inscripto: A/B) y si factura todo o solo a pedido. |

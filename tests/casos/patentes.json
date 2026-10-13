@@ -1,0 +1,15 @@
+{
+  "normalizar": [
+    { "entrada": "ab 123 cd", "esperado": "AB123CD" },
+    { "entrada": "AB-123-CD", "esperado": "AB123CD" },
+    { "entrada": "abc.123", "esperado": "ABC123" },
+    { "entrada": " ABC 123 ", "esperado": "ABC123" }
+  ],
+  "valida": [
+    { "entrada": "AB123CD", "esperado": true, "nota": "Mercosur" },
+    { "entrada": "ABC123", "esperado": true, "nota": "anterior" },
+    { "entrada": "A123BCD", "esperado": false },
+    { "entrada": "AB12CD", "esperado": false },
+    { "entrada": "1234567", "esperado": false }
+  ]
+}

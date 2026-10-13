@@ -390,3 +390,152 @@ td.col-acciones .btn {
 .manual .etapas span.a { background: var(--bs-primary-bg-subtle); }
 .manual .etapas span.b { background: var(--bs-info-bg-subtle); }
 .manual .etapas span.c { background: var(--bs-success-bg-subtle); }
+
+/* === Tablero del taller (ordenes/tablero) === */
+.tablero {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+  align-items: stretch; /* las tres columnas del mismo alto: se puede soltar en cualquier parte */
+}
+
+.tablero-columna {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--app-borde);
+  border-top: 4px solid var(--estado-color, var(--app-borde));
+  border-radius: var(--app-radio);
+  background-color: var(--app-superficie-hundida);
+  padding: 0.75rem;
+}
+
+.tablero-columna.estado-pendiente   { --estado-color: var(--estado-pendiente); }
+.tablero-columna.estado-en_proceso  { --estado-color: var(--estado-en-proceso); }
+.tablero-columna.estado-finalizado  { --estado-color: var(--estado-finalizado); }
+
+.tablero-encabezado {
+  margin-bottom: 0.75rem;
+}
+
+.tablero-cantidad {
+  background-color: var(--app-superficie);
+  color: var(--app-texto);
+  border: 1px solid var(--app-borde);
+}
+
+.tablero-lista {
+  display: flex;
+  flex-direction: column;
+  flex: 1; /* ocupa toda la columna: soltar debajo de la última tarjeta también vale */
+  gap: 0.6rem;
+  min-height: 6rem; /* una columna vacía también recibe tarjetas */
+}
+
+.tablero-vacia {
+  display: none;
+  padding: 1rem 0.5rem;
+  text-align: center;
+}
+
+.tablero-lista:not(:has(.tarjeta-orden)) .tablero-vacia {
+  display: block;
+}
+
+.tarjeta-orden {
+  background-color: var(--app-superficie);
+  border: 1px solid var(--app-borde);
+  border-radius: var(--app-radio);
+  padding: 0.6rem 0.75rem;
+  box-shadow: 0 1px 2px var(--app-sombra);
+  cursor: grab;
+}
+
+.tarjeta-elegida {
+  cursor: grabbing;
+}
+
+.tarjeta-fantasma {
+  opacity: 0.4;
+}
+
+/* "Mover a…": opciones altas para el dedo. */
+.mover-a .dropdown-item {
+  padding-block: 0.65rem;
+}
+
+/* "Mover a…": no se ofrece la etapa en la que ya está, ni "Listo" sin trabajos cargados. */
+.tarjeta-orden[data-estado="pendiente"] .mover-a[data-destino="pendiente"],
+.tarjeta-orden[data-estado="en_proceso"] .mover-a[data-destino="en_proceso"],
+.tarjeta-orden[data-estado="finalizado"] .mover-a[data-destino="finalizado"],
+.tarjeta-orden[data-sin-items] .mover-a[data-destino="finalizado"] {
+  display: none;
+}
+
+.chip-tarjeta {
+  background-color: var(--app-superficie-hundida);
+  color: var(--app-texto);
+  border: 1px solid var(--app-borde);
+  font-weight: 500;
+}
+
+.chip-tarjeta.chip-ok  { color: rgb(var(--app-texto-exito-rgb)); }
+.chip-tarjeta.chip-mal { color: rgb(var(--app-texto-peligro-rgb)); }
+
+/* En el celular, las columnas se deslizan de costado (una por pantalla, con la siguiente asomando). */
+@media (max-width: 767.98px) {
+  .tablero {
+    grid-template-columns: repeat(3, 85%);
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: 0.5rem;
+  }
+
+  .tablero-columna {
+    scroll-snap-align: start;
+  }
+
+  /* Mientras se arrastra una tarjeta, sin encaje: si no, el desplazamiento de a poco hacia la
+     otra columna (tablero.js) volvía siempre a la columna de partida. */
+  .tablero.arrastrando {
+    scroll-snap-type: none;
+  }
+}
+
+/* === Entrada con PIN en el mostrador (auth/mostrador) === */
+.pin-campo {
+  letter-spacing: 0.6em;
+  font-size: 1.6rem;
+}
+
+.teclado-pin {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+}
+
+.js-paso-pin.enviando .teclado-pin {
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+.teclado-pin .btn {
+  min-height: 3.5rem;
+  font-size: 1.4rem;
+}
+
+/* === Encuesta: los cinco botones a lo ancho, grandes para el dedo, con los extremos debajo del 1 y del 5 === */
+.escala-sus .btn {
+  flex: 1;
+  min-height: 44px;
+}
+
+/* === Primeros pasos === */
+.avance-pasos {
+  height: 0.75rem;
+  accent-color: var(--app-exito);
+}
+
+.primeros-pasos .paso-hecho strong {
+  color: var(--app-texto-suave);
+}
+

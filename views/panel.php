@@ -4,17 +4,20 @@
  * grandes que llevan a su listado (no listas: el detalle está en cada pantalla).
  *
  * @var int $turnosHoy
- * @var array{pendiente: int, en_proceso: int} $abiertas
+ * @var array{pendiente: int, en_proceso: int, listo: int} $abiertas
  * @var float $cobradoMes
- * @var int $finalizadasMes
+ * @var int $pagosMes  cuántos cobros suman lo cobrado en el mes
  * @var int $deudores
  * @var float $totalAdeudado
  * @var int $stockBajo
- * @var list<array<string, mixed>> $services
+ * @var list<array<string, mixed>> $services  services a vencer en 30 días
+ * @var list<array<string, mixed>> $sinRetirar  autos listos sin retirar hace días
+ * @var list<array<string, mixed>> $sinRespuesta  presupuestos enviados sin respuesta
+ * @var bool $whatsapp  mostrar los botones de WhatsApp
  */
 $meses = [1 => 'enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 $mes = $meses[(int) date('n')];
-$enTaller = $abiertas['pendiente'] + $abiertas['en_proceso'];
+$enTaller = $abiertas['pendiente'] + $abiertas['en_proceso'] + $abiertas['listo'];
 $plural = fn(int $n, string $uno, string $varios) => $n . ' ' . ($n === 1 ? $uno : $varios);
 // En el inicio los importes van sin centavos: es un resumen, el detalle está en cada listado.
 $redondo = fn(float $monto) => '<span class="importe numero-importe">$ ' . number_format(round($monto), 0, ',', '.') . '</span>';
@@ -31,14 +34,31 @@ $acciones = [
 // Los números del taller: [ruta, ícono, título, valor (HTML seguro), detalle, color].
 $numeros = [
   ['turnos/semana', 'calendar3', 'Turnos de hoy', (string) $turnosHoy, 'Ver la agenda', 'turnos'],
-  ['ordenes?estado=abiertas', 'car-front', 'Autos en el taller', (string) $enTaller,
-    $plural($abiertas['pendiente'], 'recibido', 'recibidos') . ' · ' . $abiertas['en_proceso'] . ' en reparación', 'ordenes'],
+  ['ordenes/tablero', 'car-front', 'Autos en el taller', (string) $enTaller,
+    $plural($abiertas['pendiente'], 'recibido', 'recibidos') . ' · ' . $abiertas['en_proceso'] . ' en reparación · '
+    . $plural($abiertas['listo'], 'listo', 'listos'), 'ordenes'],
   [auth()->esAdministrador() ? 'reportes' : 'ordenes', 'graph-up-arrow', "Cobrado en {$mes}", $redondo($cobradoMes),
-    $plural($finalizadasMes, 'auto listo', 'autos listos') . ' en el mes', 'clientes'],
+    $pagosMes === 0 ? 'Todavía no se cobró nada' : 'En ' . $plural($pagosMes, 'cobro', 'cobros') . ' desde el 1°', 'clientes'],
   ['deudores', 'exclamation-circle', 'Saldo adeudado', $redondo($totalAdeudado), $plural($deudores, 'cliente debe', 'clientes deben'), 'peligro'],
   ['repuestos', 'box-seam', 'Stock bajo mínimo', (string) $stockBajo, $stockBajo === 0 ? 'Todo en orden' : 'Hay que reponer', 'stock'],
 ];
 ?>
+<?php if (!empty($primerosPasos)): ?>
+  <?php // Se cuentan los necesarios (el aviso se va cuando están hechos); los opcionales siguen en la lista. ?>
+  <?php $pendientes = array_values(array_filter($primerosPasos, fn($p) => !$p['hecho'] && !$p['opcional'])); ?>
+  <div class="alert alert-info d-flex flex-wrap gap-2 align-items-center primeros-pasos-aviso">
+    <span class="me-auto">
+      <?= icono('signpost-split') ?> <strong>Primeros pasos:</strong> <?= count($pendientes) === 1 ? 'te falta 1 cosa' : 'te faltan ' . count($pendientes) . ' cosas' ?> para dejar el sistema listo.
+      Lo siguiente: <a href="<?= url($pendientes[0]['ruta']) ?>"><?= e(mb_strtolower($pendientes[0]['titulo'])) ?></a>.
+    </span>
+    <a href="<?= url('primeros-pasos') ?>" class="btn btn-sm btn-primary">Ver los pasos</a>
+    <form action="<?= url('primeros-pasos/ocultar') ?>" method="POST" class="d-inline">
+      <?= csrf_field() ?>
+      <button type="submit" class="btn btn-sm btn-link">No mostrar más</button>
+    </form>
+  </div>
+<?php endif; ?>
+
 <h2 class="visually-hidden">¿Qué querés hacer?</h2>
 <div class="row g-2 acciones-rapidas">
   <?php foreach ($acciones as [$ruta, $icono, $texto, $clase, $columna]): ?>
@@ -66,20 +86,53 @@ $numeros = [
   <?php endforeach; ?>
 </div>
 
-<?php if ($services !== []): ?>
-  <div class="card mt-3">
-    <div class="card-header"><strong>Services a vencer en los próximos 30 días</strong></div>
+<?php
+// Para no olvidarse: autos listos que no se retiraron, presupuestos sin respuesta y services por
+// vencer. Cada uno con su WhatsApp ya escrito (con el link) para avisarle al cliente.
+$alertas = count($sinRetirar) + count($sinRespuesta) + count($services);
+$conTelefono = fn(array $fila) => $whatsapp && strlen(preg_replace('/\D/', '', (string) ($fila['telefono'] ?? ''))) >= 10;
+$hace = fn(?string $fecha) => ($n = (int) (new DateTimeImmutable(substr((string) $fecha, 0, 10)))->diff(new DateTimeImmutable('today'))->days) === 1 ? 'hace 1 día' : "hace {$n} días";
+?>
+<?php if ($alertas > 0): ?>
+  <div class="card mt-3 alertas-taller">
+    <div class="card-header"><strong><?= icono('bell') ?> Para no olvidarse</strong> <span class="badge rounded-pill text-bg-warning"><?= $alertas ?></span></div>
     <ul class="list-group list-group-flush">
+      <?php foreach ($sinRetirar as $a): ?>
+        <li class="list-group-item d-flex flex-wrap gap-2 align-items-center">
+          <span class="me-auto">
+            <?= icono('car-front') ?> <strong>Listo sin retirar</strong> · <a href="<?= url("ordenes/{$a['id']}") ?>"><?= e($a['patente']) ?> · <?= e($a['vehiculo']) ?></a>
+            · <?= e($a['cliente']) ?> <span class="text-muted small">(terminado <?= e($hace($a['fecha_realizado'])) ?><?= (float) $a['saldo'] > 0 ? ', debe ' . importe($a['saldo']) : '' ?><?= $a['avisado_en'] ? ' · avisado el ' . e(format_date($a['avisado_en'], 'd/m')) : '' ?>)</span>
+          </span>
+          <?php if ($whatsapp): ?>
+            <?= $view->partial('partials/boton_whatsapp', ['orden' => (int) $a['id'], 'tipo' => 'listo', 'texto' => 'Recordarle', 'clase' => 'btn btn-sm btn-outline-success']) ?>
+          <?php endif; ?>
+          <a href="<?= url("ordenes/{$a['id']}/entregar") ?>" class="btn btn-sm btn-outline-secondary"><?= icono('key') ?> Ya lo retiró</a>
+        </li>
+      <?php endforeach; ?>
+      <?php foreach ($sinRespuesta as $a): ?>
+        <li class="list-group-item d-flex flex-wrap gap-2 align-items-center">
+          <span class="me-auto">
+            <?= icono('file-text') ?> <strong>Presupuesto sin respuesta</strong> · <a href="<?= url("ordenes/{$a['id']}") ?>"><?= e($a['patente']) ?> · <?= e($a['vehiculo']) ?></a>
+            · <?= e($a['cliente']) ?> <span class="text-muted small">(enviado <?= e($hace($a['presupuesto_enviado'])) ?>, <?= importe($a['total']) ?>)</span>
+          </span>
+          <?php if ($whatsapp): ?>
+            <?= $view->partial('partials/boton_whatsapp', ['orden' => (int) $a['id'], 'tipo' => 'presupuesto_recordatorio', 'texto' => 'Preguntarle', 'clase' => 'btn btn-sm btn-outline-success']) ?>
+          <?php endif; ?>
+        </li>
+      <?php endforeach; ?>
       <?php foreach ($services as $sv): ?>
-        <li class="list-group-item d-flex justify-content-between flex-wrap gap-2">
-          <span>
-            <strong><?= format_date($sv['proximo_service_fecha']) ?></strong> ·
+        <li class="list-group-item d-flex flex-wrap gap-2 align-items-center">
+          <span class="me-auto">
+            <?= icono('calendar-event') ?> <strong>Service el <?= format_date($sv['proximo_service_fecha']) ?></strong> ·
             <a href="<?= url("vehiculos/{$sv['vehiculo_id']}") ?>"><?= e($sv['patente']) ?></a> · <?= e($sv['cliente']) ?>
             <?= $sv['proximo_service_km'] ? '· ' . number_format((float) $sv['proximo_service_km'], 0, ',', '.') . ' km' : '' ?>
+            <span class="small <?= $sv['proximo_service_avisado'] ? 'text-success' : 'text-muted' ?>">
+              (<?= $sv['proximo_service_avisado'] ? 'avisado el ' . format_date($sv['proximo_service_avisado']) : 'sin avisar' ?>)
+            </span>
           </span>
-          <span class="small <?= $sv['proximo_service_avisado'] ? 'text-success' : 'text-muted' ?>">
-            <?= $sv['proximo_service_avisado'] ? icono('check-lg') . ' avisado el ' . format_date($sv['proximo_service_avisado']) : 'sin avisar' ?>
-          </span>
+          <?php if ($whatsapp && !$sv['proximo_service_avisado']): ?>
+            <?= $view->partial('partials/boton_whatsapp', ['orden' => (int) $sv['id'], 'tipo' => 'service', 'texto' => 'Avisarle', 'clase' => 'btn btn-sm btn-outline-success']) ?>
+          <?php endif; ?>
         </li>
       <?php endforeach; ?>
     </ul>

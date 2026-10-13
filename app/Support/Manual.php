@@ -46,6 +46,9 @@ final class Manual
     'ordenes/crear' => 'ordenes',
     'ordenes/#' => 'ordenes-la-ficha-de-la-orden-que-sigue',
     'ordenes/#/editar' => 'ordenes-cargar-trabajos-y-repuestos',
+    'ordenes/tablero' => 'ordenes-el-tablero-del-taller',
+    'ordenes/#/entregar' => 'ordenes-entregar-el-auto',
+    'ordenes/#/firmar' => 'llego-un-auto-fotos-y-firma-al-recibir',
     'ordenes/#/presupuesto' => 'presupuestos',
     'ordenes/#/entrega' => 'presupuestos',
     'pagos' => 'pagos-cobrar',
@@ -65,6 +68,10 @@ final class Manual
     'empleados' => 'usuarios-empleados',
     'auditoria' => 'auditoria-auditoria',
     'logs' => 'auditoria-registro-del-sistema',
+    'mostrador' => 'usuarios-modo-mostrador-pin',
+    'primeros-pasos' => 'primeros-pasos-la-primera-vez',
+    'usabilidad' => 'reportes-encuesta-de-usabilidad',
+    'encuesta' => 'reportes-encuesta-de-usabilidad',
   ];
 
   /** @var list<array{id: string, titulo: string, html: string}>|null */

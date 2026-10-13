@@ -20,7 +20,11 @@
 <?php // Atajos de teclado (app.js): tecla => [destino, descripción]. "?" muestra la lista. ?>
 <?php $atajos = ['n' => [url('recepcion'), 'Llegó un auto'], 't' => [url('turnos/crear'), 'Nuevo turno'], 'o' => [url('ordenes'), 'Ver órdenes'], 'i' => [url('/'), 'Ir al inicio'], 'a' => [$ayuda, 'Ayuda de esta pantalla']]; ?>
 <body class="con-barra-inferior" data-seccion="<?= e(current_section()) ?>" data-atajos="<?= e(json_encode($atajos, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES)) ?>"
-  data-volvio-con-errores="<?= session()->hasOldInput() ? '1' : '0' ?>">
+  data-volvio-con-errores="<?= session()->hasOldInput() ? '1' : '0' ?>"
+  <?php // El pedido anterior salió bien (dejó un aviso de éxito): app.js borra el borrador de ese formulario. ?>
+  <?php $anteriores = session()->messages(); ?>
+  data-exito="<?= !empty($anteriores['success']) || !empty($anteriores['deshacer']) || !empty($anteriores['aviso']) ? '1' : '0' ?>"
+  <?= auth()->enMostrador() ? 'data-mostrador="' . \App\Services\MostradorService::INACTIVIDAD . '" data-sesion="' . e(url('sesion')) . '"' : '' ?>>
   <?php // Con teclado, el primer Tab ofrece saltar el menú y el buscador. ?>
   <a href="#contenido" class="visually-hidden-focusable saltar-al-contenido">Saltar al contenido</a>
   <div class="container app-marco my-md-3">
@@ -38,6 +42,7 @@
         <?= $view->partial('partials/navbar') ?>
         <main id="contenido" tabindex="-1">
           <?= $view->partial('partials/alerts') ?>
+          <?= $view->partial('partials/invitacion_encuesta') ?>
           <?= $content ?>
         </main>
       </div>
@@ -54,9 +59,10 @@
   <script src="<?= asset('vendor/dataTables.responsive.min.js') ?>"></script>
   <script src="<?= asset('vendor/responsive.bootstrap5.min.js') ?>"></script>
   <script src="<?= asset('vendor/tom-select.complete.min.js') ?>"></script>
+  <script src="<?= asset('js/reglas.js') ?>"></script>
   <script src="<?= asset('js/app.js') ?>"></script>
   <?php foreach ($view->scripts() as $script): ?>
-    <script src="<?= asset('js/' . $script) ?>"></script>
+    <script src="<?= asset(str_starts_with($script, 'vendor/') ? $script : 'js/' . $script) ?>"></script>
   <?php endforeach; ?>
 </body>
 

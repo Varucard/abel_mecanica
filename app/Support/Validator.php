@@ -17,11 +17,20 @@ final class Validator
   /** @var list<string> */
   private array $errors = [];
 
-  /** Registra $message si la condición NO se cumple. */
-  public function check(bool $condition, string $message): self
+  /** @var array<string, string> campo del formulario => su mensaje */
+  private array $campos = [];
+
+  /**
+   * Registra $message si la condición NO se cumple. Con $campo (el name del formulario), al
+   * volver al formulario el mensaje aparece debajo de ese campo, que queda marcado en rojo.
+   */
+  public function check(bool $condition, string $message, ?string $campo = null): self
   {
     if (!$condition) {
       $this->errors[] = $message;
+      if ($campo !== null) {
+        $this->campos[$campo] ??= $message;
+      }
     }
 
     return $this;
@@ -36,7 +45,7 @@ final class Validator
   public function validate(): void
   {
     if ($this->fails()) {
-      throw new ValidationException($this->errors);
+      throw new ValidationException($this->errors, $this->campos);
     }
   }
 

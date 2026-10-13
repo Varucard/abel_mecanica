@@ -62,7 +62,8 @@ $activo = $cliente['estado'] === 'activo';
           <dt class="col-sm-3">Teléfono</dt>
           <dd class="col-sm-9">
             <?= e($cliente['telefono']) ?>
-            <a href="<?= e(whatsapp_url($cliente['telefono'])) ?>" target="_blank" rel="noopener" class="btn btn-sm btn-accion btn-outline-success ms-2" title="WhatsApp"><?= icono('whatsapp') ?><span class="btn-texto"> WhatsApp</span></a>
+            <?php $modoWa = whatsapp_modo(App\Core\App::instance()->container->get(App\Services\ConfiguracionService::class)->seccion('notificaciones')); ?>
+            <a href="<?= e(whatsapp_url($cliente['telefono'], '', '54', $modoWa)) ?>" target="<?= e(whatsapp_target($modoWa)) ?>" rel="noopener" class="btn btn-sm btn-accion btn-outline-success ms-2" title="WhatsApp"><?= icono('whatsapp') ?><span class="btn-texto"> WhatsApp</span></a>
           </dd>
           <dt class="col-sm-3">Email</dt>
           <dd class="col-sm-9"><?= $cliente['email'] ? '<a href="mailto:' . e($cliente['email']) . '">' . e($cliente['email']) . '</a>' : '—' ?></dd>

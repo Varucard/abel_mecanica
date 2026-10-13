@@ -40,9 +40,11 @@ final class RecepcionService
     $patente = VehiculoService::normalizarPatente($patente);
     $valida = VehiculoService::patenteValida($patente);
     $vehiculo = $valida ? $this->vehiculos->porPatente($patente) : null;
+    // Sigue en el taller si tiene una orden abierta o una lista que nadie retiró.
     $abiertas = $vehiculo === null ? [] : array_values(array_filter(
       $this->ordenes->porVehiculo((int) $vehiculo['id']),
-      fn(array $o) => OrdenService::editable(EstadoOrden::from($o['estado'])),
+      fn(array $o) => OrdenService::editable(EstadoOrden::from($o['estado']))
+        || ($o['estado'] === EstadoOrden::Finalizado->value && $o['entregado_en'] === null),
     ));
 
     return ['patente' => $patente, 'valida' => $valida, 'vehiculo' => $vehiculo, 'abiertas' => $abiertas];
@@ -60,7 +62,7 @@ final class RecepcionService
    * Recibe el auto y abre la orden. Todo o nada: si algo no valida, no queda ni el cliente
    * ni el vehículo a medio cargar.
    *
-   * @param array<string, mixed> $input patente, km_ingreso, diagnostico, mecanico_id, turno_id y,
+   * @param array<string, mixed> $input patente, km_ingreso, combustible_ingreso, estado_ingreso, diagnostico, mecanico_id, turno_id y,
    *                                    si el auto es nuevo, dni, nombre, apellido, telefono, email,
    *                                    marca_id, modelo_id, anio
    * @return int id de la orden creada
@@ -69,7 +71,7 @@ final class RecepcionService
   {
     $patente = VehiculoService::normalizarPatente((string) ($input['patente'] ?? ''));
     (new Validator())
-      ->check(VehiculoService::patenteValida($patente), 'Escribí la patente del auto (por ejemplo, AB123CD o ABC123).')
+      ->check(VehiculoService::patenteValida($patente), 'Escribí la patente del auto (por ejemplo, AB123CD o ABC123).', 'patente')
       ->validate();
 
     return $this->ordenes->transaction(function () use ($input, $patente) {
@@ -97,6 +99,8 @@ final class RecepcionService
 
       return $this->ordenService->guardar($vehiculoId, [], [], null, ((int) ($input['mecanico_id'] ?? 0)) ?: null, [
         'km_ingreso' => $input['km_ingreso'] ?? '',
+        'combustible_ingreso' => $input['combustible_ingreso'] ?? '',
+        'estado_ingreso' => $input['estado_ingreso'] ?? '',
         'diagnostico' => $input['diagnostico'] ?? '',
         'turno_id' => $input['turno_id'] ?? '',
       ]);

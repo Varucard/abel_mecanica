@@ -25,8 +25,10 @@ final class MenuPrincipal
     return [
       ['clipboard-check', 'Órdenes', 'ordenes', 'ordenes', array_filter([
         'recepcion' => 'Llegó un auto',
+        'ordenes/tablero' => 'Tablero del taller',
         'ordenes' => 'Ver órdenes',
         'reportes' => $admin ? 'Reportes' : null,
+        'usabilidad' => $admin ? 'Usabilidad (encuesta)' : null,
       ])],
       ['calendar3', 'Turnos', 'turnos', 'turnos', ['turnos/crear' => 'Nuevo turno', 'turnos/semana' => 'Agenda semanal', 'turnos' => 'Ver turnos']],
       ['people', 'Clientes', 'clientes', 'clientes', ['clientes/crear' => 'Nuevo cliente', 'clientes' => 'Ver clientes', 'deudores' => 'Deudores']],
@@ -42,8 +44,10 @@ final class MenuPrincipal
         'marcas' => 'Marcas',
         'modelos' => 'Modelos',
         'configuracion' => $admin ? 'Sistema' : null,
+        'primeros-pasos' => $admin ? 'Primeros pasos' : null,
         'empleados' => $admin ? 'Empleados' : null,
         'usuarios' => $admin ? 'Usuarios' : null,
+        'mostrador' => $admin ? 'Modo mostrador (PIN)' : null,
         'auditoria' => $admin ? 'Auditoría' : null,
         'logs' => $admin ? 'Registro del sistema' : null,
       ])],

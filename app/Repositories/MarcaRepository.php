@@ -41,4 +41,10 @@ final class MarcaRepository extends Repository
   {
     $this->execute('DELETE FROM marcas WHERE id = ?', [$id]);
   }
+
+  /** ¿Hay alguno cargado? (Primeros pasos: sin traer la lista entera.) */
+  public function hayAlguno(): bool
+  {
+    return $this->fetchOne('SELECT 1 FROM marcas LIMIT 1') !== null;
+  }
 }

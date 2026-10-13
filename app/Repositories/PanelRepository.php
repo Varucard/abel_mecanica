@@ -9,20 +9,41 @@ namespace App\Repositories;
  */
 final class PanelRepository extends Repository
 {
-  /** @return array{pendiente: int, en_proceso: int} */
+  /**
+   * Autos que están en el taller, por etapa: recibidos, en reparación y listos sin retirar.
+   *
+   * @return array{pendiente: int, en_proceso: int, listo: int}
+   */
   public function ordenesAbiertasPorEstado(): array
   {
     $conteo = $this->fetchPairs(
-      "SELECT estado, COUNT(*) FROM ordenes WHERE estado IN ('pendiente', 'en_proceso') GROUP BY estado"
+      "SELECT estado, COUNT(*) FROM ordenes
+        WHERE estado IN ('pendiente', 'en_proceso') OR (estado = 'finalizado' AND entregado_en IS NULL)
+        GROUP BY estado"
     );
 
-    return ['pendiente' => (int) ($conteo['pendiente'] ?? 0), 'en_proceso' => (int) ($conteo['en_proceso'] ?? 0)];
+    return [
+      'pendiente' => (int) ($conteo['pendiente'] ?? 0),
+      'en_proceso' => (int) ($conteo['en_proceso'] ?? 0),
+      'listo' => (int) ($conteo['finalizado'] ?? 0),
+    ];
   }
 
   public function cobradoEntre(string $desde, string $hasta): float
   {
     return (float) $this->fetchOne(
       "SELECT COALESCE(SUM(pg.monto), 0) AS total FROM pagos pg
+         INNER JOIN ordenes o ON o.id = pg.orden_id AND o.estado <> 'cancelado'
+        WHERE pg.fecha BETWEEN ? AND ?",
+      [$desde, $hasta]
+    )['total'];
+  }
+
+  /** Cuántos pagos se cobraron entre esas fechas (de órdenes no canceladas). */
+  public function pagosEntre(string $desde, string $hasta): int
+  {
+    return (int) $this->fetchOne(
+      "SELECT COUNT(*) AS total FROM pagos pg
          INNER JOIN ordenes o ON o.id = pg.orden_id AND o.estado <> 'cancelado'
         WHERE pg.fecha BETWEEN ? AND ?",
       [$desde, $hasta]
@@ -63,11 +84,36 @@ final class PanelRepository extends Repository
     return ['clientes' => (int) $fila['clientes'], 'total' => (float) $fila['total']];
   }
 
-  public function ordenesFinalizadasEntre(string $desde, string $hasta): int
+  /** Columnas comunes de las alertas: la orden, el auto y el cliente. */
+  private const ALERTA = "SELECT o.id, o.total, o.fecha_realizado, o.presupuesto_enviado, v.patente, CONCAT(ma.nombre, ' ', mo.nombre) AS vehiculo,
+              CONCAT(p.apellido, ', ', p.nombre) AS cliente, c.telefono,
+              o.total - COALESCE((SELECT SUM(pg.monto) FROM pagos pg WHERE pg.orden_id = o.id), 0) AS saldo,
+              (SELECT MAX(n.created_at) FROM notificaciones n WHERE n.orden_id = o.id AND n.tipo = 'listo' AND n.estado = 'enviado') AS avisado_en
+         FROM ordenes o
+         INNER JOIN vehiculos v ON v.id = o.vehiculo_id
+         INNER JOIN clientes c ON c.id = o.cliente_id
+         INNER JOIN personas p ON p.id = c.persona_id
+         INNER JOIN marcas ma ON ma.id = v.marca_id
+         INNER JOIN modelos mo ON mo.id = v.modelo_id";
+
+  /** @return list<array<string, mixed>> autos listos que no se retiraron hace $dias días o más (avisado_en: el último aviso de "listo") */
+  public function listosSinRetirar(int $dias): array
   {
-    return (int) $this->fetchOne(
-      "SELECT COUNT(*) AS total FROM ordenes WHERE estado = 'finalizado' AND fecha_realizado BETWEEN ? AND ?",
-      [$desde, $hasta]
-    )['total'];
+    return $this->fetchAll(
+      self::ALERTA . " WHERE o.estado = 'finalizado' AND o.entregado_en IS NULL AND o.fecha_realizado <= CURDATE() - INTERVAL ? DAY
+        ORDER BY o.fecha_realizado",
+      [$dias]
+    );
+  }
+
+  /** @return list<array<string, mixed>> presupuestos enviados hace $dias días o más que el cliente no respondió */
+  public function presupuestosSinRespuesta(int $dias): array
+  {
+    return $this->fetchAll(
+      self::ALERTA . " WHERE o.estado IN ('pendiente', 'en_proceso') AND o.presupuesto_respuesta IS NULL
+          AND o.presupuesto_enviado <= NOW() - INTERVAL ? DAY
+        ORDER BY o.presupuesto_enviado",
+      [$dias]
+    );
   }
 }

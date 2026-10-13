@@ -21,7 +21,11 @@
     <?= $view->partial('partials/pie') ?>
   </main>
   <script src="<?= asset('vendor/bootstrap.bundle.min.js') ?>"></script>
+  <script src="<?= asset('js/reglas.js') ?>"></script>
   <script src="<?= asset('js/app.js') ?>"></script>
+  <?php foreach ($view->scripts() as $script): ?>
+    <script src="<?= asset(str_starts_with($script, 'vendor/') ? $script : 'js/' . $script) ?>"></script>
+  <?php endforeach; ?>
 </body>
 
 </html>

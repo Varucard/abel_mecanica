@@ -31,7 +31,8 @@ return [
   format_date($o['created_at']),
   '<select class="form-select form-select-sm select-estado estado-orden-select estado-' . e($estado->value) . '" data-url="' . e(url("ordenes/{$o['id']}/estado")) . '"'
     . ' data-actual="' . e($estado->value) . '"' . ($sinItems ? ' data-sin-items="1"' : '')
-    . ' aria-label="Estado de la orden ' . (int) $o['id'] . '">' . $opciones . '</select>',
+    . ' aria-label="Estado de la orden ' . (int) $o['id'] . '">' . $opciones . '</select>'
+    . ($o['entregado_en'] ? '<div class="small text-muted mt-1">' . icono('key') . ' Entregado el ' . e(format_date($o['entregado_en'])) . '</div>' : ''),
   boton_accion("ordenes/{$o['id']}", 'eye', 'Ver') . ' '
     . (OrdenService::editable($estado) ? boton_accion("ordenes/{$o['id']}/editar", 'pencil', 'Editar', 'btn-outline-primary') : ''),
 ];

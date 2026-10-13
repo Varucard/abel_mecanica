@@ -28,11 +28,12 @@ foreach ($estados as $e) {
   </div>
   <div class="card-body">
     <div class="table-responsive">
-      <table data-vacio="No hay turnos para mostrar." data-vacio-accion="<?= e(url('turnos/crear')) ?>" data-vacio-boton="Nuevo turno" class="table table-striped table-bordered" data-server="<?= e(url('turnos/datos')) ?>" data-filtros="#filtro_turnos" data-order='[[0, "asc"]]'>
+      <table data-tarjetas data-vacio="No hay turnos para mostrar." data-vacio-accion="<?= e(url('turnos/crear')) ?>" data-vacio-boton="Nuevo turno" class="table table-striped table-bordered" data-server="<?= e(url('turnos/datos')) ?>" data-filtros="#filtro_turnos" data-order='[[0, "asc"]]'>
         <thead>
           <tr>
             <th data-prioridad="1">Fecha / Hora</th>
-            <th class="col-cliente" data-prioridad="4">Cliente</th>
+            <?php // En la tarjeta del celular, el cliente ya va debajo de la fecha. ?>
+            <th class="col-cliente" data-prioridad="4" data-tarjeta="ocultar">Cliente</th>
             <th class="col-vehiculo">Vehículo</th>
             <th>Descripción</th>
             <th data-prioridad="3">Estado</th>

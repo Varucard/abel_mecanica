@@ -109,14 +109,15 @@ final class VehiculoService
   }
 
   /** @param array<string, mixed> $archivo elemento de $_FILES */
-  public function agregarImagen(int $id, array $archivo, ?string $descripcion, ?int $usuarioId): void
+  /** @param int|null $ordenId la orden en la que se sacó (fotos de la recepción) */
+  public function agregarImagen(int $id, array $archivo, ?string $descripcion, ?int $usuarioId, ?int $ordenId = null): void
   {
     $this->obtener($id);
     $descripcion = Validator::nullable((string) $descripcion);
     (new Validator())->check($descripcion === null || Validator::largo($descripcion, 1, 255), 'La descripción es demasiado larga.')->validate();
 
     $nombre = ImageUpload::en('vehiculos')->guardar($archivo);
-    $this->vehiculos->agregarImagen($id, $nombre, $descripcion, $usuarioId);
+    $this->vehiculos->agregarImagen($id, $nombre, $descripcion, $usuarioId, $ordenId);
   }
 
   /** Elimina una imagen. Devuelve el id del vehículo. */
@@ -181,15 +182,15 @@ final class VehiculoService
     $color = Validator::nullable((string) ($input['color'] ?? ''));
 
     (new Validator())
-      ->check($clienteId > 0 && $this->clientes->find($clienteId) !== null, 'Seleccioná un cliente válido.')
-      ->check($marcaId > 0 && $modeloId > 0 && $this->modelos->perteneceAMarca($modeloId, $marcaId), 'Seleccioná una marca y un modelo válidos.')
-      ->check($anio >= self::ANIO_MINIMO && $anio <= self::anioMaximo(), sprintf('El año debe estar entre %d y %d.', self::ANIO_MINIMO, self::anioMaximo()))
-      ->check(self::patenteValida($patente), 'La patente debe tener formato AB123CD o ABC123.')
-      ->check($km === null || ($km !== false && $km >= 0 && $km <= self::KM_MAXIMO), 'El kilometraje debe estar entre 0 y 9.999.999 km.')
-      ->check($combustibleRaw === '' || $combustible !== null, 'Seleccioná un combustible válido.')
-      ->check($chasis === null || (bool) preg_match('/^[A-HJ-NPR-Z0-9]{8,17}$/', $chasis), 'El número de chasis (VIN) debe tener entre 8 y 17 caracteres alfanuméricos (sin I, O ni Q).')
-      ->check($motor === null || Validator::largo($motor, 1, 50), 'El motor no puede superar los 50 caracteres.')
-      ->check($color === null || Validator::largo($color, 1, 30), 'El color no puede superar los 30 caracteres.')
+      ->check($clienteId > 0 && $this->clientes->find($clienteId) !== null, 'Seleccioná un cliente válido.', 'cliente_id')
+      ->check($marcaId > 0 && $modeloId > 0 && $this->modelos->perteneceAMarca($modeloId, $marcaId), 'Seleccioná una marca y un modelo válidos.', 'modelo_id')
+      ->check($anio >= self::ANIO_MINIMO && $anio <= self::anioMaximo(), sprintf('El año debe estar entre %d y %d.', self::ANIO_MINIMO, self::anioMaximo()), 'anio')
+      ->check(self::patenteValida($patente), 'La patente debe tener formato AB123CD o ABC123.', 'patente')
+      ->check($km === null || ($km !== false && $km >= 0 && $km <= self::KM_MAXIMO), 'El kilometraje debe estar entre 0 y 9.999.999 km.', 'kilometraje')
+      ->check($combustibleRaw === '' || $combustible !== null, 'Seleccioná un combustible válido.', 'combustible')
+      ->check($chasis === null || (bool) preg_match('/^[A-HJ-NPR-Z0-9]{8,17}$/', $chasis), 'El número de chasis (VIN) debe tener entre 8 y 17 caracteres alfanuméricos (sin I, O ni Q).', 'numero_chasis')
+      ->check($motor === null || Validator::largo($motor, 1, 50), 'El motor no puede superar los 50 caracteres.', 'motor')
+      ->check($color === null || Validator::largo($color, 1, 30), 'El color no puede superar los 30 caracteres.', 'color')
       ->validate();
 
     return new Vehiculo(

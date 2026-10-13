@@ -36,9 +36,13 @@ $canales = ['email' => 'email', 'whatsapp' => 'WhatsApp', 'sin_contacto' => 'sin
     <?php endif; ?>
   <?php endif; ?>
   <?php if ($avisos['whatsapp']): ?>
-    <form action="<?= url("turnos/{$turno['id']}/whatsapp") ?>" method="POST" target="_blank" class="d-inline">
+    <?php // Si el cliente todavía no confirmó, el mensaje lleva el link para confirmar o cancelar. ?>
+    <?php $paraConfirmar = $turno['respuesta_cliente'] === null; ?>
+    <form action="<?= url("turnos/{$turno['id']}/whatsapp") ?>" method="POST" target="<?= e(whatsapp_target_actual()) ?>" data-whatsapp class="d-inline">
       <?= csrf_field() ?>
-      <button type="submit" class="btn btn-sm btn-accion btn-outline-success" title="Abrir WhatsApp con el recordatorio armado"><?= icono('whatsapp') ?><span class="btn-texto"> WhatsApp</span></button>
+      <input type="hidden" name="tipo" value="<?= $paraConfirmar ? 'confirmacion' : 'recordatorio' ?>">
+      <button type="submit" class="btn btn-sm btn-accion btn-outline-success"
+        title="<?= $paraConfirmar ? 'Abrir WhatsApp con el link para que confirme el turno' : 'Abrir WhatsApp con el recordatorio armado' ?>"><?= icono('whatsapp') ?><span class="btn-texto"> WhatsApp</span></button>
     </form>
   <?php endif; ?>
 </div>

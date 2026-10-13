@@ -176,7 +176,7 @@
         <td style="width: 150px; padding-left: 8px;">
           <div class="box" style="font-size:9px;">
             <div><strong>Nº <?= $entrega ? 'Orden' : 'Presupuesto' ?>:</strong> <?= e($numero) ?></div>
-            <div><strong>Fecha:</strong> <?= format_date($entrega ? $orden['fecha_realizado'] : $orden['created_at']) ?></div>
+            <div><strong>Fecha:</strong> <?= format_date($entrega ? ($orden['entregado_en'] ?? $orden['fecha_realizado']) : $orden['created_at']) ?></div>
             <?php if ($entrega): ?>
           <div><strong>Mecánico:</strong> <?= e($orden['mecanico'] ?? '—') ?></div>
         <?php else: ?>
@@ -246,6 +246,11 @@
     <?php if (!$entrega && $orden['diagnostico']): ?>
       <div class="notes"><strong>Motivo / diagnóstico:</strong> <?= nl2br(e($orden['diagnostico'])) ?></div>
     <?php endif; ?>
+    <?php if ($entrega && ($combustible !== null || $orden['estado_ingreso'])): ?>
+      <div class="notes"><strong>Al recibirlo:</strong>
+        <?= $combustible !== null ? 'nafta ' . e($combustible) . ($orden['estado_ingreso'] ? '. ' : '.') : '' ?><?= e((string) $orden['estado_ingreso']) ?>
+      </div>
+    <?php endif; ?>
     <?php if ($entrega && $orden['trabajo_realizado']): ?>
       <div class="notes"><strong>Trabajo realizado:</strong> <?= nl2br(e($orden['trabajo_realizado'])) ?></div>
     <?php endif; ?>
@@ -282,10 +287,19 @@
       <?= e($trabajo['mensaje_legal']) ?>
     </div>
 
+    <!-- QR -->
+    <table style="margin-top:10px;"><tr>
+      <td style="width:70px;"><img src="<?= e($qrPng) ?>" alt="Código QR" style="width:64px; height:64px;"></td>
+      <td class="small"><?= e($textoQr) ?></td>
+    </tr></table>
+
     <!-- FIRMA -->
     <div class="firma-block">
       <div class="small"><?= $entrega ? 'Recibí el vehículo en conformidad con los trabajos detallados:' : 'Firma y conformidad del cliente:' ?></div>
-      <div class="firma-line">Nombre y Firma</div>
+      <?php if (!empty($firma)): ?>
+        <img src="<?= e($firma) ?>" alt="Firma del cliente" style="display:block; margin-top:6px; max-width:200px; max-height:70px;">
+      <?php endif; ?>
+      <div class="firma-line"><?= !empty($firmaAclaracion) ? e($firmaAclaracion) : 'Nombre y Firma' ?></div>
     </div>
 
   </div>

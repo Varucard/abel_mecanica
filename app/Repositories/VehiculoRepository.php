@@ -133,8 +133,17 @@ final class VehiculoRepository extends Repository
   public function imagenes(int $vehiculoId): array
   {
     return $this->fetchAll(
-      'SELECT id, archivo, descripcion, created_at FROM vehiculo_imagenes WHERE vehiculo_id = ? ORDER BY id DESC',
+      'SELECT id, orden_id, archivo, descripcion, created_at FROM vehiculo_imagenes WHERE vehiculo_id = ? ORDER BY id DESC',
       [$vehiculoId]
+    );
+  }
+
+  /** @return list<array<string, mixed>> fotos sacadas en una orden (al recibir el auto, o después) */
+  public function imagenesDeOrden(int $ordenId): array
+  {
+    return $this->fetchAll(
+      'SELECT id, vehiculo_id, archivo, descripcion, created_at FROM vehiculo_imagenes WHERE orden_id = ? ORDER BY id',
+      [$ordenId]
     );
   }
 
@@ -144,11 +153,11 @@ final class VehiculoRepository extends Repository
     return $this->fetchOne('SELECT id, vehiculo_id, archivo FROM vehiculo_imagenes WHERE id = ?', [$imagenId]);
   }
 
-  public function agregarImagen(int $vehiculoId, string $archivo, ?string $descripcion, ?int $usuarioId): int
+  public function agregarImagen(int $vehiculoId, string $archivo, ?string $descripcion, ?int $usuarioId, ?int $ordenId = null): int
   {
     return $this->insert(
-      'INSERT INTO vehiculo_imagenes (vehiculo_id, archivo, descripcion, usuario_id) VALUES (?, ?, ?, ?)',
-      [$vehiculoId, $archivo, $descripcion, $usuarioId]
+      'INSERT INTO vehiculo_imagenes (vehiculo_id, orden_id, archivo, descripcion, usuario_id) VALUES (?, ?, ?, ?, ?)',
+      [$vehiculoId, $ordenId, $archivo, $descripcion, $usuarioId]
     );
   }
 

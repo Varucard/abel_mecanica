@@ -25,7 +25,7 @@ final class OrdenRepository extends Repository
   {
     $saldo = 'o.total - COALESCE((SELECT SUM(pg.monto) FROM pagos pg WHERE pg.orden_id = o.id), 0)';
     $consulta = new ConsultaPaginada(
-      "SELECT o.id, o.total, o.estado, o.created_at, o.presupuesto_respuesta, {$saldo} AS saldo,
+      "SELECT o.id, o.total, o.estado, o.created_at, o.presupuesto_respuesta, o.entregado_en, {$saldo} AS saldo,
               CONCAT(p.apellido, ', ', p.nombre) AS cliente,
               CONCAT(v.patente, ' - ', ma.nombre, ' ', mo.nombre) AS vehiculo,
               (SELECT CONCAT(pm.apellido, ', ', pm.nombre) FROM empleados em
@@ -61,12 +61,41 @@ final class OrdenRepository extends Repository
     $estado = (string) ($peticion['estado'] ?? '');
     $filtros = match ($estado) {
       '' => [],
-      'abiertas' => [["o.estado IN ('pendiente', 'en_proceso')", []]],
+      // Los autos que están en el taller: también los listos que nadie retiró (como el inicio y el tablero).
+      'abiertas' => [["(o.estado IN ('pendiente', 'en_proceso') OR (o.estado = 'finalizado' AND o.entregado_en IS NULL))", []]],
+      'sin_retirar' => [["o.estado = 'finalizado' AND o.entregado_en IS NULL", []]],
+      'entregadas' => [['o.entregado_en IS NOT NULL', []]],
       'con_saldo' => [["o.estado <> 'cancelado' AND {$saldo} > 0", []]],
       default => [['o.estado = ?', [$estado]]],
     };
 
     return $consulta->ejecutar($this->db, $peticion, $filtros);
+  }
+
+  /**
+   * Autos en el taller para el tablero: recibidos, en reparación y listos sin entregar, los
+   * más viejos primero. Con lo mínimo para la tarjeta.
+   *
+   * @return list<array<string, mixed>>
+   */
+  public function tablero(): array
+  {
+    return $this->fetchAll(
+      "SELECT o.id, o.estado, o.total, o.created_at, o.fecha_realizado, o.presupuesto_respuesta, o.presupuesto_enviado,
+              o.total - COALESCE((SELECT SUM(pg.monto) FROM pagos pg WHERE pg.orden_id = o.id), 0) AS saldo,
+              EXISTS (SELECT 1 FROM ordenes_servicios os WHERE os.orden_id = o.id) AS con_items,
+              v.patente, CONCAT(ma.nombre, ' ', mo.nombre) AS vehiculo, CONCAT(p.apellido, ', ', p.nombre) AS cliente,
+              (SELECT CONCAT(pm.nombre, ' ', pm.apellido) FROM empleados em
+                 INNER JOIN personas pm ON pm.id = em.persona_id WHERE em.id = o.mecanico_id) AS mecanico
+         FROM ordenes o
+         INNER JOIN vehiculos v ON v.id = o.vehiculo_id
+         INNER JOIN clientes c ON c.id = o.cliente_id
+         INNER JOIN personas p ON p.id = c.persona_id
+         INNER JOIN marcas ma ON ma.id = v.marca_id
+         INNER JOIN modelos mo ON mo.id = v.modelo_id
+        WHERE o.estado IN ('pendiente', 'en_proceso') OR (o.estado = 'finalizado' AND o.entregado_en IS NULL)
+        ORDER BY COALESCE(o.fecha_realizado, o.created_at), o.id"
+    );
   }
 
   /** @return list<array<string, mixed>> */
@@ -90,7 +119,7 @@ final class OrdenRepository extends Repository
   private function listado(string $where, array $params): array
   {
     return $this->fetchAll(
-      "SELECT o.id, o.total, o.estado, o.created_at,
+      "SELECT o.id, o.total, o.estado, o.created_at, o.entregado_en,
               o.total - COALESCE((SELECT SUM(pg.monto) FROM pagos pg WHERE pg.orden_id = o.id), 0) AS saldo,
               CONCAT(p.apellido, ', ', p.nombre) AS cliente,
               CONCAT(v.patente, ' - ', ma.nombre, ' ', mo.nombre) AS vehiculo,
@@ -157,8 +186,8 @@ final class OrdenRepository extends Repository
       if ($orden->id === null) {
         $id = $this->insert(
           'INSERT INTO ordenes (vehiculo_id, cliente_id, mecanico_id, turno_id, estado, total, km_ingreso, diagnostico, trabajo_realizado,
-                                notas_internas, proximo_service_km, proximo_service_fecha)
-           VALUES (?, (SELECT cliente_id FROM vehiculos WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                                notas_internas, proximo_service_km, proximo_service_fecha, combustible_ingreso, estado_ingreso)
+           VALUES (?, (SELECT cliente_id FROM vehiculos WHERE id = ?), ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
           [$orden->vehiculoId, $orden->vehiculoId, $orden->mecanicoId, $orden->turnoId, $orden->estado->value, $orden->total(), ...$this->detalle($orden)]
         );
       } else {
@@ -171,12 +200,12 @@ final class OrdenRepository extends Repository
                   vehiculo_id = ?, mecanico_id = ?, total = ?, km_ingreso = ?, diagnostico = ?, trabajo_realizado = ?,
                   notas_internas = ?,
                   proximo_service_avisado = IF(proximo_service_km <=> ? AND proximo_service_fecha <=> ?, proximo_service_avisado, NULL),
-                  proximo_service_km = ?, proximo_service_fecha = ?
+                  proximo_service_km = ?, proximo_service_fecha = ?, combustible_ingreso = ?, estado_ingreso = ?
             WHERE id = ?',
           [
             $orden->vehiculoId, $orden->vehiculoId, $orden->vehiculoId, $orden->mecanicoId, $orden->total(), $orden->kmIngreso, $orden->diagnostico,
             $orden->trabajoRealizado, $orden->notasInternas, $orden->proximoServiceKm, $orden->proximoServiceFecha,
-            $orden->proximoServiceKm, $orden->proximoServiceFecha, $id,
+            $orden->proximoServiceKm, $orden->proximoServiceFecha, $orden->combustibleIngreso, $orden->estadoIngreso, $id,
           ]
         );
         $this->execute('DELETE FROM ordenes_servicios WHERE orden_id = ?', [$id]);
@@ -202,7 +231,7 @@ final class OrdenRepository extends Repository
   {
     return [
       $orden->kmIngreso, $orden->diagnostico, $orden->trabajoRealizado, $orden->notasInternas,
-      $orden->proximoServiceKm, $orden->proximoServiceFecha,
+      $orden->proximoServiceKm, $orden->proximoServiceFecha, $orden->combustibleIngreso, $orden->estadoIngreso,
     ];
   }
 
@@ -232,13 +261,18 @@ final class OrdenRepository extends Repository
     return (string) $this->fetchOne('SELECT token FROM ordenes WHERE id = ?', [$id])['token'];
   }
 
-  /** Días que el link del presupuesto sigue abriendo desde su último envío (o desde que se creó la orden). */
+  /**
+   * Días que el link de la orden sigue abriendo desde su último envío (o desde que se creó la
+   * orden) y desde que se terminó: el QR del ticket de entrega sirve para seguir el auto un
+   * tiempo después de retirarlo.
+   */
   public const DIAS_LINK = 60;
 
   public function idPorToken(string $token): ?int
   {
     $fila = $this->fetchOne(
-      'SELECT id FROM ordenes WHERE token = ? AND COALESCE(presupuesto_enviado, created_at) >= NOW() - INTERVAL ' . self::DIAS_LINK . ' DAY',
+      'SELECT id FROM ordenes WHERE token = ?
+          AND GREATEST(COALESCE(presupuesto_enviado, created_at), COALESCE(fecha_realizado, created_at)) >= NOW() - INTERVAL ' . self::DIAS_LINK . ' DAY',
       [$token]
     );
 
@@ -269,11 +303,11 @@ final class OrdenRepository extends Repository
    * Estado y bandera de stock de la orden, bloqueando la fila hasta el fin de la transacción
    * en curso (debe llamarse dentro de una).
    *
-   * @return array{estado: string, stock_descontado: int|string}|null
+   * @return array{estado: string, stock_descontado: int|string, entregado_en: ?string}|null
    */
   public function bloquear(int $id): ?array
   {
-    return $this->fetchOne('SELECT estado, stock_descontado FROM ordenes WHERE id = ? FOR UPDATE', [$id]);
+    return $this->fetchOne('SELECT estado, stock_descontado, entregado_en FROM ordenes WHERE id = ? FOR UPDATE', [$id]);
   }
 
   public function registrarRespuestaPresupuesto(int $id, string $respuesta): void
@@ -334,11 +368,19 @@ final class OrdenRepository extends Repository
     $this->execute('UPDATE ordenes SET stock_descontado = ? WHERE id = ?', [(int) $descontado, $id]);
   }
 
+  /** Si la orden deja de estar lista (se reabre o se cancela), tampoco queda como entregada. */
   public function setEstado(int $id, EstadoOrden $estado): void
   {
+    $lista = $estado === EstadoOrden::Finalizado;
     $this->execute(
-      'UPDATE ordenes SET estado = ?, fecha_realizado = ? WHERE id = ?',
-      [$estado->value, $estado === EstadoOrden::Finalizado ? date('Y-m-d') : null, $id]
+      'UPDATE ordenes SET estado = ?, fecha_realizado = ?, entregado_en = IF(?, entregado_en, NULL) WHERE id = ?',
+      [$estado->value, $lista ? date('Y-m-d') : null, (int) $lista, $id]
     );
+  }
+
+  /** El cliente retiró el auto (null: se deshace la entrega). */
+  public function setEntregado(int $id, ?string $cuando): void
+  {
+    $this->execute('UPDATE ordenes SET entregado_en = ? WHERE id = ?', [$cuando, $id]);
   }
 }

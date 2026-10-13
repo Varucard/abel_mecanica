@@ -72,7 +72,27 @@ $abrirCierre = array_filter($cierre, fn($campo) => (string) old($campo, $orden[$
         ]) ?>
       </div>
 
-      <h5 class="mt-4 mb-1">Trabajos y repuestos</h5>
+      <?php
+      // Plegado (se carga en "Llegó un auto"): se abre solo si volvió con un error ahí. El resumen
+      // muestra lo cargado sin abrirlo, y los trabajos quedan más arriba en la pantalla.
+      $errorLlegada = error_campo('combustible_ingreso') !== null || error_campo('estado_ingreso') !== null;
+      $resumenLlegada = implode(' · ', array_filter([
+        ($orden['combustible_ingreso'] ?? null) !== null ? 'nafta ' . ($combustibles[(int) $orden['combustible_ingreso']] ?? '') : null,
+        !empty($orden['estado_ingreso']) ? 'con golpes o faltantes anotados' : null,
+      ]));
+      ?>
+      <details class="mas-datos mb-3" <?= $errorLlegada ? 'open' : '' ?>>
+        <summary>Cómo llegó <span class="small text-muted">(<?= e($resumenLlegada !== '' ? $resumenLlegada : 'nafta, golpes, rayones o faltantes') ?>)</span></summary>
+        <div class="pt-3">
+          <?= $view->partial('componentes/nafta', ['niveles' => $combustibles, 'valor' => $orden['combustible_ingreso'] ?? '']) ?>
+          <?= $view->partial('componentes/campo', [
+            'nombre' => 'estado_ingreso', 'etiqueta' => 'Golpes, rayones o faltantes', 'tipo' => 'textarea', 'columna' => 'mb-0',
+            'valor' => $orden['estado_ingreso'] ?? '', 'atributos' => ['rows' => 2, 'maxlength' => 1000],
+          ]) ?>
+        </div>
+      </details>
+
+      <h5 class="mt-4 mb-1" id="trabajos">Trabajos y repuestos</h5>
       <p class="small text-muted mb-3">Si todavía no sabés qué hay que hacer, podés guardar la orden sin cargarlos y completarlos después.</p>
 
       <div class="row mb-3">

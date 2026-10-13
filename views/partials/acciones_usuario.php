@@ -28,6 +28,8 @@ $texto = !empty($soloIcono) ? 'visually-hidden' : '';
 <?php if ($usuarioActual): ?>
   <form action="<?= url('logout') ?>" method="POST" class="d-inline <?= !empty($soloIcono) ? 'ms-auto' : '' ?>">
     <?= csrf_field() ?>
-    <button type="submit" class="<?= e($clase) ?>" title="Salir del sistema"><?= icono('box-arrow-right') ?> <span class="<?= $texto ?>">Salir</span></button>
+    <?php // En el mostrador, salir deja el equipo listo para que entre el siguiente con su PIN. ?>
+    <?php $enMostrador = auth()->enMostrador(); ?>
+    <button type="submit" class="<?= e($clase) ?>" title="<?= $enMostrador ? 'Salir para que entre otro con su PIN' : 'Salir del sistema' ?>"><?= icono($enMostrador ? 'people' : 'box-arrow-right') ?> <span class="<?= $texto ?>"><?= $enMostrador ? 'Cambiar de usuario' : 'Salir' ?></span></button>
   </form>
 <?php endif; ?>

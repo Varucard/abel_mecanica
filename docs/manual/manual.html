@@ -126,13 +126,14 @@
   <div class="nota nuevo">
     <strong class="titulo">✨ Qué cambió en esta versión</strong>
     <ul>
-      <li><strong>Ayuda dentro del sistema</strong>: el botón ❓ Ayuda abre este manual en la parte que explica la pantalla en la que estás, con un botón para volver.</li>
-      <li><strong>«Llegó un auto»</strong>: el cliente, el auto y la orden se cargan en una sola pantalla, empezando por la patente.</li>
-      <li><strong>La orden te dice qué sigue</strong>: Recibido → En reparación → Listo, con un botón para cada paso.</li>
-      <li><strong>Menú nuevo</strong>, con un color por sección, y un inicio con los números del día.</li>
-      <li><strong>Deshacer</strong>: lo que se puede revertir se hace al toque, con un botón para volver atrás.</li>
-      <li><strong>Buscador con sugerencias</strong>, <strong>atajos de teclado</strong> y <strong>letra más grande</strong> (A+).</li>
-      <li>Los importes se escriben como siempre: <strong>10.000</strong> son diez mil.</li>
+      <li><strong>Tablero del taller</strong>: los autos en columnas (Recibido · En reparación · Listo), para pasarlos de una a otra arrastrándolos.</li>
+      <li><strong>Fotos y firma al recibir</strong>: en «Llegó un auto» se anotan la nafta y los golpes, se sacan fotos con el celular y el cliente firma en la pantalla.</li>
+      <li><strong>Entregar el auto</strong>: un paso nuevo al final de la orden, con la firma del cliente en el comprobante.</li>
+      <li><strong>WhatsApp con link</strong>: el presupuesto, el «está listo» y la confirmación del turno van por WhatsApp con el link para aceptar o seguir el auto.</li>
+      <li><strong>Para no olvidarse</strong>: el inicio avisa de los autos listos sin retirar, los presupuestos sin respuesta y los services por vencer.</li>
+      <li><strong>Modo mostrador</strong>: en la PC que usan varios, cada uno entra tocando su nombre y con un PIN de 4 números.</li>
+      <li><strong>Tickets con QR</strong> para la impresora de tickets, y <strong>tarjetas</strong> en vez de tablas en el celular.</li>
+      <li><strong>Primeros pasos</strong> para dejar el sistema listo y una <strong>encuesta</strong> para medir qué tan fácil es de usar.</li>
     </ul>
   </div>
 </section>
@@ -149,8 +150,20 @@
     <li>Si dejás el sistema sin usar durante 8 horas, la sesión se cierra sola.</li>
   </ul>
 
+  <h3>Entrar con PIN (modo mostrador)</h3>
+  <p>En la computadora o la tablet que usan varios, el administrador puede habilitar el <strong>modo mostrador</strong> (sección 16). Ahí no hace falta escribir usuario y contraseña: la pantalla de ingreso pregunta <strong>«¿Quién sos?»</strong>, tocás tu nombre y escribís tu <strong>PIN de 4 números</strong> (con el teclado o con los números grandes de la pantalla). Con el cuarto número entrás.</p>
+  <figure class="media"><img src="capturas/02-mostrador.png" alt=""><figcaption>Ingreso en un mostrador.</figcaption></figure>
+  <ul>
+    <li>Tu PIN te lo ponés vos, tocando tu nombre arriba a la derecha (sección «PIN para el mostrador»). Te pide la contraseña, y no acepta números fáciles como 1234 o 0000.</li>
+    <li>Al terminar, tocá <span class="boton">Cambiar de usuario</span> y la pantalla queda lista para el siguiente. Si nadie la toca por 10 minutos, se cierra sola.</li>
+    <li>Con PIN se hace el trabajo de todos los días. Para Configuración, Usuarios, Reportes o los backups, tocá «Cambiar de usuario» y entrá con usuario y contraseña.</li>
+    <li>El PIN solo sirve en los equipos habilitados como mostrador. Si te equivocás 5 veces, tu PIN queda bloqueado 15 minutos en ese equipo; mientras tanto podés entrar con <strong>Entrar con usuario y contraseña</strong>.</li>
+  </ul>
+
   <h3>La primera vez</h3>
-  <p>Con el sistema recién instalado, la pantalla de ingreso pide crear la cuenta del administrador: <strong>Nombre y apellido</strong>, <strong>Usuario</strong> y una contraseña. Después, el administrador da de alta al resto del personal (sección 16).</p>
+  <p>Con el sistema recién instalado, la pantalla de ingreso pide crear la cuenta del administrador: <strong>Nombre y apellido</strong>, <strong>Usuario</strong> y una contraseña. Después se abre <strong>Primeros pasos</strong>: la lista de lo que conviene dejar cargado (datos del taller, horario, servicios con precios, marcas y modelos, mecánicos, usuarios, repuestos y email), que se tilda sola a medida que lo hacés. Las marcas y modelos más comunes se cargan de un clic con <span class="boton">Cargar las marcas más comunes</span>.</p>
+  <figure class="media"><img src="capturas/04-primeros-pasos.png" alt=""><figcaption>Primeros pasos.</figcaption></figure>
+  <p>Mientras falte algo, el inicio del administrador lo recuerda; con <strong>No mostrar más</strong> se oculta. La lista sigue en <span class="menu">⚙️ Configuración › Primeros pasos</span>.</p>
 
   <h3>Roles</h3>
   <table>
@@ -211,12 +224,18 @@
   <table>
     <tr><th>Número</th><th>Qué muestra y adónde lleva</th></tr>
     <tr><td>Turnos de hoy</td><td>Los turnos del día. Lleva a la agenda semanal.</td></tr>
-    <tr><td>Autos en el taller</td><td>Cuántos están recibidos y cuántos en reparación. Lleva a las órdenes abiertas.</td></tr>
-    <tr><td>Cobrado en &lt;mes&gt; (por ejemplo, «Cobrado en octubre»)</td><td>Lo cobrado en el mes y cuántos autos quedaron listos. Lleva a los reportes (a los empleados, al listado de órdenes).</td></tr>
+    <tr><td>Autos en el taller</td><td>Cuántos están recibidos, en reparación y listos sin retirar. Lleva al tablero del taller.</td></tr>
+    <tr><td>Cobrado en &lt;mes&gt; (por ejemplo, «Cobrado en octubre»)</td><td>Lo cobrado en el mes y en cuántos cobros. Lleva a los reportes (a los empleados, al listado de órdenes).</td></tr>
     <tr><td>Saldo adeudado</td><td>Lo que deben los clientes y cuántos son. Lleva a Deudores.</td></tr>
     <tr><td>Stock bajo mínimo</td><td>Cuántos repuestos hay que reponer. Lleva a Repuestos.</td></tr>
   </table>
-  <p>Si hay services por vencer en los próximos 30 días, aparecen debajo, con los clientes a los que les toca volver.</p>
+  <p>Debajo, en <strong>Para no olvidarse</strong>, aparece lo que se pasa y cuesta plata, cada cosa con su botón de WhatsApp con el mensaje ya escrito:</p>
+  <ul>
+    <li><strong>Listo sin retirar</strong>: autos terminados hace varios días que nadie vino a buscar (<span class="boton">Recordarle</span> o <span class="boton">Ya lo retiró</span>).</li>
+    <li><strong>Presupuesto sin respuesta</strong>: presupuestos enviados que el cliente no aceptó ni rechazó (<span class="boton">Preguntarle</span>).</li>
+    <li><strong>Services por vencer</strong> en los próximos 30 días (<span class="boton">Avisarle</span>, si todavía no se le avisó).</li>
+  </ul>
+  <p>Cuántos días esperar para avisar se cambia en <span class="menu">⚙️ Configuración › Sistema › Presupuestos</span>.</p>
 
   <h3>El buscador</h3>
   <p>Debajo del menú está el buscador: escribí una <strong>patente</strong>, un <strong>DNI</strong>, un <strong>apellido</strong> o un <strong>número de orden</strong>. <strong>Mientras escribís aparecen sugerencias</strong>: tocá una (o elegila con las flechas ↑ ↓ y <kbd>Enter</kbd>) para ir directo a su ficha. Si apretás <kbd>Enter</kbd> sin elegir, ves todos los resultados agrupados.</p>
@@ -228,7 +247,7 @@
   <figure class="alta"><img src="capturas/07-listado.png" alt=""><figcaption>Listado de clientes.</figcaption></figure>
 
   <h3>En el celular</h3>
-  <p>En el celular, el menú pasa a una <strong>barra abajo</strong>: Inicio, Órdenes, <strong>Llegó un auto</strong> (el botón redondo del medio), Turnos y Menú. En <strong>Menú</strong> están el resto de las secciones y, arriba, los botones de ayuda, tu usuario, letra, modo oscuro y salir.</p>
+  <p>En el celular, el menú pasa a una <strong>barra abajo</strong>: Inicio, Órdenes, <strong>Llegó un auto</strong> (el botón redondo del medio), Turnos y Menú. En <strong>Menú</strong> están el resto de las secciones y, arriba, los botones de ayuda, tu usuario, letra, modo oscuro y salir. Las órdenes y los turnos se ven como <strong>tarjetas</strong>, una debajo de la otra, con lo esencial y sus botones.</p>
   <figure class="par celular">
     <div><img src="capturas/09-celular-inicio.png" alt=""></div>
     <div><img src="capturas/09-celular-menu.png" alt=""></div>
@@ -269,7 +288,7 @@
   <p>Ese borrador se borra solo al guardar el formulario, al salir del sistema o a las 8 horas.</p>
 
   <h3>Cuando falta o está mal un dato</h3>
-  <p>Si al guardar falta algo o hay un dato mal escrito, el campo queda marcado en rojo con el motivo <strong>debajo</strong> (por ejemplo, «Este dato es obligatorio» o «Falta el código de área»). Corregilo y el aviso desaparece.</p>
+  <p>Si al guardar falta algo o hay un dato mal escrito, el campo queda marcado en rojo con el motivo <strong>debajo</strong> (por ejemplo, «Este dato es obligatorio» o «Falta el código de área»). Corregilo y el aviso desaparece. Lo mismo cuando el sistema rechaza un dato después de enviar (por ejemplo, un año fuera de rango): arriba dice cuántos datos hay para corregir y la pantalla baja hasta el primero.</p>
   <figure class="media"><img src="capturas/15-errores.png" alt=""><figcaption>Errores debajo de cada campo.</figcaption></figure>
 </section>
 
@@ -286,10 +305,18 @@
     <li><strong>¿De quién es?</strong> Escribí el <strong>DNI del dueño</strong>. Si ya es cliente del taller, el sistema lo reconoce («Ya es cliente: …») y no hace falta cargar nada más. Si es nuevo, completá Nombre, Apellido, Teléfono y, si tiene, Email.</li>
     <li><strong>¿Qué auto es?</strong> Elegí la Marca, el Modelo y el Año. Si la marca o el modelo no están en la lista, <strong>escribilos y elegí «Agregar»</strong>: quedan cargados para la próxima.</li>
     <li><strong>¿Qué le pasa?</strong> Anotá lo que cuenta el cliente, los kilómetros que marca y, si ya sabés, quién lo va a atender.</li>
+    <li><strong>¿Cómo viene?</strong> (opcional) Marcá cuánta <strong>nafta</strong> tiene, anotá los <strong>golpes, rayones o faltantes</strong>, sacá <strong>fotos</strong> y, si querés, que el cliente <strong>firme</strong> que lo deja así (ver abajo).</li>
     <li>Tocá <span class="boton">Recibir el auto</span>. Se abre la orden, lista para cargarle los trabajos cuando se sepa qué hay que hacer.</li>
   </ol>
   <figure class="alta"><img src="capturas/11-recepcion-nuevo.png" alt=""><figcaption>Auto y cliente nuevos, cargados en la misma pantalla.</figcaption></figure>
   <div class="nota consejo"><strong class="titulo">💡 Cargá el email siempre que puedas</strong>Con email, el cliente recibe el presupuesto para aceptar online, la confirmación y el recordatorio de turnos, y el aviso de que el auto está listo.</div>
+
+  <h3>Fotos y firma al recibir</h3>
+  <p>Sirven para que no haya discusiones al entregar el auto. Con <span class="boton">Sacar o elegir fotos</span>, en el celular se abre la cámara (o la galería): se pueden sacar de a una y se van sumando, hasta 10. El sistema las achica antes de subirlas, así suben rápido aunque la señal sea mala.</p>
+  <p>En <strong>Que el cliente firme que el auto llegó así</strong>, el cliente firma con el dedo (o con el mouse) en el recuadro. Si sale mal, <span class="boton">Borrar y firmar de nuevo</span>.</p>
+  <figure class="alta"><img src="capturas/14-recepcion-como-viene.png" alt=""><figcaption>Nafta, golpes, fotos y la firma del cliente.</figcaption></figure>
+  <p>Todo queda en la orden, en <strong>Cómo llegó</strong>, donde también se pueden sumar fotos después o hacer firmar la conformidad (<span class="boton">Que firme cómo llegó</span>). Las fotos se ven además en la ficha del vehículo.</p>
+  <div class="nota consejo"><strong class="titulo">💡 Qué fotografiar</strong>Los golpes y rayones que tenga, el tablero (se ven los km y la nafta) y cualquier cosa que falte.</div>
 
   <h3>Un auto que ya conocemos</h3>
   <p>Si la patente ya está cargada, aparece «Ya lo conocemos» con el auto y su dueño, y se pasa directo a <strong>¿Qué le pasa?</strong>: anotás el motivo y los km, y <span class="boton">Recibir el auto</span>.</p>
@@ -393,6 +420,7 @@
 
   <h3>Confirmación y recordatorios</h3>
   <p>Si el cliente tiene email y está activado en la configuración, al agendar recibe un email para confirmar o cancelar (y de nuevo si se reprograma), y el día hábil anterior le llega un recordatorio automático. Si no tiene email, al guardar el turno aparece un aviso amarillo: <strong>el turno quedó guardado</strong>, solo que hay que avisarle por WhatsApp o por teléfono.</p>
+  <p>El botón <span class="boton">WhatsApp</span> de cada turno abre la conversación con el mensaje ya escrito: si el cliente todavía no confirmó, lleva el <strong>link para confirmar o cancelar</strong>; si ya confirmó, es un recordatorio con el día, la hora y la dirección.</p>
 
   <h3>Agenda semanal</h3>
   <p><span class="menu">📅 Turnos › Agenda semanal</span> muestra la semana en una grilla por día y hora. El <strong>día de hoy</strong> aparece resaltado con la etiqueta «Hoy»; los feriados, marcados; los días que no se atiende, en gris. Tocá cualquier «+ libre» para agendar en ese horario. En el celular, la grilla arranca en el día de hoy y se desliza de costado.</p>
@@ -404,7 +432,7 @@
   <h2>7. Órdenes de servicio</h2>
   <p>La orden es el centro del sistema: registra qué se le hace al auto, cuánto cuesta, quién lo hace y cuánto pagó el cliente. Pasa por tres etapas (los mismos nombres que ve el cliente en su consulta):</p>
   <div class="etapas"><span class="a">1. Recibido</span><span class="b">2. En reparación</span><span class="c">3. Listo</span></div>
-  <p>Además, una orden puede quedar <strong>Cancelada</strong>.</p>
+  <p>Cuando el cliente se lo lleva, la orden queda <strong>Entregada</strong>. Además, una orden puede quedar <strong>Cancelada</strong>.</p>
 
   <h3>La ficha de la orden: «Qué sigue»</h3>
   <p>Arriba de cada orden se ve en qué etapa está y un recuadro <strong>Qué sigue</strong> con el botón del próximo paso:</p>
@@ -413,8 +441,9 @@
     <tr><td>Recibida, sin trabajos cargados</td><td><span class="boton">Cargar trabajos y repuestos</span> (mientras está Recibida, también <span class="boton">Empezar el trabajo</span>, por si se arranca a diagnosticar).</td></tr>
     <tr><td>Recibida, con trabajos</td><td><span class="boton">Empezar el trabajo</span>. Es el momento de mandarle el presupuesto al cliente.</td></tr>
     <tr><td>En reparación</td><td><span class="boton">Terminar el trabajo</span>.</td></tr>
-    <tr><td>Lista, con saldo</td><td><span class="boton">Cobrar</span> y <span class="boton">Comprobante de entrega</span>.</td></tr>
-    <tr><td>Lista y pagada</td><td><span class="boton">Comprobante de entrega</span>.</td></tr>
+    <tr><td>Lista, con saldo</td><td><span class="boton">Cobrar</span>, <span class="boton">Entregar el auto</span> y <span class="boton">Avisarle por WhatsApp</span>.</td></tr>
+    <tr><td>Lista y pagada</td><td><span class="boton">Entregar el auto</span> y <span class="boton">Avisarle por WhatsApp</span>.</td></tr>
+    <tr><td>Entregada</td><td><span class="boton">Comprobante de entrega</span> y <span class="boton">Ticket</span> (y <span class="boton">Cobrar</span>, si quedó debiendo).</td></tr>
   </table>
   <figure class="alta"><img src="capturas/30-orden-recibida.png" alt=""><figcaption>Orden recién recibida: falta cargar los trabajos.</figcaption></figure>
 
@@ -458,12 +487,24 @@
   <figure class="media"><img src="capturas/33-terminar.png" alt=""><figcaption>Confirmación al terminar el trabajo.</figcaption></figure>
   <div class="nota atencion"><strong class="titulo">⚠️ Para terminar hace falta cargar los trabajos</strong>Una orden se puede abrir sin trabajos (el auto entra a diagnóstico), pero no se puede terminar ni presupuestar hasta cargarle al menos un servicio o repuesto.</div>
 
+  <h3>Entregar el auto</h3>
+  <p>Cuando el cliente viene a buscar el auto, tocá <span class="boton">Entregar el auto</span>. Se ve el resumen de lo que se hizo y, si falta cobrar, un aviso con el saldo (se puede cobrar primero o entregarlo igual: queda como deuda). El cliente puede <strong>firmar la conformidad</strong> en la pantalla; la firma y su aclaración salen en el comprobante de entrega.</p>
+  <figure class="alta"><img src="capturas/34-entregar.png" alt=""><figcaption>Entrega del auto con la firma del cliente.</figcaption></figure>
+  <p>Si el auto vuelve a «Llegó un auto» antes de que lo retiren, el sistema avisa que la orden está lista y todavía no se retiró, igual que con una orden abierta.</p>
+  <p>Si se entregó por error, aparece <span class="boton">Deshacer</span> unos segundos y, durante media hora, <strong>Deshacer la entrega</strong> debajo de «Qué sigue» (después, solo un administrador puede deshacerla, porque se borra la firma del cliente). Un auto «Listo» que no se entregó sigue figurando en el taller (en el tablero y en «Para no olvidarse»).</p>
+  <div class="nota atencion"><strong class="titulo">⚠️ Órdenes de antes de esta versión</strong>Las órdenes que ya estaban listas hace más de una semana se dieron por entregadas el día en que se terminaron. Las de la última semana figuran como listas para retirar: si ya se las llevaron, tocá «Entregar el auto» en cada una.</div>
+
   <h3>Volver atrás o cancelar</h3>
   <p>Debajo del recuadro «Qué sigue» están las opciones menos comunes: <strong>Cancelar la orden</strong>, <strong>Volver a «Recibido»</strong> y, en una orden lista, <strong>Volver a abrir el trabajo</strong> (los repuestos vuelven al stock hasta que se termine de nuevo). Una orden cancelada se puede volver a abrir.</p>
   <div class="nota atencion"><strong class="titulo">⚠️ Qué se puede editar</strong>Solo se editan las órdenes Recibidas o En reparación, y el total no puede quedar por debajo de lo que el cliente ya pagó. El vehículo de una orden no se cambia: si te equivocaste de auto, cancelala y recibí el correcto.</div>
 
+  <h3>El tablero del taller</h3>
+  <p><span class="menu">📋 Órdenes › Tablero del taller</span> (o el número «Autos en el taller» del inicio) muestra los autos que están en el taller en tres columnas: <strong>Recibido</strong>, <strong>En reparación</strong> y <strong>Listo</strong> (terminados que todavía no se retiraron). Cada tarjeta dice el auto, el cliente, el mecánico, hace cuánto se recibió (en «Listo», hace cuánto se terminó) y avisos como «Sin trabajos cargados», «Presupuesto aceptado» o «Debe $…».</p>
+  <figure class="alta"><img src="capturas/35-tablero.png" alt=""><figcaption>El tablero del taller.</figcaption></figure>
+  <p>Para cambiar la etapa, <strong>arrastrá la tarjeta</strong> a la otra columna (en el celular, mantenela apretada un momento y arrastrala; las columnas se deslizan de costado). También se puede con <span class="boton">Mover a…</span> en cada tarjeta. Terminar el trabajo y volver a abrirlo piden confirmación, igual que en la orden.</p>
+
   <h3>El listado de órdenes</h3>
-  <p><span class="menu">📋 Órdenes › Ver órdenes</span> (o la tecla <kbd>O</kbd>) muestra todas las órdenes; arriba se filtran por estado, por ejemplo <strong>Autos en el taller</strong> o <strong>Con saldo sin cobrar</strong>. Tocá el número para abrir la orden. El estado también se puede cambiar desde el desplegable de cada fila.</p>
+  <p><span class="menu">📋 Órdenes › Ver órdenes</span> (o la tecla <kbd>O</kbd>) muestra todas las órdenes; arriba se filtran por estado, por ejemplo <strong>Autos en el taller</strong> (recibidos, en reparación y listos sin retirar), <strong>Listos sin retirar</strong>, <strong>Entregados</strong> o <strong>Con saldo sin cobrar</strong>. Una orden entregada lo dice debajo de su estado («Entregado el …») y, en su ficha, figura como <strong>Entregado</strong>. Tocá el número para abrir la orden. El estado también se puede cambiar desde el desplegable de cada fila.</p>
   <figure class="alta"><img src="capturas/37-ordenes.png" alt=""><figcaption>Listado de órdenes.</figcaption></figure>
   <p>En el celular, debajo del número de cada orden se ve la patente, y la ficha muestra el mismo «Qué sigue» con botones grandes.</p>
   <figure class="celular"><img src="capturas/38-celular-orden.png" alt=""><figcaption>Una orden en el celular.</figcaption></figure>
@@ -472,18 +513,22 @@
 <!-- ============================================================ 8 -->
 <section id="presupuestos">
   <h2>8. Presupuestos y comprobantes</h2>
-  <p>En la ficha de la orden, el botón <span class="boton">Imprimir / Enviar</span> (aparece cuando la orden ya tiene trabajos cargados) reúne todo:</p>
+  <p>En la ficha de la orden, el botón <span class="boton">Imprimir / Enviar</span> reúne todo (el presupuesto aparece cuando la orden ya tiene trabajos cargados):</p>
   <figure class="media"><img src="capturas/36-imprimir.png" alt=""><figcaption>Menú «Imprimir / Enviar» de una orden lista.</figcaption></figure>
   <table>
     <tr><th>Opción</th><th>Qué hace</th></tr>
     <tr><td>Presupuesto › Ver e imprimir</td><td>El presupuesto listo para imprimir, con los datos del taller, cliente, vehículo, ítems, validez, formas de pago y observaciones.</td></tr>
     <tr><td>Presupuesto › Descargar PDF</td><td>El mismo presupuesto en PDF, para guardarlo o mandarlo.</td></tr>
     <tr><td>Mandar por email al cliente</td><td>Le llega un email con un link para ver el presupuesto y <strong>aceptarlo o rechazarlo online</strong>. Si el cliente no tiene email, en su lugar aparece «Cargarle el email al cliente para mandárselo». Solo mientras la orden está Recibida o En reparación.</td></tr>
-    <tr><td>Escribirle por WhatsApp</td><td>Abre WhatsApp con un mensaje para el cliente; adjuntale el PDF. Solo mientras la orden está Recibida o En reparación.</td></tr>
-    <tr><td>Comprobante de entrega</td><td>Solo en órdenes listas: el comprobante para entregar el auto, con el trabajo realizado, lo pagado, el saldo, el próximo service y la garantía (para imprimir o en PDF).</td></tr>
+    <tr><td>Mandar por WhatsApp, con el link para aceptarlo</td><td>Abre WhatsApp con el mensaje ya escrito y el link para ver y <strong>aceptar el presupuesto</strong>: no hace falta adjuntar nada. Hay que tocar «Enviar» en WhatsApp; la pantalla del sistema se actualiza sola y queda anotado en el historial de la orden. En una orden recibida con trabajos, también está como botón en «Qué sigue». Se manda desde el teléfono o la PC como cualquier mensaje. Cuenta como un envío (renueva la validez). Solo mientras la orden está Recibida o En reparación.</td></tr>
+    <tr><td>Ticket</td><td>Para la <strong>impresora de tickets</strong> (58 u 80 mm): de recepción, del presupuesto o de entrega. Lleva un <strong>código QR</strong> que el cliente escanea con el celular para seguir su auto (o, en el del presupuesto, para aceptarlo).</td></tr>
+    <tr><td>Comprobante de entrega</td><td>Solo en órdenes listas: el comprobante para entregar el auto, con el trabajo realizado, lo pagado, el saldo, el próximo service, la garantía y la firma del cliente (para imprimir o en PDF). También tiene <strong>Avisar por WhatsApp que está listo</strong>, con el link para ver el trabajo.</td></tr>
   </table>
   <figure class="alta"><img src="capturas/40-presupuesto.png" alt=""><figcaption>Presupuesto listo para imprimir o descargar.</figcaption></figure>
   <figure class="alta"><img src="capturas/41-entrega.png" alt=""><figcaption>Comprobante de entrega.</figcaption></figure>
+
+  <figure class="celular"><img src="capturas/42-ticket.png" alt=""><figcaption>Ticket de recepción con el QR.</figcaption></figure>
+  <div class="nota consejo"><strong class="titulo">💡 Imprimir el ticket</strong>Al abrir un ticket se abre la ventana de impresión: elegí la impresora de tickets. El ancho del papel (58 u 80 mm) se configura en <span class="menu">⚙️ Configuración › Sistema › Presupuestos</span>. El presupuesto y el comprobante en hoja A4 también traen el QR.</div>
 
   <h3>La respuesta del cliente</h3>
   <p>Cuando el cliente responde desde el link, la orden lo muestra: «Presupuesto aceptado por el cliente» o «Presupuesto rechazado por el cliente», con la fecha y la hora; si no contestó, «Presupuesto enviado el …, sin respuesta».</p>
@@ -586,6 +631,15 @@
   </ul>
   <p>Cada reporte se descarga con <span class="boton">Excel (CSV)</span>. Las órdenes se cuentan por su fecha de creación y los pagos por su fecha de cobro; las canceladas no suman en los totales (en «Órdenes por mecánico» sí figuran en la cantidad de órdenes). Los repuestos que trajo el cliente no cuentan en «Repuestos más usados».</p>
   <figure class="alta"><img src="capturas/71-reportes.png" alt=""><figcaption>Pantalla de reportes.</figcaption></figure>
+
+  <h3>Encuesta de usabilidad</h3>
+  <p>En <span class="menu">📋 Órdenes › Usabilidad (encuesta)</span> se mide qué tan fácil es usar el sistema con la <strong>encuesta SUS</strong>: 10 frases que cada persona del equipo marca de 1 a 5, y que dan un puntaje de 0 a 100 (el promedio de la industria es 68; más de 80 es excelente).</p>
+  <ol class="pasos">
+    <li>Abrí una <strong>ronda</strong> con un nombre (por ejemplo, «Antes de los cambios»). Mientras está abierta, el sistema invita a cada usuario a responderla una vez.</li>
+    <li>Cuando respondieron, cerrala. Se ve el puntaje de la ronda, el promedio de cada pregunta y lo que cada uno contó que más le cuesta (sin decir quién).</li>
+    <li>Después de hacer cambios, abrí otra ronda y compará.</li>
+  </ol>
+  <p>Lo que más enseña, junto con la encuesta, es mirar a 3 a 5 personas del taller haciendo tareas reales. Quien instaló el sistema tiene el paso a paso.</p>
 </section>
 
 <!-- ============================================================ 14 -->
@@ -619,11 +673,11 @@
   <table>
     <tr><th>Pestaña</th><th>Qué se configura</th></tr>
     <tr><td>Taller</td><td>Nombre, CUIT, dirección, teléfono, WhatsApp y email. Aparecen en presupuestos, comprobantes, emails y al pie del sistema.</td></tr>
-    <tr><td>Presupuestos</td><td>Validez del presupuesto, garantía y tiempo estimado (en días); formas de pago (una por línea: son las que se ofrecen al cobrar); observaciones del presupuesto (una por línea) y mensaje legal; aviso de garantía para los repuestos que trae el cliente (vacío: no se muestra); si al aceptar el presupuesto la orden pasa sola a En reparación.</td></tr>
+    <tr><td>Presupuestos</td><td>Validez del presupuesto, garantía y tiempo estimado (en días); formas de pago (una por línea: son las que se ofrecen al cobrar); observaciones del presupuesto (una por línea) y mensaje legal; aviso de garantía para los repuestos que trae el cliente (vacío: no se muestra); si al aceptar el presupuesto la orden pasa sola a En reparación; después de cuántos días avisar en el inicio de un auto sin retirar o un presupuesto sin respuesta; ancho del papel de la impresora de tickets.</td></tr>
     <tr><td>Turnos y horario</td><td>Horario de atención por día; no permitir turnos fuera de horario ni en feriados; turnos simultáneos por horario; franjas de la agenda (minutos); feriados (con el botón para importar los nacionales); pedir confirmación al agendar o reprogramar; recordatorio automático el día hábil anterior, a partir de la hora que elijas.</td></tr>
     <tr><td>Service preventivo</td><td>Intervalo sugerido en km y meses para el próximo service; aviso automático al cliente y con cuántos días de anticipación.</td></tr>
-    <tr><td>Avisos</td><td>Canales para avisar a los clientes (email; WhatsApp Business próximamente); avisar al taller cuando un cliente responde un presupuesto; avisar al cliente cuando el auto está listo; botón de WhatsApp manual. Abajo, los últimos avisos enviados con su resultado.</td></tr>
-    <tr><td>Mensajes</td><td>Los textos de los emails y mensajes a clientes, con variables (nombre, fecha, saldo…) que el sistema completa solo.</td></tr>
+    <tr><td>Avisos</td><td>Avisos automáticos por email; avisar al taller cuando un cliente responde un presupuesto; avisar al cliente cuando el auto está listo; mostrar los botones de WhatsApp (abren la conversación con el mensaje y el link ya escritos, sin costo) y cómo se abren en la computadora: la <strong>app de WhatsApp instalada</strong> (recomendado si está instalada: abre la conversación sin preguntar nada), WhatsApp Web (en una pestaña nueva; si ya había una abierta, WhatsApp pregunta «¿Usar aquí?») o la página de WhatsApp que pregunta. En el celular abren siempre la app. Abajo, los últimos avisos enviados con su resultado.</td></tr>
+    <tr><td>Mensajes</td><td>Los textos de los emails y de los mensajes de WhatsApp, con variables (nombre, fecha, saldo, links…) que el sistema completa solo.</td></tr>
     <tr><td>Stock</td><td>Permitir terminar órdenes aunque el stock quede negativo; margen sugerido sobre el costo.</td></tr>
     <tr><td>Portal de clientes</td><td>Habilitar el portal; pedir la patente además del DNI (recomendado); mostrar totales y saldos; cantidad de trabajos a mostrar.</td></tr>
     <tr><td>Backups</td><td>Ver sección 17.</td></tr>
@@ -652,6 +706,11 @@
   </ul>
   <figure class="media"><img src="capturas/90-usuarios.png" alt=""><figcaption>Usuarios del sistema.</figcaption></figure>
   <figure class="media"><img src="capturas/91-usuario-nuevo.png" alt=""><figcaption>Alta de usuario.</figcaption></figure>
+
+  <h3>Modo mostrador (PIN)</h3>
+  <p>En <span class="menu">⚙️ Configuración › Modo mostrador (PIN)</span> (también es una pestaña de <span class="menu">Configuración › Sistema</span>), <strong>entrando desde la computadora o tablet que comparten</strong>, poné un nombre (por ejemplo, «PC del mostrador») y tocá <span class="boton">Usar este equipo como mostrador</span>. Desde ese momento, en ese equipo cada uno entra con su PIN (sección 1). La misma pantalla lista los equipos habilitados, con su último ingreso, y quién tiene PIN; <span class="boton">Quitar</span> vuelve un equipo al ingreso con usuario y contraseña.</p>
+  <figure class="media"><img src="capturas/93-mostrador.png" alt=""><figcaption>Equipos habilitados como mostrador.</figcaption></figure>
+  <div class="nota atencion"><strong class="titulo">⚠️ Solo en equipos del taller</strong>Habilitá únicamente equipos que están dentro del taller. Si se pierde o se cambia uno, quitalo de la lista.</div>
 
   <h3>Empleados</h3>
   <p>Son el personal del taller (mecánicos, etc.), tengan o no usuario. En <span class="menu">⚙️ Configuración › Empleados</span> se carga Nombre, Apellido, DNI, Puesto, Teléfono, Fecha de ingreso y Email. Los empleados activos aparecen como mecánico en «Llegó un auto», en las órdenes y en el reporte por mecánico. Darlos de baja se hace al toque, con <span class="boton">Deshacer</span>.</p>
@@ -704,12 +763,13 @@
   <ol class="pasos">
     <li>Completá el <strong>Trabajo realizado</strong> y el <strong>Próximo service</strong> (en «Al terminar el trabajo»).</li>
     <li><span class="boton">Terminar el trabajo</span>: se descuenta el stock y, si tiene email y el aviso de «auto listo» está activado, se le avisa al cliente.</li>
-    <li><span class="boton">Cobrar</span> e imprimí el <strong>Comprobante de entrega</strong> (o descargá el PDF y mandáselo por WhatsApp).</li>
+    <li>Avisale por WhatsApp con <span class="boton">Avisarle por WhatsApp</span> (va con el link para ver el trabajo).</li>
+    <li>Cuando lo viene a buscar: <span class="boton">Cobrar</span> y <span class="boton">Entregar el auto</span>, con la firma del cliente. Imprimí el <strong>Comprobante de entrega</strong> o el <strong>Ticket</strong>.</li>
   </ol>
 
   <h3>Una vez por semana</h3>
   <ol class="pasos">
-    <li>Revisá <strong>Saldo adeudado</strong> (los deudores) y <strong>Stock bajo mínimo</strong> desde los números del inicio.</li>
+    <li>Revisá <strong>Saldo adeudado</strong> (los deudores) y <strong>Stock bajo mínimo</strong> desde los números del inicio, y lo que haya en <strong>Para no olvidarse</strong>.</li>
     <li>Descargá un backup y guardalo fuera del taller.</li>
   </ol>
 </section>

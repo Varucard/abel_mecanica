@@ -36,8 +36,9 @@ nunca la del taller:
    ```bash
    P=$(docker compose exec -T database printenv MYSQL_ROOT_PASSWORD | tr -d '\r')
    docker compose exec -T database sh -c 'mysql -uroot -p"$MYSQL_ROOT_PASSWORD" -e "CREATE DATABASE taller_manual CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"'
-   docker compose run -d --rm --no-deps -p 127.0.0.1:8099:80 -e DB_DATABASE=taller_manual \
-     -e DB_USERNAME=root -e DB_PASSWORD="$P" -e MAIL_DSN=null://null --name abel_manual public
+   mkdir -p /tmp/storage_manual   # storage/ propio: la copia no toca la configuración ni las fotos del taller
+   docker compose run -d --rm --no-deps -p 127.0.0.1:8099:80 -v /tmp/storage_manual:/var/www/html/storage \
+     -e DB_DATABASE=taller_manual -e DB_USERNAME=root -e DB_PASSWORD="$P" -e MAIL_DSN=null://null --name abel_manual public
    ```
 
 2. Entrar a <http://127.0.0.1:8099>, crear el administrador (usuario `abel`) y cargar los datos
@@ -62,6 +63,6 @@ nunca la del taller:
 
 5. Apagar la copia y borrar la base: `docker stop abel_manual` y `DROP DATABASE taller_manual`.
 
-> La copia de prueba comparte `storage/` con la aplicación (configuración del taller, fotos,
-> backups): las capturas muestran los datos reales del taller (nombre, dirección, CUIT). No
-> subir imágenes ni guardar configuración desde la copia.
+> La copia de prueba usa su propio `storage/` (el `-v` del paso 1): lo que se sube o se configura
+> ahí (fotos, firmas, encuestas, el modo mostrador) no llega a la aplicación. Por eso las capturas
+> muestran los datos del taller por defecto (`config/taller.php`).
