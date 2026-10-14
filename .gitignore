@@ -20,3 +20,6 @@
 
 # Notas locales (pendientes con datos sensibles del servidor)
 *.local.md
+
+# Ajustes propios de cada servidor (montajes extra, otros sitios en el contenedor)
+docker-compose.override.yml
