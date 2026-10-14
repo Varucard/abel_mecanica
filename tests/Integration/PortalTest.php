@@ -108,6 +108,26 @@ final class PortalTest extends IntegrationTestCase
     $this->make(PortalService::class)->consultarPorOrden($id);
   }
 
+  public function testDesdeElPresupuestoSoloSeVeEsaOrden(): void
+  {
+    $cliente = $this->crearCliente('30111222');
+    $vehiculo = $this->crearVehiculo($cliente, 'AB123CD');
+    $otroVehiculo = $this->crearVehiculo($cliente, 'AC456EF');
+    $servicio = $this->crearServicio('Frenos', 1000);
+    $ordenes = $this->make(OrdenService::class);
+    $vieja = $ordenes->guardar($otroVehiculo, [$servicio], []);
+    $id = $ordenes->guardar($vehiculo, [$servicio], []);
+
+    // El link viaja en el QR del comprobante: no muestra las otras órdenes ni el otro vehículo.
+    $resultado = $this->make(PortalService::class)->consultarPorOrden($id);
+    $this->assertSame([$id], array_map('intval', array_column($resultado['ordenes'], 'id')));
+    $this->assertSame([$vehiculo], array_map('intval', array_column($resultado['vehiculos'], 'id')));
+
+    // Con DNI y patente, en cambio, se ve todo lo del cliente.
+    $completo = $this->make(PortalService::class)->consultar('30111222', 'AB123CD', '10.0.0.8');
+    $this->assertEqualsCanonicalizing([$id, $vieja], array_map('intval', array_column($completo['ordenes'], 'id')));
+  }
+
   public function testDeshabilitado(): void
   {
     $this->configurar('portal', ['habilitado' => false]);

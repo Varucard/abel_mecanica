@@ -391,6 +391,20 @@ services:
 y `BACKUP_COPIA_DIR=/backups_externos` en `.env`. Si la copia falla, queda en el registro
 del sistema y el backup local se conserva igual.
 
+**Cifrado:** con `BACKUP_CLAVE_PUBLICA` en `.env`, cada backup (el automático, el manual y el de
+`scripts/backup.sh`) se guarda cifrado como `.cif`, y el original se borra. El servidor solo tiene la
+clave **pública**: puede cifrar pero no descifrar. Una copia filtrada, o el disco del servidor, no se
+leen sin la clave **privada**, que se guarda fuera (un gestor de contraseñas). **Sin la clave privada
+los backups no se pueden recuperar.**
+
+```bash
+php bin/backup.php claves                                  # en una PC propia: genera el par
+php bin/backup.php descifrar db_<fecha>.sql.gz.cif db.sql.gz   # pide la clave privada, sin eco
+```
+
+`scripts/restore.sh` acepta los `.cif` directamente: pide la clave privada (o la toma de
+`BACKUP_CLAVE_PRIVADA`) y descifra en el contenedor, a una carpeta temporal que se borra al terminar.
+
 También se puede hacer desde la consola del servidor:
 
 ```bash
