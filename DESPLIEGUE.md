@@ -24,12 +24,26 @@ que el Apache que hace de proxy.
 
 ```mermaid
 flowchart LR
-  N[Navegador] -->|443 HTTPS| AP[Apache del host<br/>vhost taller]
-  AP -->|127.0.0.1:8050| PUB[contenedor public<br/>Apache + PHP]
-  PUB --> DB[(contenedor database<br/>MySQL 8.4)]
-  TAR[contenedor tareas<br/>cada 15 min] --> DB
+  N[Navegador] -->|443 HTTPS| AP[Apache del host<br/>vhosts taller, pcfighter y gestion]
+  AP -->|127.0.0.1:8050| PUB
+  subgraph PUB[contenedor public · Apache + PHP]
+    TA[vhost por defecto<br/>sistema del taller]
+    PCF[vhost pcfighter.conf<br/>sitio de PC Fighter]
+  end
+  AP -->|127.0.0.1:8060| GES[contenedor gestion<br/>sistema de gestión]
+  PCF -->|Seguí tu servicio| GES
+  TA --> DB[(contenedor database · MySQL 8.4<br/>taller_mecanico + servicio_tecnico)]
+  GES --> DB
+  TAR[contenedores tareas<br/>y gestion-tareas] --> DB
   AP -.otros vhosts.- WP[WordPress del colegio<br/>+ MariaDB del host]
 ```
+
+En la misma VPS y el mismo compose corren dos sistemas más de PC Fighter:
+
+- el **sitio institucional** (`www.pcfighter.com.ar`), como un segundo vhost del contenedor
+  `public`: ver [*Sitio de PC Fighter*](#sitio-de-pc-fighter);
+- el **sistema de gestión** del servicio técnico (`gestion.pcfighter.com.ar`), con sus propios
+  contenedores pero usando este MySQL: ver [*Sistema de gestión*](#sistema-de-gestión).
 
 ## Usuario y carpetas
 
@@ -44,20 +58,26 @@ Todo el proyecto pertenece al usuario de sistema **`abel`**:
   como `www-data`, que en el host es el usuario del Apache del colegio. Con `750`, el
   `www-data` del host no puede ni entrar a la carpeta.
 - Código en `/opt/abel/abel_mecanica`, clonado por HTTPS desde `main`.
+- Al lado, `/opt/abel/pc-fighter`: el sitio de PC Fighter. Ese repo es privado y se clona por
+  SSH con una *deploy key* de solo lectura (`~/.ssh/pcfighter_deploy`, alias
+  `github-pcfighter` en `~/.ssh/config`).
+- Y `/opt/abel/gestion-system`: el sistema de gestión, clonado por HTTPS desde `main`.
 
 **No ponerle `umask 027` al usuario**: el contenedor lee el código como `www-data` y, con
 ese umask, Apache daría 403. La protección la da `/opt/abel`; adentro, permisos normales.
 
 ## Contenedores
 
-Se levantan tres de los cuatro servicios del `docker-compose.yml`:
+Se levantan tres de los cuatro servicios del `docker-compose.yml`, más los dos del sistema de
+gestión que agrega el `docker-compose.override.yml`:
 
 | Servicio | Qué es | En producción |
 | --- | --- | --- |
 | `database` | MySQL 8.4 | ✅ siempre, en `127.0.0.1:8807` |
 | `public` | La aplicación (Apache + PHP) | ✅ siempre, en `127.0.0.1:8050` |
 | `tareas` | Recordatorios, avisos y backup diario | ✅ siempre |
-| `admin` | phpMyAdmin | ❌ solo cuando hace falta |
+| `admin` | phpMyAdmin | ❌ solo cuando hace falta || `gestion` | Sistema de gestión (del override) | ✅ siempre, en `127.0.0.1:8060` |
+| `gestion-tareas` | Sus tareas (del override) | ✅ siempre |
 
 Los tres puertos escuchan solo en `127.0.0.1`: desde internet se entra únicamente por el
 Apache del host, con HTTPS. Docker abre los puertos publicados por encima de `ufw`, así que
@@ -96,8 +116,82 @@ Se armó desde `.env.example` con `chmod 600`. Diferencias con el ejemplo:
 
 `certbot --apache` generó `taller-le-ssl.conf` y la redirección de HTTP a HTTPS.
 
+`/etc/apache2/sites-available/pcfighter.conf` es igual, con `ServerName www.pcfighter.com.ar`,
+`ServerAlias pcfighter.com.ar` y el **mismo** `127.0.0.1:8050`; su certificado cubre los dos
+nombres. `ProxyPreserveHost On` es imprescindible: es lo que le deja al contenedor elegir el
+vhost por el nombre. Sin eso, todo cae en el sistema del taller.
+
 **No apuntar otros nombres del dominio a esta VPS sin su propio vhost**: Apache le sirve a
 un nombre desconocido el primer sitio que tiene, que es el del colegio.
+
+## Sitio de PC Fighter
+
+Desde el 2026-10-14 el sitio de PC Fighter corre **dentro del contenedor `public`**, sin
+contenedor propio, para no cargar la VPS con un servidor aparte. Es PHP y manda las consultas
+del formulario con el mismo mecanismo que el sistema (Symfony Mailer, desde este `vendor/`).
+
+Lo engancha `~/abel_mecanica/docker-compose.override.yml`, que no se versiona y Compose toma
+solo en cada `docker compose up`. Sale de `docker-compose.override.ejemplo.yml` del repo de PC
+Fighter y hace tres cosas sobre `public`:
+
+- monta `../pc-fighter` en `/var/www/pcfighter`, de solo lectura;
+- monta su `apache/pcfighter.conf` en `sites-enabled/`, el vhost de `www.pcfighter.com.ar`;
+- agrega `host.docker.internal`, para su consulta de seguimiento.
+
+**Si el override se pierde, el sitio de PC Fighter cae y el sistema sigue andando**: cualquier
+nombre que el contenedor no reconoce va al vhost por defecto, que es el del taller. Si hace
+falta otro montaje (por ejemplo, la copia de backups de *Pendientes*), se suma a ese mismo
+archivo: no se crea otro.
+
+El sitio tiene su propio `.env` en `/opt/abel/pc-fighter`, con `644`: lo lee el `www-data` del
+contenedor, y no queda expuesto porque `/opt/abel` es `750`. Lo que deja vacío lo hereda del
+`.env` de este sistema; así, las consultas salen por la misma cuenta de email.
+
+**Actualizarlo** no requiere reiniciar nada (el código está montado y PHP lee cada pedido):
+
+```bash
+cd ~/pc-fighter && git pull
+```
+
+Solo si cambian su `apache/pcfighter.conf` o el override: `docker compose up -d public`, desde
+`~/abel_mecanica`. Los errores del sitio aparecen en `docker compose logs public` con el prefijo
+`PC Fighter:`.
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' https://www.pcfighter.com.ar/   # 200 = OK
+```
+
+## Sistema de gestión
+
+Desde el 2026-10-14 el sistema de gestión del servicio técnico
+([gestion-system](https://github.com/Varucard/gestion-system)) corre en este compose y **usa este
+MySQL**, con su propia base (`servicio_tecnico`) y su propio usuario, que solo ve esa base. Un
+segundo MySQL hubiera sumado ~500 MB; así, el sistema agrega ~25 MB.
+
+No va en el contenedor `public`, como el sitio: las dos aplicaciones leen las mismas variables
+(`DB_DATABASE`, `MAIL_DSN`, `APP_URL`…) y en un mismo Apache se pisarían. Tiene sus contenedores,
+con la misma imagen que este sistema, declarados en el mismo `docker-compose.override.yml`:
+
+| Servicio | Qué es |
+| --- | --- |
+| `gestion` | La aplicación, en `127.0.0.1:8060`. Monta `../gestion-system` y arranca con *su* `docker/entrypoint.sh` (dependencias y migraciones en su base) |
+| `gestion-tareas` | Sus recordatorios, avisos y backup diario |
+
+Usa su propio `.env` (`/opt/abel/gestion-system/.env`, `600`), con `DB_HOST=database`. El
+vhost del host es `gestion.conf`, igual al del taller pero hacia `127.0.0.1:8060`, con su
+certificado. El sitio de PC Fighter lo consulta por la red interna: `GESTION_URL=http://gestion`.
+
+**Cuidado con los backups de consola:** `scripts/backup.sh` y `restore.sh` de *este* sistema
+usan la base por defecto del contenedor (`taller_mecanico`). Los de gestión van con
+`ABEL_DIR=../abel_mecanica` y usan siempre `servicio_tecnico`. El backup automático de cada
+sistema ya usa su propia base.
+
+**Actualizarlo:**
+
+```bash
+cd ~/gestion-system && git pull && cd ~/abel_mecanica
+docker compose up -d gestion gestion-tareas
+```
 
 ## Operación
 
@@ -109,7 +203,7 @@ versión del pie llega con el `pull`, desde el archivo `VERSION`):
 
 ```bash
 git pull
-docker compose up -d --build database public tareas
+docker compose up -d --build database public tareas gestion gestion-tareas
 ```
 
 `APP_URL` en el `.env` tiene que ser la dirección pública (`https://taller.pcfighter.com.ar`): con ella
@@ -151,6 +245,6 @@ curl -s -o /dev/null -w '%{http_code}\n' https://taller.pcfighter.com.ar/   # 30
 
 | # | Qué | Prioridad |
 | --- | --- | --- |
-| 1 | **Copia de los backups fuera de la VPS.** Hoy quedan solo en `storage/backups`, en el mismo disco: si se pierde el servidor, se pierde todo junto. El mecanismo ya existe (`BACKUP_COPIA_DIR` + `docker-compose.override.yml`, ver *Backups* en el README); falta decidir el destino (Drive con rclone, la PC del taller, otra VPS). | Alta |
+| 1 | **Copia de los backups fuera de la VPS.** Hoy quedan solo en `storage/backups`, en el mismo disco: si se pierde el servidor, se pierde todo junto. El mecanismo ya existe (`BACKUP_COPIA_DIR` + `docker-compose.override.yml`, ver *Backups* en el README); falta decidir el destino (Drive con rclone, la PC del taller, otra VPS). El override ya existe por el sitio de PC Fighter: el montaje se suma ahí. | Alta |
 | 2 | **Cuenta de email propia del taller.** Hoy los avisos salen de una cuenta personal de Gmail: los clientes ven ese remitente y Gmail limita a unos 500 envíos por día. | Media |
 | 3 | **Monitor de disponibilidad** externo (UptimeRobot y similares). El router ya responde `HEAD`. | Baja |
